@@ -1,0 +1,10 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Your rule content
+Always use react 18, do not install any react 19 packages
+- You can @ files here
+- You can use markdown but dont have to
