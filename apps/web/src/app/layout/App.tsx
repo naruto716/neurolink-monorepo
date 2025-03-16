@@ -4,8 +4,22 @@ import { theme } from './theme';
 import Navbar from './Navbar';
 import Footer from './Footer';
 import { ToastContainer } from 'react-toastify';
+import { useAppDispatch, setTokens } from "@neurolink/shared";
+import { useAuth } from "react-oidc-context";
+import { useEffect } from "react";
 
 function App() {
+  const auth = useAuth();
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    dispatch(setTokens({
+      accessToken: auth?.user?.access_token,
+      idToken: auth?.user?.id_token,
+      refreshToken: auth?.user?.refresh_token,
+    }));
+  }, [auth?.user, dispatch]);
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />

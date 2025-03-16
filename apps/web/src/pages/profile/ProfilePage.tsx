@@ -3,9 +3,11 @@ import { Box, Typography, Paper, Avatar, TextField, Button, Grid, Card, CardCont
 import { Edit as EditIcon, Save as SaveIcon, Visibility as VisibilityIcon, VisibilityOff as VisibilityOffIcon } from '@mui/icons-material';
 import { useAuth } from 'react-oidc-context';
 import { toastSuccess, toastError, toastInfo } from '../../app/utils/toast';
+import { useAppSelector } from '@neurolink/shared';
 
 const ProfilePage = () => {
   const auth = useAuth();
+  const { accessToken, idToken, refreshToken } = useAppSelector(state => state.tokens);
   const [isEditing, setIsEditing] = useState(false);
   const [showTokens, setShowTokens] = useState({
     idToken: false,
@@ -20,10 +22,10 @@ const ProfilePage = () => {
     role: 'Research Scientist'
   });
 
-  // Extract tokens from auth context
-  const idToken = auth.user?.id_token || 'Not available';
-  const accessToken = auth.user?.access_token || 'Not available';
-  const refreshToken = auth.user?.refresh_token || 'Not available';
+  // Use tokens from Redux store
+  const formattedIdToken = idToken || 'Not available';
+  const formattedAccessToken = accessToken || 'Not available';
+  const formattedRefreshToken = refreshToken || 'Not available';
 
   const handleEditToggle = () => {
     setIsEditing(!isEditing);
@@ -191,7 +193,7 @@ const ProfilePage = () => {
             <TextField
               fullWidth
               label="ID Token"
-              value={formatToken(idToken, showTokens.idToken)}
+              value={formatToken(formattedIdToken, showTokens.idToken)}
               InputProps={{
                 readOnly: true,
                 endAdornment: (
@@ -214,7 +216,7 @@ const ProfilePage = () => {
             <TextField
               fullWidth
               label="Access Token"
-              value={formatToken(accessToken, showTokens.accessToken)}
+              value={formatToken(formattedAccessToken, showTokens.accessToken)}
               InputProps={{
                 readOnly: true,
                 endAdornment: (
@@ -237,7 +239,7 @@ const ProfilePage = () => {
             <TextField
               fullWidth
               label="Refresh Token"
-              value={formatToken(refreshToken, showTokens.refreshToken)}
+              value={formatToken(formattedRefreshToken, showTokens.refreshToken)}
               InputProps={{
                 readOnly: true,
                 endAdornment: (

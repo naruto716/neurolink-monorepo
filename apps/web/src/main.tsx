@@ -6,11 +6,15 @@ import { RouterProvider } from "react-router-dom";
 import { router } from './app/router/router'
 import { AuthProvider } from 'react-oidc-context';
 import { cognitoAuthConfig } from './features/auth/auth';
+import { Provider } from 'react-redux';
+import { store } from '@neurolink/shared';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <AuthProvider {...cognitoAuthConfig}>
-      <RouterProvider router={router} />
+      <Provider store={store}>
+        <RouterProvider router={router} />
+      </Provider>
     </AuthProvider>
   </StrictMode>,
 )
