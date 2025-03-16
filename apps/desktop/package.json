@@ -1,0 +1,22 @@
+{
+  "name": "desktop",
+  "version": "1.0.0",
+  "main": "dist/main.js",
+  "scripts": {
+    "build:electron": "tsc -p tsconfig.json",
+    "build:web": "yarn workspace web build",
+    "dev": "cross-env ELECTRON_START_URL=http://localhost:5173 concurrently \"yarn workspace web dev\" \"yarn run start:electron\"",
+    "start:electron": "wait-on http://localhost:5173 && electron .",
+    "start:prod": "yarn run build:web && yarn run build:electron && electron dist/main.js"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/electron": "^1.6.12",
+    "@types/node": "^22.13.10",
+    "electron": "^35.0.1",
+    "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "electron-squirrel-startup": "^1.0.1"
+  }
+}
