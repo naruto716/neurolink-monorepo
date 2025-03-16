@@ -1,7 +1,10 @@
 import { Code as CodeIcon, Home as HomeIcon, Info as InfoIcon, Notifications as NotificationsIcon } from '@mui/icons-material';
 import { Box, Button, Card, CardActionArea, CardContent, Grid, Paper, Typography } from '@mui/material';
+import { useNavigate } from 'react-router-dom';
 
 const HomePage = () => {
+  const navigate = useNavigate();
+
   const sendNotification = () => {
     // Check if browser supports notifications
     if (!("Notification" in window)) {
@@ -66,6 +69,16 @@ const HomePage = () => {
             onClick={sendNotification}
           >
             Try Notification
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            size="large"
+            startIcon={<NotificationsIcon />}
+            sx={{ mt: 2 }}
+            onClick={() => navigate('/profile')}
+          >
+            Profile
           </Button>
         </Box>
       </Paper>

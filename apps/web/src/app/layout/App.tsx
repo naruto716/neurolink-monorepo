@@ -3,11 +3,13 @@ import { ThemeProvider, CssBaseline, Container, Box } from '@mui/material';
 import { theme } from './theme';
 import Navbar from './Navbar';
 import Footer from './Footer';
+import { ToastContainer } from 'react-toastify';
 
 function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
+      <ToastContainer position="bottom-right" autoClose={5000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
       <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <Navbar />
         <Container component="main" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
