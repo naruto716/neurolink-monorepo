@@ -10,5 +10,5 @@ export const signOutRedirect = () => {
     const clientId = "1a876t4gftennmng7milfuqucc";
     const logoutUri = "http://localhost:5173";
     const cognitoDomain = "https://ap-southeast-2cmjdrfofc.auth.ap-southeast-2.amazoncognito.com";
-    window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${encodeURIComponent(logoutUri)}`;
+    window.location.href = `${cognitoDomain}/logout?client_id=${clientId}&logout_uri=${logoutUri}`;
 };
