@@ -1,9 +1,13 @@
+import { WebStorageStateStore } from "oidc-client-ts";
+
 export const cognitoAuthConfig = {
     authority: "https://cognito-idp.ap-southeast-2.amazonaws.com/ap-southeast-2_cMjDRFoFC",
     client_id: "1a876t4gftennmng7milfuqucc",
     redirect_uri: "http://localhost:5173",
     response_type: "code",
     scope: "email openid phone",
+
+    userStore: new WebStorageStateStore({ store: window.localStorage }),
 };
 
 export const signOutRedirect = () => {

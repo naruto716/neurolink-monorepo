@@ -4,8 +4,8 @@ import tokensReducer from "../../features/tokens/tokensSlice";
 export const store = configureStore({
     reducer: {
         tokens: tokensReducer,
-        // Add other reducers here as needed
-    }
+    },
+    devTools: true
 });
 export const useAppDispatch = () => useDispatch();
 export const useAppSelector = useSelector;

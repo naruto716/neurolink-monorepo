@@ -5,8 +5,8 @@ import tokensReducer from "../../features/tokens/tokensSlice";
 export const store = configureStore({
   reducer: {
     tokens: tokensReducer,
-    // Add other reducers here as needed
-  }
+  },
+  devTools: true
 });
 
 export type RootState = ReturnType<typeof store.getState>;

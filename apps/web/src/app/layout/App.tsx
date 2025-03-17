@@ -18,7 +18,12 @@ function App() {
       idToken: auth?.user?.id_token,
       refreshToken: auth?.user?.refresh_token,
     }));
-  }, [auth?.user, dispatch]);
+
+    if (auth.isAuthenticated && window.location.search.includes('code=')) {
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, cleanUrl);
+    }
+  }, [auth?.user, auth.isAuthenticated, dispatch]);
 
   return (
     <ThemeProvider theme={theme}>
