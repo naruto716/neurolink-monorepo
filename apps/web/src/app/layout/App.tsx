@@ -13,10 +13,12 @@ function App() {
   const dispatch = useAppDispatch();
 
   useEffect(() => {
+    const groups = auth.user?.profile["cognito:groups"] as string[] | undefined;
     dispatch(setTokens({
       accessToken: auth?.user?.access_token,
       idToken: auth?.user?.id_token,
       refreshToken: auth?.user?.refresh_token,
+      groups: groups
     }));
 
     if (auth.isAuthenticated && window.location.search.includes('code=')) {

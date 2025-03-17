@@ -5,6 +5,7 @@ export interface TokensState {
   accessToken?: string;
   idToken?: string;
   refreshToken?: string;
+  groups?: string[];
 }
 
 // Define the initial state
@@ -12,6 +13,7 @@ const initialState: TokensState = {
   accessToken: undefined,
   idToken: undefined,
   refreshToken: undefined,
+  groups: undefined,
 };
 
 // Create the tokens slice
@@ -20,15 +22,17 @@ export const tokensSlice = createSlice({
   initialState,
   reducers: {
     setTokens: (state, action: PayloadAction<TokensState>) => {
-      const { accessToken, idToken, refreshToken } = action.payload;
+      const { accessToken, idToken, refreshToken, groups } = action.payload;
       state.accessToken = accessToken;
       state.idToken = idToken;
       state.refreshToken = refreshToken;
+      state.groups = groups;
     },
     clearTokens: (state) => {
       state.accessToken = undefined;
       state.idToken = undefined;
       state.refreshToken = undefined;
+      state.groups = undefined;
     },
     setAccessToken: (state, action: PayloadAction<string | undefined>) => {
       state.accessToken = action.payload;
@@ -39,6 +43,9 @@ export const tokensSlice = createSlice({
     setRefreshToken: (state, action: PayloadAction<string | undefined>) => {
       state.refreshToken = action.payload;
     },
+    setGroups: (state, action: PayloadAction<string[] | undefined>) => {
+      state.groups = action.payload;
+    },
   },
 });
 
@@ -48,7 +55,8 @@ export const {
   clearTokens, 
   setAccessToken, 
   setIdToken, 
-  setRefreshToken 
+  setRefreshToken,
+  setGroups
 } = tokensSlice.actions;
 
 export default tokensSlice.reducer; 
