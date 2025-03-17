@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { StatusBar } from 'expo-status-bar';
 
 export default function LoginScreen() {
-  const { login, logout, error, isLoggedIn, tokens } = useAuth();
+  const { login, logout, error, isLoggedIn, authTokens } = useAuth();
 
   return (
     <View style={styles.container}>
@@ -19,7 +19,7 @@ export default function LoginScreen() {
           <ScrollView style={styles.tokenContainer}>
             <Text style={styles.tokenLabel}>Your Tokens:</Text>
             <Text style={styles.tokenText}>
-              {JSON.stringify(tokens, null, 2)}
+              {JSON.stringify(authTokens, null, 2)}
             </Text>
           </ScrollView>
           <TouchableOpacity style={styles.logoutButton} onPress={logout}>
