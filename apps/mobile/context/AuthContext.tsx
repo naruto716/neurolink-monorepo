@@ -38,6 +38,8 @@ type AuthTokens = {
 
 interface AuthContextType {
   authTokens: AuthTokens | null;
+  tokens: AuthTokens | null; // Alias for authTokens for clearer UI
+  isLoggedIn: boolean;      // Simple flag for login state
   error: string | null;
   login: () => void;
   logout: () => void;
@@ -171,6 +173,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider
       value={{
         authTokens,
+        tokens: authTokens,
+        isLoggedIn: !!authTokens,
         error,
         login,
         logout,
