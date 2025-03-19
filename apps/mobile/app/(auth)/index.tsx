@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
 import { StatusBar } from 'expo-status-bar';
+import ReduxStateViewer from '@/components/ReduxStateViewer';
 
 export default function LoginScreen() {
   const { login, logout, error, isLoggedIn, authTokens } = useAuth();
@@ -17,11 +18,15 @@ export default function LoginScreen() {
         <>
           <Text style={styles.subtitle}>You are logged in</Text>
           <ScrollView style={styles.tokenContainer}>
-            <Text style={styles.tokenLabel}>Your Tokens:</Text>
+            <Text style={styles.tokenLabel}>Your Auth Context Tokens:</Text>
             <Text style={styles.tokenText}>
               {JSON.stringify(authTokens, null, 2)}
             </Text>
           </ScrollView>
+          
+          {/* Display Redux state */}
+          <ReduxStateViewer />
+          
           <TouchableOpacity style={styles.logoutButton} onPress={logout}>
             <Text style={styles.buttonText}>Sign Out</Text>
           </TouchableOpacity>
