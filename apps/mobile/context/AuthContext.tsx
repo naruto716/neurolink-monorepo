@@ -60,6 +60,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   loginWithDifferentAccount: () => void;
   refreshTokens: (tokensParam?: AuthTokens) => Promise<void>;
+  manualRefresh: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -73,6 +74,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // We store a ref to the timer so we can clear it if tokens change
   const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Add a flag to track if we've already initialized tokens to prevent multiple refreshes
+  const hasInitializedRef = useRef(false);
+  // Add a flag to prevent rapid consecutive refreshes
+  const isRefreshingRef = useRef(false);
 
   // --------------------------------------------------------------------------
   // Helper: Store / Load / Remove tokens from AsyncStorage
@@ -114,10 +120,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // --------------------------------------------------------------------------
-  // Forward declarations to fix circular dependency
-  // --------------------------------------------------------------------------
-  const refreshTokens = useCallback<(tokensParam?: AuthTokens) => Promise<void>>(async () => {}, []);
-  
+  // Forward declaration for scheduleRefresh since it has circular dependency with refreshTokens
+  // --------------------------------------------------------------------------  
+  // Use a ref instead of Object.assign to handle the circular dependency
+  const refreshTokensRef = useRef<(tokensParam?: AuthTokens) => Promise<void>>(async () => {});
+
   // --------------------------------------------------------------------------
   // Schedule a refresh using a timer
   //   - Refresh 60 seconds before the token actually expires
@@ -141,38 +148,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (refreshInSeconds > 0) {
           const refreshTimeMs = refreshInSeconds * 1000;
           const timerId = setTimeout(() => {
-            refreshTokens(tokens);
+            refreshTokensRef.current(tokens);
           }, refreshTimeMs);
 
           refreshTimerRef.current = timerId;
         } else {
           // If it's already within 60s of expiry or expired, refresh immediately
-          refreshTokens(tokens);
+          refreshTokensRef.current(tokens);
         }
       } catch (err) {
         console.error('Error scheduling refresh:', err);
       }
     },
-    [clearRefreshTimer, refreshTokens]
+    [clearRefreshTimer]
   );
 
   // --------------------------------------------------------------------------
-  // Refresh tokens
-  //   - We allow an optional `tokensParam` so we can call this immediately
-  //     after loading tokens from storage, without waiting for state to update.
+  // Refresh tokens - create the actual function
   // --------------------------------------------------------------------------
-  // Override the initial empty implementation
-  Object.assign(refreshTokens, useCallback(
+  const refreshTokens = useCallback(
     async (tokensParam?: AuthTokens) => {
-      console.log('Token refresh attempted', new Date().toISOString());
-      const currentTokens = tokensParam || authTokens;
-      if (!currentTokens?.refreshToken) {
-        // If there's no refresh token, nothing to do
-        console.log('No refresh token available, skipping refresh');
+      // Check if we're already refreshing to prevent multiple simultaneous refreshes
+      if (isRefreshingRef.current) {
+        console.log('Token refresh already in progress, skipping', new Date().toISOString());
         return;
       }
-
+      
+      console.log('Token refresh attempted', new Date().toISOString());
+      isRefreshingRef.current = true;
+      
       try {
+        const currentTokens = tokensParam || authTokens;
+        if (!currentTokens?.refreshToken) {
+          // If there's no refresh token, nothing to do
+          console.log('No refresh token available, skipping refresh');
+          return;
+        }
+
         const result = await refreshAsync(
           {
             clientId,
@@ -188,21 +200,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             refreshToken: result.refreshToken ?? currentTokens.refreshToken,
             idToken: result.idToken ?? currentTokens.idToken
           };
-          setAuthTokens(updated);
+          
+          // Force a re-render and update by creating a new token object
+          // This ensures that the context value changes and triggers re-renders
+          console.log('Setting new auth tokens to trigger context update');
+          setAuthTokens({...updated});
+          
+          // Then save to storage and schedule refresh
           await saveTokensToStorage(updated);
           scheduleRefresh(updated);
+        } else {
+          throw new Error('Refresh response missing access token');
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Failed to refresh tokens:', err);
-        // If refresh fails, you might want to log out or alert the user
-        // For example:
-        // setAuthTokens(null);
-        // await removeTokensFromStorage();
-        // Alert.alert('Session expired', 'Please log in again.');
+        // Handle token refresh failure
+        setError(err.message || 'Failed to refresh authentication');
+        
+        // For silent refreshes, we don't want to log out automatically
+        // But we should set a flag that tokens need refresh
+        if (err.message?.includes('invalid_grant') || err.message?.includes('expired')) {
+          console.log('Refresh token may be expired');
+          // Don't clear tokens here - let the manual refresh handle that
+        }
+      } finally {
+        // Reset refreshing flag when done
+        isRefreshingRef.current = false;
       }
     },
     [authTokens, saveTokensToStorage, scheduleRefresh]
-  ));
+  );
+  
+  // Update the ref with the actual implementation
+  refreshTokensRef.current = refreshTokens;
 
   // --------------------------------------------------------------------------
   // useAuthRequest - login flow
@@ -272,7 +302,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   //   - Then refresh immediately (since you requested it)
   // --------------------------------------------------------------------------
   useEffect(() => {
+    // Only run the initialization once
+    if (hasInitializedRef.current) {
+      console.log('Skipping token initialization - already initialized');
+      return;
+    }
+    
     console.log('App startup - checking stored tokens');
+    hasInitializedRef.current = true;
+    
     (async () => {
       const storedTokens = await loadTokensFromStorage();
       if (storedTokens) {
@@ -283,7 +321,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Specifically refresh tokens immediately whenever the app opens
         if (storedTokens.refreshToken) {
           console.log('Refreshing tokens on app startup');
-          await refreshTokens(storedTokens);
+          // Small delay to ensure state is updated
+          setTimeout(() => {
+            refreshTokensRef.current(storedTokens);
+          }, 500);
         }
       } else {
         console.log('No stored tokens found during app startup');
@@ -294,7 +335,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       clearRefreshTimer();
     };
-  }, [loadTokensFromStorage, refreshTokens, scheduleRefresh, clearRefreshTimer]);
+  }, [loadTokensFromStorage, scheduleRefresh, clearRefreshTimer]);
 
   // --------------------------------------------------------------------------
   // Auth Actions: login, logout, loginWithDifferentAccount
@@ -357,6 +398,87 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // --------------------------------------------------------------------------
   // Provide context
   // --------------------------------------------------------------------------
+  const manualRefresh = useCallback(async (): Promise<boolean> => {
+    if (!authTokens?.refreshToken) {
+      Alert.alert('Error', 'No refresh token available. Please log in again.');
+      return false;
+    }
+
+    // Check if we're already refreshing
+    if (isRefreshingRef.current) {
+      Alert.alert('Already Refreshing', 'A token refresh is already in progress. Please wait...');
+      return false;
+    }
+
+    try {
+      // First, show in-progress alert
+      Alert.alert('Refreshing', 'Attempting to refresh your session...');
+      
+      // Track initial token to compare later
+      const initialTokenExpiry = authTokens.accessToken ? 
+        getTokenExpiry(authTokens.accessToken) : null;
+      
+      // Manually set the refreshing flag - the refreshTokens function will reset it
+      isRefreshingRef.current = true;
+      
+      // Store a copy of the starting tokens to check if they actually changed
+      const startingTokenHash = authTokens?.accessToken || 'none';
+      
+      console.log('Manual refresh: Starting refresh from token hash:', 
+        startingTokenHash.substring(0, 15) + '...');
+      
+      // Perform refresh - use the ref directly to ensure we always use the latest version
+      await refreshTokensRef.current();
+      
+      // Delay slightly to ensure the state has updated with new tokens
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Check if the token actually changed by comparing expiry times
+      // This is more reliable than just checking if the function succeeded
+      const newTokenExpiry = authTokens?.accessToken ? 
+        getTokenExpiry(authTokens.accessToken) : null;
+        
+      const endingTokenHash = authTokens?.accessToken || 'none';
+      console.log('Manual refresh: Ending refresh with token hash:', 
+        endingTokenHash.substring(0, 15) + '...');
+      
+      const tokensChanged = startingTokenHash !== endingTokenHash;
+      console.log('Manual refresh: Tokens changed?', tokensChanged);
+      
+      if (newTokenExpiry && initialTokenExpiry !== newTokenExpiry) {
+        // Extra check: manually trigger a state update to ensure Redux sync
+        if (authTokens) {
+          console.log('Manual refresh: Force updating tokens to ensure Redux sync');
+          setAuthTokens({...authTokens});
+        }
+        
+        Alert.alert('Success', 'Your session has been refreshed successfully.');
+        return true;
+      } else {
+        // Ensure refreshing flag is reset if the refresh didn't change the token
+        isRefreshingRef.current = false;
+        throw new Error('Token did not change after refresh');
+      }
+    } catch (err: any) {
+      console.error('Manual refresh failed:', err);
+      const errorMsg = err?.message || 'Unknown error occurred';
+      Alert.alert('Refresh Failed', `Unable to refresh your session: ${errorMsg}. You may need to log in again.`);
+      // Ensure refreshing flag is reset on error
+      isRefreshingRef.current = false;
+      return false;
+    }
+  }, [authTokens]);
+  
+  // Helper to get token expiry timestamp
+  const getTokenExpiry = (token: string): number | null => {
+    try {
+      const { exp } = jwtDecode<{ exp: number }>(token);
+      return exp || null;
+    } catch (e) {
+      return null;
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -366,7 +488,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         loginWithDifferentAccount,
-        refreshTokens
+        refreshTokens,
+        manualRefresh
       }}
     >
       {children}
