@@ -1,10 +1,15 @@
-import { AppBar, Toolbar, Typography, Button } from '@mui/material';
+import { AppBar, Toolbar, Typography, Button, Box } from '@mui/material';
 import { Link } from 'react-router-dom';
 import { useAuth } from 'react-oidc-context';
 import { signOutRedirect } from '../../features/auth/auth';
+import { ThemeSwitcher } from './ThemeSwitcher';
+import { AccessibilityToggle } from '../components/AccessibilityToggle';
+import { LanguageSwitcher } from '../components/LanguageSwitcher';
+import { useTranslation } from 'react-i18next';
 
 export default function Navbar() {
   const auth = useAuth();
+  const { t } = useTranslation();
   
   const handleLogin = () => {
     auth.signinRedirect();
@@ -19,29 +24,38 @@ export default function Navbar() {
     <AppBar position="static">
       <Toolbar>
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-          Neurolink
+          {t('app.name')}
         </Typography>
         <Button color="inherit" component={Link} to="/">
-          Home
+          {t('nav.home')}
         </Button>
         <Button color="inherit" component={Link} to="/about">
-          About
+          {t('nav.about')}
+        </Button>
+        <Button color="inherit" component={Link} to="/accessibility">
+          {t('nav.accessibility')}
         </Button>
         
         {auth.isAuthenticated ? (
           <>
             <Button color="inherit" component={Link} to="/profile">
-              Profile
+              {t('nav.profile')}
             </Button>
             <Button color="inherit" onClick={handleLogout}>
-              Sign Out
+              {t('nav.signOut')}
             </Button>
           </>
         ) : (
           <Button color="inherit" onClick={handleLogin}>
-            Sign In
+            {t('nav.signIn')}
           </Button>
         )}
+        
+        <Box ml={1} display="flex" alignItems="center">
+          <LanguageSwitcher />
+          <AccessibilityToggle />
+          <ThemeSwitcher />
+        </Box>
       </Toolbar>
     </AppBar>
   );

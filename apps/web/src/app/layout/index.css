@@ -3,3 +3,22 @@ body, html, #root {
     padding: 0;
     overflow-x: hidden;
 }
+
+/* Base styles */
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Screen reader highlight styles */
+.screen-reader-enabled:focus {
+  outline: 2px solid #3f51b5;
+  outline-offset: 2px;
+}
+
+/* Animation for text highlighting during speech */
+@keyframes highlight-pulse {
+  0% { background-color: rgba(255, 255, 0, 0.2); }
+  50% { background-color: rgba(255, 255, 0, 0.4); }
+  100% { background-color: rgba(255, 255, 0, 0.2); }
+}

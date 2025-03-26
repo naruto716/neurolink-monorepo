@@ -1,0 +1,42 @@
+{
+  "app": {
+    "name": "Neurolink",
+    "tagline": "Connecter les esprits, renforcer les avenirs"
+  },
+  "nav": {
+    "home": "Accueil",
+    "about": "À propos",
+    "accessibility": "Accessibilité",
+    "profile": "Profil",
+    "signIn": "Se connecter",
+    "signOut": "Se déconnecter"
+  },
+  "theme": {
+    "light": "Mode Clair",
+    "dark": "Mode Sombre",
+    "toggle": "Changer de thème"
+  },
+  "accessibility": {
+    "title": "Fonctionnalités d'Accessibilité",
+    "description": "Neurolink est conçu pour être accessible à tous les utilisateurs, y compris ceux souffrant de dyslexie.",
+    "screenReader": {
+      "title": "Lecteur d'Écran",
+      "description": "Notre lecteur d'écran intégré aide les utilisateurs ayant des difficultés de lecture. Lorsqu'il est activé, vous pouvez utiliser {{keyCommand}} sur n'importe quel texte pour le faire lire à haute voix.",
+      "status": "Le lecteur d'écran est actuellement {{status}}.",
+      "enabled": "activé",
+      "disabled": "désactivé",
+      "toggle": "Activer/désactiver le lecteur d'écran",
+      "try": "Essayez {{keyCommand}} sur ce texte pour l'entendre à haute voix !"
+    },
+    "theme": {
+      "title": "Options de Thème",
+      "description": "Vous pouvez basculer entre les thèmes clair et sombre en utilisant le bouton de thème dans la barre de navigation. Le mode sombre peut aider à réduire la fatigue oculaire pour certains utilisateurs."
+    }
+  },
+  "language": {
+    "select": "Sélectionner la langue",
+    "en": "Anglais",
+    "es": "Espagnol",
+    "fr": "Français"
+  }
+} 
