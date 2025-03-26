@@ -5,6 +5,7 @@ import { useAccessibility } from '../../features/accessibility/hooks';
 export const AccessibleTypography: React.FC<TypographyProps> = (props) => {
   const { screenReaderEnabled, speak, isSpeaking } = useAccessibility();
   const elementRef = useRef<HTMLElement>(null);
+  const { onClick } = props;
   
   // Handle cmd/ctrl + click events
   const handleClick = useCallback((event: React.MouseEvent<HTMLElement>) => {
@@ -23,10 +24,10 @@ export const AccessibleTypography: React.FC<TypographyProps> = (props) => {
     }
     
     // Call original onClick if provided
-    if (props.onClick) {
-      props.onClick(event);
+    if (onClick) {
+      onClick(event);
     }
-  }, [screenReaderEnabled, speak, props.onClick]);
+  }, [screenReaderEnabled, speak, onClick]);
   
   return (
     <Typography

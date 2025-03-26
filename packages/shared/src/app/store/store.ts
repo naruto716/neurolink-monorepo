@@ -1,25 +1,35 @@
-import { configureStore } from "@reduxjs/toolkit";
+import { configureStore, combineReducers, Reducer } from "@reduxjs/toolkit";
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 import tokensReducer from "../../features/tokens/tokensSlice";
 // Reducer imports are commented out to avoid circular dependencies
 // Theme and accessibility reducers will be added dynamically
 
+// Initial reducers
+const initialReducers = {
+  tokens: tokensReducer,
+};
+
+// Create the root reducer
+let rootReducer = combineReducers(initialReducers);
+
 export const store = configureStore({
-  reducer: {
-    tokens: tokensReducer,
-    // theme and accessibility will be added dynamically when needed
-  },
+  reducer: rootReducer,
   devTools: true
 });
 
 // Method to add reducers dynamically
-export const injectReducer = (key: string, reducer: any) => {
-  if (!store.getState()[key]) {
-    // @ts-ignore - TS doesn't know about replaceReducers
-    store.replaceReducer({
-      ...store.getState(),
+export const injectReducer = (key: string, reducer: Reducer) => {
+  const currentReducers = store.getState() as Record<string, unknown>;
+  
+  if (!(key in currentReducers)) {
+    // Add new reducer and recreate the root reducer
+    rootReducer = combineReducers({
+      ...initialReducers,
       [key]: reducer,
     });
+    
+    // Replace the existing reducer with our new one
+    store.replaceReducer(rootReducer);
   }
 };
 
