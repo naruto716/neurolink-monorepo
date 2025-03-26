@@ -1,6 +1,6 @@
 import React, { useRef, useCallback } from 'react';
 import { Typography, TypographyProps } from '@mui/material';
-import { useAccessibility } from '../utils/AccessibilityContext';
+import { useAccessibility } from '../../features/accessibility/hooks';
 
 export const AccessibleTypography: React.FC<TypographyProps> = (props) => {
   const { screenReaderEnabled, speak, isSpeaking } = useAccessibility();

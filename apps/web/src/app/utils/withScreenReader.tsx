@@ -1,5 +1,5 @@
 import React, { useRef, useCallback, forwardRef, ForwardRefExoticComponent, RefAttributes } from 'react';
-import { useAccessibility } from './AccessibilityContext';
+import { useAccessibility } from '../../features/accessibility/hooks';
 
 // Higher-order component to add screen reader functionality to any component
 export const withScreenReader = <P extends object>(

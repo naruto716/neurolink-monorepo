@@ -1,4 +1,6 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef } from 'react';
+import { useDispatch } from 'react-redux';
+import { setIsSpeaking } from './accessibilitySlice';
 
 interface TextToSpeechOptions {
   rate?: number;
@@ -8,15 +10,14 @@ interface TextToSpeechOptions {
 }
 
 export const useTextToSpeech = (options: TextToSpeechOptions = {}) => {
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
+  const dispatch = useDispatch();
   const speechSynthRef = useRef<SpeechSynthesis | null>(null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const highlightedElementRef = useRef<HTMLElement | null>(null);
   
   // Initialize speech synthesis on first use
   const initSpeechSynthesis = useCallback(() => {
-    if (!speechSynthRef.current && 'speechSynthesis' in window) {
+    if (!speechSynthRef.current && typeof window !== 'undefined' && 'speechSynthesis' in window) {
       speechSynthRef.current = window.speechSynthesis;
     }
     return !!speechSynthRef.current;
@@ -46,13 +47,12 @@ export const useTextToSpeech = (options: TextToSpeechOptions = {}) => {
   const stop = useCallback(() => {
     if (speechSynthRef.current) {
       speechSynthRef.current.cancel();
-      setIsSpeaking(false);
-      setIsPaused(false);
+      dispatch(setIsSpeaking(false));
       removeHighlight();
       return true;
     }
     return false;
-  }, [removeHighlight]);
+  }, [dispatch, removeHighlight]);
 
   // Speak text
   const speak = useCallback((text: string, element?: HTMLElement) => {
@@ -70,31 +70,20 @@ export const useTextToSpeech = (options: TextToSpeechOptions = {}) => {
     
     // Add event listeners
     utterance.onstart = () => {
-      setIsSpeaking(true);
-      setIsPaused(false);
+      dispatch(setIsSpeaking(true));
       if (element) {
         highlightElement(element);
       }
     };
     
     utterance.onend = () => {
-      setIsSpeaking(false);
-      setIsPaused(false);
+      dispatch(setIsSpeaking(false));
       removeHighlight();
-    };
-    
-    utterance.onpause = () => {
-      setIsPaused(true);
-    };
-    
-    utterance.onresume = () => {
-      setIsPaused(false);
     };
     
     utterance.onerror = (event) => {
       console.error('SpeechSynthesis error:', event);
-      setIsSpeaking(false);
-      setIsPaused(false);
+      dispatch(setIsSpeaking(false));
       removeHighlight();
     };
     
@@ -103,35 +92,11 @@ export const useTextToSpeech = (options: TextToSpeechOptions = {}) => {
     speechSynthRef.current!.speak(utterance);
     
     return true;
-  }, [initSpeechSynthesis, options, highlightElement, removeHighlight, stop]);
-
-  // Pause speech
-  const pause = useCallback(() => {
-    if (speechSynthRef.current && isSpeaking) {
-      speechSynthRef.current.pause();
-      setIsPaused(true);
-      return true;
-    }
-    return false;
-  }, [isSpeaking]);
-
-  // Resume speech
-  const resume = useCallback(() => {
-    if (speechSynthRef.current && isPaused) {
-      speechSynthRef.current.resume();
-      setIsPaused(false);
-      return true;
-    }
-    return false;
-  }, [isPaused]);
+  }, [initSpeechSynthesis, options, highlightElement, removeHighlight, stop, dispatch]);
 
   return {
     speak,
-    pause,
-    resume,
     stop,
-    isSpeaking,
-    isPaused,
-    isSupported: 'speechSynthesis' in window
+    isSupported: typeof window !== 'undefined' && 'speechSynthesis' in window
   };
 }; 

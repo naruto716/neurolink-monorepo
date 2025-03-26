@@ -1,7 +1,7 @@
 import React from 'react';
 import { Paper, Box, Container } from '@mui/material';
 import { AccessibleTypography } from './AccessibleTypography';
-import { useAccessibility } from '../utils/AccessibilityContext';
+import { useAccessibility } from '../../features/accessibility/hooks';
 import { useTranslation } from 'react-i18next';
 
 export const AccessibilityInfo: React.FC = () => {

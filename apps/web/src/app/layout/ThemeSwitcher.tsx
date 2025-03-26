@@ -2,11 +2,11 @@ import React from 'react';
 import { IconButton, Tooltip } from '@mui/material';
 import Brightness4Icon from '@mui/icons-material/Brightness4';
 import Brightness7Icon from '@mui/icons-material/Brightness7';
-import { useThemeContext } from './ThemeContext';
+import { useTheme } from '../../features/theme/hooks';
 import { useTranslation } from 'react-i18next';
 
 export const ThemeSwitcher: React.FC = () => {
-  const { mode, toggleTheme } = useThemeContext();
+  const { mode, toggleTheme } = useTheme();
   const { t } = useTranslation();
   
   return (

@@ -1,7 +1,7 @@
 import React from 'react';
 import { IconButton, Tooltip } from '@mui/material';
 import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
-import { useAccessibility } from '../utils/AccessibilityContext';
+import { useAccessibility } from '../../features/accessibility/hooks';
 import { useTranslation } from 'react-i18next';
 
 export const AccessibilityToggle: React.FC = () => {
