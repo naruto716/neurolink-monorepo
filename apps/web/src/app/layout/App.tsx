@@ -1,11 +1,9 @@
 import { Outlet } from "react-router-dom";
-import { Container, Box } from '@mui/material';
-import Navbar from './Navbar';
-import Footer from './Footer';
 import { ToastContainer } from 'react-toastify';
 import { useAppDispatch, setTokens } from "@neurolink/shared";
 import { useAuth } from "react-oidc-context";
 import { useEffect } from "react";
+import Layout from "./Layout";
 
 function App() {
   const auth = useAuth();
@@ -29,13 +27,9 @@ function App() {
   return (
     <>
       <ToastContainer position="bottom-right" autoClose={5000} hideProgressBar={false} newestOnTop closeOnClick rtl={false} pauseOnFocusLoss draggable pauseOnHover />
-      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-        <Navbar />
-        <Container component="main" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
-          <Outlet />
-        </Container>
-        <Footer />
-      </Box>
+      <Layout>
+        <Outlet />
+      </Layout>
     </>
   );
 }
