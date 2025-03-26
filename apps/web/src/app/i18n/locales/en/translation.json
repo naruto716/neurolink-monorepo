@@ -18,6 +18,8 @@
   },
   "accessibility": {
     "title": "Accessibility Features",
+    "subtitle": "Customize your experience",
+    "options": "Accessibility Options",
     "description": "Neurolink is designed to be accessible for all users, including those with dyslexia.",
     "screenReader": {
       "title": "Screen Reader",
@@ -28,15 +30,28 @@
       "toggle": "Toggle screen reader",
       "try": "Try {{keyCommand}} on this text to hear it read aloud!"
     },
+    "demo": {
+      "title": "Test Text-to-Speech",
+      "text": "This is a test of the screen reader functionality. If you can hear this, the screen reader is working correctly."
+    },
+    "fontSize": "Font Size",
     "theme": {
       "title": "Theme Options",
       "description": "You can switch between light and dark themes using the theme toggle in the navigation bar. Dark mode can help reduce eye strain for some users."
     }
   },
   "language": {
+    "title": "Language",
+    "selectLanguage": "Change the display language",
     "select": "Select language",
     "en": "English",
     "es": "Spanish",
     "fr": "French"
+  },
+  "sidebar": {
+    "right": {
+      "title": "Quick Tools",
+      "noContent": "No content available for this section."
+    }
   }
 } 

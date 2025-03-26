@@ -1,54 +1,103 @@
-# React + TypeScript + Vite
+## Breadcrumb
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+I understand your confusion. Let me explain how the breadcrumb system works and how to set it up for new pages:
 
-Currently, two official plugins are available:
+### How the Breadcrumb System Works
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The breadcrumb component we've built has two methods of operation:
 
-## Expanding the ESLint configuration
+1. **Automatic Breadcrumbs**: For most pages, breadcrumbs are generated automatically from the URL path.
+2. **Custom Breadcrumbs**: For special cases, you can manually define breadcrumbs.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Setting Up Breadcrumbs for a New Page
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+#### Option 1: Let it work automatically
+
+If you create a new page at a URL path like `/settings/privacy`, the breadcrumb will automatically show:
+`Home / Settings / Privacy`
+
+You don't need to do anything special - it just works by parsing the URL.
+
+#### Option 2: Add friendly names to the route map
+
+If you want a nicer display name than what's auto-generated from the URL, add your route to the `routeNameMap` in the Breadcrumb component:
+
+```typescript jsx:apps/web/src/app/components/Breadcrumb.tsx
+// ... existing imports
+
+const Breadcrumb: React.FC<BreadcrumbProps> = ({ customItems }) => {
+  const location = useLocation();
+  const { t } = useTranslation();
+
+  const routeNameMap: Record<string, string> = useMemo(() => {
+    return {
+      '/': t('nav.home'),
+      '/dashboard': t('nav.dashboard'),
+      '/about': t('nav.about'),
+      '/profile': t('nav.profile'),
+      '/accessibility': t('nav.accessibility'),
+      '/settings': t('nav.settings'),
+      // Add your new routes here, for example:
+      '/settings/privacy': 'Privacy Settings',
+      '/projects/new': 'Create Project',
+    };
+  }, [t]);
+  
+  // ... rest of the component
+```
+#### Option 3: For special pages, use custom breadcrumbs
+
+If a page needs a completely custom breadcrumb path, you can set specific breadcrumb items in the page component:
+
+```tsx
+// Example: YourNewPage.tsx
+import React from 'react';
+import { Box } from '@mui/material';
+import Breadcrumb from '../../components/Breadcrumb';
+
+const YourNewPage = () => {
+  // Define custom breadcrumb items for this specific page
+  const customBreadcrumbItems = [
+    { label: 'Special Section', path: '/special' },
+    { label: 'Your Page Title', path: '/special/your-page' }
+  ];
+  
+  return (
+    <Box>
+      {/* Option to override breadcrumb directly in the page */}
+      <Breadcrumb customItems={customBreadcrumbItems} />
+      
+      {/* Page content */}
+      <h1>Your Page Content</h1>
+      {/* ... */}
+    </Box>
+  );
+};
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+However, since we're already handling breadcrumbs in the Navbar, it's cleaner to modify the existing breadcrumb setup:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```tsx
+// In your page component
+import { useBreadcrumb } from '../../hooks/useBreadcrumb'; // You would create this
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+const YourNewPage = () => {
+  // Set custom breadcrumb on page load
+  useBreadcrumb([
+    { label: 'Special Section', path: '/special' },
+    { label: 'Your Page Title', path: '/special/your-page' }
+  ]);
+  
+  return (
+    // Your page content without breadcrumb component
+  );
+};
 ```
+
+### Simple Approach
+
+For most new pages, you don't need to do anything - the breadcrumbs will work automatically based on the URL.
+
+If you want a nicer display name, just add your new route to the `routeNameMap` in the Breadcrumb component as shown above.
+
+Would you like me to create a useBreadcrumb hook to make it easier to set custom breadcrumbs from any page?

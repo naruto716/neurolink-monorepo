@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Container, Box } from '@mui/material';
 import Navbar from './navbar/Navbar';
-import Footer from './Footer';
 import { LeftSidebar } from './navbar/LeftSidebar';
 import { RightSidebar } from './navbar/RightSidebar';
 import { useLocation } from 'react-router-dom';
@@ -33,7 +32,6 @@ export default function Layout({ children }: LayoutProps) {
         <Container component="main" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
           {children}
         </Container>
-        <Footer />
       </Box>
       <RightSidebar 
         open={rightSidebarOpen} 

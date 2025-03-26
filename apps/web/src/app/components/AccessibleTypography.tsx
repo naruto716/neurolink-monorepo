@@ -1,11 +1,12 @@
 import React, { useRef, useCallback } from 'react';
-import { Typography, TypographyProps } from '@mui/material';
+import { Typography, TypographyProps, useTheme } from '@mui/material';
 import { useAccessibility } from '../../features/accessibility/hooks';
 
 export const AccessibleTypography: React.FC<TypographyProps> = (props) => {
   const { screenReaderEnabled, speak, isSpeaking } = useAccessibility();
   const elementRef = useRef<HTMLElement>(null);
   const { onClick } = props;
+  const theme = useTheme();
   
   // Handle cmd/ctrl + click events
   const handleClick = useCallback((event: React.MouseEvent<HTMLElement>) => {
@@ -39,13 +40,47 @@ export const AccessibleTypography: React.FC<TypographyProps> = (props) => {
       tabIndex={screenReaderEnabled ? 0 : undefined}
       sx={{
         ...props.sx,
+        position: 'relative',
+        transition: 'all 0.3s ease',
+        color: theme.palette.text.primary,
         ...(screenReaderEnabled && {
-          cursor: 'pointer',
           '&:focus': {
-            outline: '2px solid #3f51b5',
-            outlineOffset: '2px',
+            outline: 'none',
+          },
+          '&:focus::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: theme => 
+              theme.palette.mode === 'light' 
+                ? 'rgba(63, 81, 181, 0.08)' 
+                : 'rgba(92, 107, 192, 0.15)',
+            borderRadius: '4px',
+            boxShadow: theme => 
+              theme.palette.mode === 'light'
+                ? '0 0 0 2px rgba(63, 81, 181, 0.2)'
+                : '0 0 0 2px rgba(92, 107, 192, 0.3)',
+            zIndex: -1,
+          },
+          '&:hover::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: theme => 
+              theme.palette.mode === 'light' 
+                ? 'rgba(63, 81, 181, 0.04)' 
+                : 'rgba(92, 107, 192, 0.08)',
+            borderRadius: '4px',
+            zIndex: -1,
           },
         }),
+        // The useTextToSpeech hook handles highlighting of the specific element
       }}
     />
   );

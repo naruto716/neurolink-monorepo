@@ -6,15 +6,32 @@ import {
   MenuItem,
   Tooltip,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  Box,
+  Typography,
+  Divider
 } from '@mui/material';
-import TranslateIcon from '@mui/icons-material/Translate';
-import CheckIcon from '@mui/icons-material/Check';
+import { Translate, Check } from '@phosphor-icons/react';
 
 const LANGUAGES = [
-  { code: 'en', name: 'English' },
-  { code: 'es', name: 'Español' },
-  { code: 'fr', name: 'Français' }
+  { 
+    code: 'en', 
+    name: 'English',
+    flag: '🇺🇸',
+    nativeName: 'English'
+  },
+  { 
+    code: 'es', 
+    name: 'Spanish',
+    flag: '🇪🇸',
+    nativeName: 'Español'
+  },
+  { 
+    code: 'fr', 
+    name: 'French',
+    flag: '🇫🇷',
+    nativeName: 'Français'
+  }
 ];
 
 export const LanguageSwitcher: React.FC = () => {
@@ -44,12 +61,12 @@ export const LanguageSwitcher: React.FC = () => {
           onClick={handleClick}
           color="inherit"
           aria-label={t('language.select')}
-          edge="end"
-          size="large"
+          size="small"
         >
-          <TranslateIcon />
+          <Translate size={20} />
         </IconButton>
       </Tooltip>
+      
       <Menu
         id="language-menu"
         anchorEl={anchorEl}
@@ -58,21 +75,59 @@ export const LanguageSwitcher: React.FC = () => {
         MenuListProps={{
           'aria-labelledby': 'language-button',
         }}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'right',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'right',
+        }}
+        PaperProps={{
+          sx: { minWidth: '200px' }
+        }}
       >
-        {LANGUAGES.map((language) => (
-          <MenuItem
-            key={language.code}
-            onClick={() => changeLanguage(language.code)}
-            selected={currentLanguage === language.code}
-          >
-            <ListItemIcon>
-              {currentLanguage === language.code && <CheckIcon fontSize="small" />}
-            </ListItemIcon>
-            <ListItemText>
-              {t(`language.${language.code}`)}
-            </ListItemText>
-          </MenuItem>
-        ))}
+        <Box sx={{ px: 2, py: 1 }}>
+          <Typography variant="subtitle1" fontWeight={600}>
+            {t('language.title')}
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            {t('language.selectLanguage')}
+          </Typography>
+        </Box>
+        
+        <Divider sx={{ mb: 1 }} />
+        
+        {LANGUAGES.map((language) => {
+          const isSelected = currentLanguage === language.code;
+          
+          return (
+            <MenuItem
+              key={language.code}
+              onClick={() => changeLanguage(language.code)}
+              selected={isSelected}
+              sx={{ height: 44 }}
+            >
+              <ListItemIcon>
+                <Box component="span" sx={{ fontSize: '20px', display: 'flex', alignItems: 'center' }}>
+                  {language.flag}
+                </Box>
+              </ListItemIcon>
+              
+              <ListItemText 
+                primary={language.nativeName} 
+                secondary={language.name !== language.nativeName ? language.name : undefined}
+                primaryTypographyProps={{
+                  fontWeight: isSelected ? 600 : 400
+                }}
+              />
+              
+              {isSelected && (
+                <Check size={20} weight="bold" color="var(--mui-palette-primary-main)" />
+              )}
+            </MenuItem>
+          );
+        })}
       </Menu>
     </>
   );
