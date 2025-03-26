@@ -1,5 +1,4 @@
 import { AppBar, Toolbar, Typography, Button, Box, IconButton } from '@mui/material';
-import { Link } from 'react-router-dom';
 import { useAuth } from 'react-oidc-context';
 import { signOutRedirect } from '../../../features/auth/auth';
 import { ThemeSwitcher } from '../ThemeSwitcher';
@@ -9,15 +8,11 @@ import { useTranslation } from 'react-i18next';
 import { Menu as MenuIcon, HelpOutline } from '@mui/icons-material';
 
 interface NavbarProps {
-  leftSidebarOpen: boolean;
-  rightSidebarOpen: boolean;
   toggleLeftSidebar: () => void;
   toggleRightSidebar: () => void;
 }
 
 export default function Navbar({ 
-  leftSidebarOpen, 
-  rightSidebarOpen, 
   toggleLeftSidebar, 
   toggleRightSidebar 
 }: NavbarProps) {
@@ -43,7 +38,8 @@ export default function Navbar({
           onClick={toggleLeftSidebar}
           sx={{ 
             mr: 2,
-            bgcolor: leftSidebarOpen ? 'rgba(255, 255, 255, 0.2)' : 'transparent'
+            // Keep background highlight logic if needed, or remove if only icon should indicate state
+            // bgcolor: leftSidebarOpen ? 'rgba(255, 255, 255, 0.2)' : 'transparent' 
           }}
         >
           <MenuIcon />
@@ -51,21 +47,12 @@ export default function Navbar({
         <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
           {t('app.name')}
         </Typography>
-        <Button color="inherit" component={Link} to="/">
-          {t('nav.home')}
-        </Button>
-        <Button color="inherit" component={Link} to="/about">
-          {t('nav.about')}
-        </Button>
-        <Button color="inherit" component={Link} to="/accessibility">
-          {t('nav.accessibility')}
-        </Button>
+        
+        {/* Removed Navigation Buttons: Home, About, Accessibility */}
         
         {auth.isAuthenticated ? (
           <>
-            <Button color="inherit" component={Link} to="/profile">
-              {t('nav.profile')}
-            </Button>
+            {/* Removed Profile Button */}
             <Button color="inherit" onClick={handleLogout}>
               {t('nav.signOut')}
             </Button>
@@ -87,7 +74,8 @@ export default function Navbar({
             onClick={toggleRightSidebar}
             sx={{ 
               ml: 1,
-              bgcolor: rightSidebarOpen ? 'rgba(255, 255, 255, 0.2)' : 'transparent'
+              // Keep background highlight logic if needed, or remove if only icon should indicate state
+              // bgcolor: rightSidebarOpen ? 'rgba(255, 255, 255, 0.2)' : 'transparent'
             }}
           >
             <HelpOutline />

@@ -27,8 +27,6 @@ export default function Layout({ children }: LayoutProps) {
         transition: 'width 225ms cubic-bezier(0.0, 0, 0.2, 1) 0ms',
       }}>
         <Navbar
-          leftSidebarOpen={leftSidebarOpen}
-          rightSidebarOpen={rightSidebarOpen}
           toggleLeftSidebar={() => setLeftSidebarOpen(!leftSidebarOpen)}
           toggleRightSidebar={() => setRightSidebarOpen(!rightSidebarOpen)}
         />

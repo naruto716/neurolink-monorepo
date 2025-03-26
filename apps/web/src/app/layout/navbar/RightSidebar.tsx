@@ -2,11 +2,10 @@ import React from 'react';
 import { 
   Box, 
   Drawer, 
-  IconButton, 
   Typography,
-  useTheme
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
-import { ChevronRight, ChevronLeft } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 
 interface RightSidebarProps {
@@ -26,25 +25,30 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
 }) => {
   const theme = useTheme();
   const { t } = useTranslation();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   return (
     <Drawer
-      variant="persistent"
+      variant={isMobile ? 'temporary' : 'persistent'}
       anchor="right"
       open={open}
+      onClose={onClose}
       sx={{
-        width: open ? DRAWER_WIDTH : 0,
+        width: isMobile ? (open ? DRAWER_WIDTH : 0) : (open ? DRAWER_WIDTH : 0),
         flexShrink: 0,
         '& .MuiDrawer-paper': {
           width: DRAWER_WIDTH,
           boxSizing: 'border-box',
-          borderLeft: '1px solid',
+          borderLeft: isMobile ? 'none' : '1px solid',
           borderColor: 'divider',
-          transition: theme.transitions.create('width', {
+          transition: !isMobile ? theme.transitions.create('width', {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.shorter,
-          }),
+          }) : undefined,
         },
+      }}
+      ModalProps={{
+        keepMounted: true,
       }}
     >
       <Box
@@ -53,7 +57,6 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
           display: 'flex',
           alignItems: 'center',
           px: 2,
-          justifyContent: 'space-between',
           borderBottom: '1px solid',
           borderColor: 'divider',
         }}
@@ -61,9 +64,6 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
         <Typography variant="h6" sx={{ fontWeight: 500 }}>
           {title || t('sidebar.right.title')}
         </Typography>
-        <IconButton onClick={onClose} size="small">
-          {theme.direction === 'rtl' ? <ChevronLeft /> : <ChevronRight />}
-        </IconButton>
       </Box>
       <Box sx={{ p: 2 }}>
         {children || (

@@ -2,15 +2,15 @@ import React from 'react';
 import { 
   Box, 
   Drawer, 
-  IconButton, 
   List,
   ListItemButton,
   ListItemIcon,
   ListItemText,
   Typography,
-  useTheme
+  useTheme,
+  useMediaQuery
 } from '@mui/material';
-import { ChevronLeft, ChevronRight, Home, Info, Person, Settings } from '@mui/icons-material';
+import { Home, Info, Person, Settings } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -26,6 +26,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ open, onClose }) => {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
   const menuItems = [
     { key: 'home', label: t('nav.home'), path: '/', icon: <Home /> },
@@ -40,21 +41,25 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ open, onClose }) => {
 
   return (
     <Drawer
-      variant="persistent"
+      variant={isMobile ? 'temporary' : 'persistent'}
       open={open}
+      onClose={onClose}
       sx={{
-        width: open ? DRAWER_WIDTH : 0,
+        width: isMobile ? (open ? DRAWER_WIDTH : 0) : (open ? DRAWER_WIDTH : 0),
         flexShrink: 0,
         '& .MuiDrawer-paper': {
           width: DRAWER_WIDTH,
           boxSizing: 'border-box',
-          borderRight: '1px solid',
+          borderRight: isMobile ? 'none' : '1px solid',
           borderColor: 'divider',
-          transition: theme.transitions.create('width', {
+          transition: !isMobile ? theme.transitions.create('width', {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.shorter,
-          }),
+          }) : undefined,
         },
+      }}
+      ModalProps={{
+        keepMounted: true,
       }}
     >
       <Box
@@ -63,7 +68,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ open, onClose }) => {
           display: 'flex',
           alignItems: 'center',
           px: 2,
-          justifyContent: 'space-between',
           borderBottom: '1px solid',
           borderColor: 'divider',
         }}
@@ -71,9 +75,6 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ open, onClose }) => {
         <Typography variant="h6" sx={{ fontWeight: 500 }}>
           {t('app.name')}
         </Typography>
-        <IconButton onClick={onClose} size="small">
-          {theme.direction === 'rtl' ? <ChevronRight /> : <ChevronLeft />}
-        </IconButton>
       </Box>
       
       <List sx={{ pt: 2 }}>
@@ -84,7 +85,12 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ open, onClose }) => {
             <ListItemButton
               key={item.key}
               selected={isActive}
-              onClick={() => handleNavigate(item.path)}
+              onClick={() => {
+                handleNavigate(item.path);
+                if (isMobile) {
+                  onClose();
+                }
+              }}
               sx={{
                 mx: 1.5,
                 mb: 0.5,
