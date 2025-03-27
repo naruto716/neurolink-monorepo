@@ -15,6 +15,19 @@ api.interceptors.request.use((config) => {
     if (accessToken) {
         config.headers.Authorization = `Bearer ${accessToken}`;
     }
+    // Support for development headers like X-User-Name
+    // This allows us to impersonate users during development
+    if (process.env.NODE_ENV === 'development') {
+        const developmentHeaders = {
+            'X-User-Name': process.env.REACT_APP_USER_NAME || localStorage.getItem('x-user-name')
+        };
+        // Only add non-empty headers
+        Object.entries(developmentHeaders).forEach(([key, value]) => {
+            if (value) {
+                config.headers[key] = value;
+            }
+        });
+    }
     // Log all requests to help with debugging
     console.log(`API Request: ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
     return config;

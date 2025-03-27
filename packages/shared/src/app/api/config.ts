@@ -6,7 +6,7 @@
 
 export const API_CONFIG = {
   // Base URL for all API requests
-  baseUrl: 'http://localhost:3000',
+  baseUrl: 'https://d2agqx8n7tecm4.cloudfront.net',
   
   // API version prefix
   apiVersion: 'v1',
@@ -15,6 +15,8 @@ export const API_CONFIG = {
   endpoints: {
     health: '/api/v1/Health',
     posts: '/api/v1/posts',
+    users: '/api/v1/Users',
+    currentUser: '/api/v1/Users/me'
   },
   
   // Headers to include with all requests

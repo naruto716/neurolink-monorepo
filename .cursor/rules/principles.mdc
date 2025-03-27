@@ -9,3 +9,4 @@ Always use i18n text, and when you use text, please change the en/translate.json
 When using Typography, use accessibleTypography where possible.
 This application is served for neurodivergent students
 For business logic, use the shared repo.
+If you need critical information, never assume it. Ask me instead.

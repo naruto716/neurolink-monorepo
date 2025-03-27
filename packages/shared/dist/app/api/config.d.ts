@@ -9,6 +9,8 @@ export declare const API_CONFIG: {
     endpoints: {
         health: string;
         posts: string;
+        users: string;
+        currentUser: string;
     };
     defaultHeaders: {
         'Content-Type': string;

@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Box, Typography, CircularProgress, useTheme } from '@mui/material';
 import { useAuth } from 'react-oidc-context';
 import { signOutRedirect } from '../../features/auth/auth';
