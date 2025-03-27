@@ -1,3 +1,4 @@
+import { Reducer } from "@reduxjs/toolkit";
 import { TypedUseSelectorHook } from "react-redux";
 export declare const store: import("@reduxjs/toolkit").EnhancedStore<{
     tokens: import("../../features/tokens/tokensSlice").TokensState;
@@ -6,6 +7,7 @@ export declare const store: import("@reduxjs/toolkit").EnhancedStore<{
         tokens: import("../../features/tokens/tokensSlice").TokensState;
     }, undefined, import("redux").UnknownAction>;
 }>, import("redux").StoreEnhancer]>>;
+export declare const injectReducer: (key: string, reducer: Reducer) => void;
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
 export declare const useAppDispatch: () => import("redux-thunk").ThunkDispatch<{

@@ -1,26 +1,25 @@
-import React from 'react';
-import { 
-  Box, 
-  Drawer, 
+import {
   Avatar,
-  Typography,
-  useTheme,
-  useMediaQuery,
-  styled,
+  Box,
+  Drawer,
   List,
   ListItemButton,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  styled,
+  Typography,
+  useMediaQuery,
+  useTheme
 } from '@mui/material';
-import { useLocation, useNavigate } from 'react-router-dom';
 import {
+  BookOpen,
   House,
   Info,
-  BookOpen,
   User,
-  Gear,
   Wheelchair
 } from '@phosphor-icons/react';
+import React from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 interface LeftSidebarProps {
   open: boolean;
