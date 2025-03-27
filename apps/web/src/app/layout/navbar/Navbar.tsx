@@ -18,11 +18,18 @@ import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 interface NavbarProps {
   toggleLeftSidebar: () => void;
   toggleRightSidebar: () => void;
+  leftSidebarOpen: boolean;
+  rightSidebarOpen: boolean;
 }
+
+// Navbar height for consistency
+export const NAVBAR_HEIGHT = 68;
 
 export default function Navbar({ 
   toggleLeftSidebar, 
-  toggleRightSidebar 
+  toggleRightSidebar,
+  leftSidebarOpen,
+  rightSidebarOpen 
 }: NavbarProps) {
   const muiTheme = useMuiTheme();
   const { toggleTheme } = useAppTheme();
@@ -34,14 +41,33 @@ export default function Navbar({
     ? [{ label: 'Home', path: '/' }]
     : undefined;
   
+  // Calculate side margins based on sidebar states
+  const leftSidebarWidth = leftSidebarOpen ? 212 : 0;
+  const rightSidebarWidth = rightSidebarOpen ? 280 : 0;
+  
   return (
     <AppBar 
-      position="static" 
+      position="fixed" 
       color="default"
       sx={{
         boxShadow: 'none',
         borderBottom: `1px solid ${muiTheme.palette.divider}`,
-        backgroundColor: muiTheme.palette.background.paper,
+        backgroundColor: muiTheme.palette.mode === 'light' 
+          ? 'rgba(255, 255, 255, 0.8)' 
+          : 'rgba(18, 18, 18, 0.8)',
+        backdropFilter: 'blur(10px)',
+        WebkitBackdropFilter: 'blur(10px)',
+        zIndex: (theme) => theme.zIndex.drawer + 1,
+        left: { xs: 0, md: leftSidebarWidth },
+        right: { xs: 0, md: rightSidebarWidth },
+        width: { 
+          xs: '100%', 
+          md: `calc(100% - ${leftSidebarWidth}px - ${rightSidebarWidth}px)` 
+        },
+        transition: (theme) => theme.transitions.create(['width', 'left', 'right'], {
+          easing: theme.transitions.easing.sharp,
+          duration: theme.transitions.duration.enteringScreen,
+        }),
       }}
     >
       <Toolbar
@@ -49,8 +75,8 @@ export default function Navbar({
           display: 'flex',
           width: '100%',
           padding: '14px 28px',
-          height: '68px',
-          minHeight: '68px',
+          height: `${NAVBAR_HEIGHT}px`,
+          minHeight: `${NAVBAR_HEIGHT}px`,
           justifyContent: 'space-between',
           alignItems: 'center',
         }}
