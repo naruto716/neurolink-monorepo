@@ -8,10 +8,11 @@ import {
   Moon, 
   Bell, 
   SquaresFour,
-  House
+  House,
+  SignOut
 } from '@phosphor-icons/react';
 import Breadcrumb from '../../components/Breadcrumb';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { AccessibilityToggle } from '../../components/AccessibilityToggle';
 import { LanguageSwitcher } from '../../components/LanguageSwitcher';
 
@@ -35,6 +36,7 @@ export default function Navbar({
   const { toggleTheme } = useAppTheme();
   const isDarkMode = muiTheme.palette.mode === 'dark';
   const location = useLocation();
+  const navigate = useNavigate();
   
   // Force "Home" breadcrumb for the root path
   const customBreadcrumbItems = location.pathname === '/' 
@@ -177,6 +179,16 @@ export default function Navbar({
               onClick={toggleRightSidebar}
             >
               <SquaresFour size={20} />
+            </IconButton>
+          </Tooltip>
+          
+          <Tooltip title="Account">
+            <IconButton 
+              color="inherit" 
+              size="small"
+              onClick={() => navigate('/auth')}
+            >
+              <SignOut size={20} />
             </IconButton>
           </Tooltip>
         </Box>

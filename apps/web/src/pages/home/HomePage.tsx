@@ -370,10 +370,10 @@ const HomePage = () => {
                     </Box>
                   </Box>
                 </CardContent>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
       </Box>
     </Box>
   );
