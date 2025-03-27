@@ -14,7 +14,7 @@ const getThemeOptions = (mode: PaletteMode): ThemeOptions => ({
             main: '#f50057',
           },
           background: {
-            default: '#f5f5f5',
+            default: '#ffffff',
             paper: '#ffffff',
           },
         }

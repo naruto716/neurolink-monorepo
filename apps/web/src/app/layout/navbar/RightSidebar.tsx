@@ -53,12 +53,10 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
     >
       <Box
         sx={{
-          height: '64px',
+          height: '68px',
           display: 'flex',
           alignItems: 'center',
           px: 2,
-          borderBottom: '1px solid',
-          borderColor: 'divider',
         }}
       >
         <Typography variant="h6" sx={{ fontWeight: 500 }}>
