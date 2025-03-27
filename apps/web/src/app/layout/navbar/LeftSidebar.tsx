@@ -49,10 +49,11 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ open, onClose }) => {
   const navItems = [
     { key: 'home', label: 'Home', path: '/', icon: <House weight="regular" size={20} /> },
     { key: 'about', label: 'About', path: '/about', icon: <Info weight="regular" size={20} /> },
-    { key: 'courses', label: 'Online Courses', path: '/courses', icon: <BookOpen weight="regular" size={20} /> },
+    // { key: 'courses', label: 'Online Courses', path: '/courses', icon: <BookOpen weight="regular" size={20} /> },
+    { key: 'commitment', label: 'Commitment', path: '/courses', icon: <BookOpen weight="regular" size={20} /> },
     { key: 'profile', label: 'Profile', path: '/profile', icon: <User weight="regular" size={20} /> },
     { key: 'accessibility', label: 'Accessibility', path: '/accessibility', icon: <Wheelchair weight="regular" size={20} /> },
-    { key: 'account', label: 'Account', path: '/account', icon: <Gear weight="regular" size={20} /> },
+    // { key: 'account', label: 'Account', path: '/account', icon: <Gear weight="regular" size={20} /> },
   ];
 
   const isActivePath = (path: string) => {
@@ -181,9 +182,15 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ open, onClose }) => {
       <Box sx={{ 
         mt: 'auto', 
         display: 'flex', 
-        justifyContent: 'center',
+        flexDirection: 'column',  // Stack elements vertically
+        alignItems: 'center',     // Center items horizontally
         p: 2
       }}>
+        <img 
+          src="https://d2ymeg1i7s1elw.cloudfront.net/Logo.png"
+          alt="Neurolink Logo"
+          style={{ width: '50px', height: '50px', marginBottom: '8px' }} // Adjust size and spacing
+        />
         <Typography
           variant="h6"
           sx={{
@@ -197,6 +204,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ open, onClose }) => {
           Neurolink
         </Typography>
       </Box>
+
     </Drawer>
   );
 };
