@@ -3,7 +3,7 @@ import { Box, Typography, Paper, Avatar, TextField, Button, Grid, Card, CardCont
 import { Edit as EditIcon, Save as SaveIcon, Visibility as VisibilityIcon, VisibilityOff as VisibilityOffIcon } from '@mui/icons-material';
 import { useAuth } from 'react-oidc-context';
 import { toastSuccess, toastError, toastInfo } from '../../app/utils/toast';
-import { useAppSelector } from '@neurolink/shared';
+import { useAppSelector } from '../../app/store/initStore'; // Corrected import path
 
 const ProfilePage = () => {
   const auth = useAuth();
@@ -311,4 +311,4 @@ const ProfilePage = () => {
   );
 };
 
-export default ProfilePage; 
+export default ProfilePage;

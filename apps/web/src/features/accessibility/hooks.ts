@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import { useAppDispatch, useAppSelector } from '@neurolink/shared';
+import { useAppDispatch, useAppSelector } from '../../app/store/initStore';
 import { 
   selectScreenReaderEnabled, 
   selectIsSpeaking, 

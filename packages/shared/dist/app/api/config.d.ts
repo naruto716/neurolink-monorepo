@@ -5,12 +5,11 @@
  */
 export declare const API_CONFIG: {
     baseUrl: string;
-    apiVersion: string;
     endpoints: {
-        health: string;
         posts: string;
         users: string;
         currentUser: string;
+        tags: string;
     };
     defaultHeaders: {
         'Content-Type': string;

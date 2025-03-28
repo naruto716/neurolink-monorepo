@@ -1,7 +1,8 @@
 import React, { useEffect } from "react";
 import { Outlet } from "react-router-dom";
 import { useAuth } from "react-oidc-context";
-import { useAppSelector, useAppDispatch, setTokens, clearTokens } from "@neurolink/shared";
+import { useAppDispatch, useAppSelector, RootState } from "../store/initStore";
+import { setTokens, clearTokens } from "@neurolink/shared";
 import { Box, Typography, CircularProgress, Paper, Button } from "@mui/material";
 import { Warning, SignIn, Lock } from "@phosphor-icons/react";
 
@@ -59,8 +60,7 @@ const AuthMessageContainer = ({
 export const RequireAuth = ({ roles }: { roles?: string[] }) => {
     const auth = useAuth();
     const dispatch = useAppDispatch();
-    // Safely access tokens state with optional chaining
-    const userGroups = useAppSelector((state) => state.tokens?.groups || []);
+    const userGroups = useAppSelector((state: RootState) => state.tokens?.groups || []);
     
     // Handle token management when auth state changes
     useEffect(() => {
@@ -76,6 +76,13 @@ export const RequireAuth = ({ roles }: { roles?: string[] }) => {
                 ? tokenClaims['cognito:groups'] 
                 : [];
             
+            console.log('Setting tokens in Redux from RequireAuth');
+            
+            // Also store in localStorage as fallback
+            if (accessToken) {
+                localStorage.setItem('auth_access_token', accessToken);
+            }
+            
             // Store in Redux
             dispatch(setTokens({
                 accessToken,
@@ -87,6 +94,8 @@ export const RequireAuth = ({ roles }: { roles?: string[] }) => {
             console.log('Authentication successful, tokens stored');
         } else if (!auth.isLoading) {
             // Clear tokens when not authenticated
+            console.log('Clearing tokens in Redux, not authenticated');
+            localStorage.removeItem('auth_access_token');
             dispatch(clearTokens());
         }
     }, [auth.isAuthenticated, auth.user, auth.isLoading, dispatch]);
@@ -132,7 +141,7 @@ export const RequireAuth = ({ roles }: { roles?: string[] }) => {
     }
 
     // Safely check roles with the non-null userGroups array
-    if (roles && roles.length > 0 && !userGroups.some(group => roles.includes(group))) {
+    if (roles && roles.length > 0 && !userGroups.some((group: string) => roles.includes(group))) {
         return (
             <AuthMessageContainer
                 icon={<Lock size={50} weight="duotone" />}

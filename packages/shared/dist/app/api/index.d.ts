@@ -1,3 +1,2 @@
-import api from './api';
-import { HealthResponse, checkHealth } from './health';
-export { api, HealthResponse, checkHealth };
+export { createApiClient } from './api';
+export * from './config';

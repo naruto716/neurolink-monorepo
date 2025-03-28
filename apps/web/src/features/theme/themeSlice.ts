@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { PaletteMode } from '@mui/material';
-import { RootState } from '@neurolink/shared';
+import { RootState } from '../../app/store/initStore';
 
 // Storage key for persisting theme preference
 const THEME_STORAGE_KEY = 'neurolink-theme-mode';
@@ -57,11 +57,5 @@ export const themeSlice = createSlice({
 export const { toggleTheme, setThemeMode } = themeSlice.actions;
 export default themeSlice.reducer;
 
-// Define extended state type
-interface ExtendedRootState extends RootState {
-  theme?: ThemeState;
-}
-
-// Selectors
-export const selectThemeMode = (state: RootState) => 
-  (state as ExtendedRootState).theme?.mode || 'light'; 
+// Selectors - Use the web app's RootState
+export const selectThemeMode = (state: RootState) => state.theme.mode; // Direct access 

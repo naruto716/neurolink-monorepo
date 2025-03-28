@@ -1,7 +1,8 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
+import { AxiosInstance } from 'axios';
 import { User, UserState } from './types';
 import { fetchCurrentUser } from './userAPI';
-import { RootState } from '../../app/store/store';
+import { SharedRootState, SharedStateSelector } from '../../app/store/store';
 
 // Initial state
 const initialState: UserState = {
@@ -12,11 +13,15 @@ const initialState: UserState = {
 };
 
 // Async thunks
-export const fetchUser = createAsyncThunk(
+export const fetchUser = createAsyncThunk<
+  User,
+  { apiClient: AxiosInstance },
+  { rejectValue: string }
+>(
   'user/fetchUser',
-  async (_, { rejectWithValue }) => {
+  async ({ apiClient }, { rejectWithValue }) => {
     try {
-      const user = await fetchCurrentUser();
+      const user = await fetchCurrentUser(apiClient);
       return user;
     } catch (error: any) {
       return rejectWithValue(error.message || 'Failed to fetch user');
@@ -80,16 +85,14 @@ export const userSlice = createSlice({
 // Export actions and reducer
 export const { clearUser, setOnboardingStatus } = userSlice.actions;
 
-// Selector to check if onboarding is needed
-export const selectNeedsOnboarding = (state: RootState) => 
+// Selectors - Use SharedStateSelector and explicitly type state
+export const selectNeedsOnboarding: SharedStateSelector<boolean> = (state: SharedRootState) =>
   state.user?.isOnboarded === false;
 
-// Selector to get current user
-export const selectCurrentUser = (state: RootState) => 
+export const selectCurrentUser: SharedStateSelector< User | null > = (state: SharedRootState) =>
   state.user?.currentUser;
 
-// Selector to get loading status
-export const selectUserLoadingStatus = (state: RootState) => 
+export const selectUserLoadingStatus: SharedStateSelector< 'idle' | 'loading' | 'succeeded' | 'failed' > = (state: SharedRootState) =>
   state.user?.status || 'idle';
 
 export default userSlice.reducer; 

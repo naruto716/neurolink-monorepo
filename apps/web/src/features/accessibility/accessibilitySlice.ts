@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { RootState } from '@neurolink/shared';
+import { RootState } from '../../app/store/initStore';
 
 // Local storage key for screen reader preference
 const SCREEN_READER_STORAGE_KEY = 'neurolink-screen-reader-enabled';
@@ -51,13 +51,6 @@ export const accessibilitySlice = createSlice({
 export const { toggleScreenReader, setScreenReaderEnabled, setIsSpeaking } = accessibilitySlice.actions;
 export default accessibilitySlice.reducer;
 
-// Define extended state type
-interface ExtendedRootState extends RootState {
-  accessibility?: AccessibilityState;
-}
-
-// Selectors
-export const selectScreenReaderEnabled = (state: RootState) => 
-  (state as ExtendedRootState).accessibility?.screenReaderEnabled || false;
-export const selectIsSpeaking = (state: RootState) => 
-  (state as ExtendedRootState).accessibility?.isSpeaking || false; 
+// Selectors - Use the web app's RootState
+export const selectScreenReaderEnabled = (state: RootState) => state.accessibility.screenReaderEnabled; // Direct access
+export const selectIsSpeaking = (state: RootState) => state.accessibility.isSpeaking; // Direct access 

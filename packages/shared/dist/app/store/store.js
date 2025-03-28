@@ -1,39 +1,17 @@
-import { configureStore, combineReducers } from "@reduxjs/toolkit";
-import { useDispatch, useSelector } from "react-redux";
+import { combineReducers } from "@reduxjs/toolkit";
 import tokensReducer from "../../features/tokens/tokensSlice";
 import userReducer from "../../features/user/userSlice";
-// Reducer imports are commented out to avoid circular dependencies
-// Theme and accessibility reducers will be added dynamically
-// Initial reducers
-const initialReducers = {
+/**
+ * Export the individual shared reducers.
+ * Apps can import these and combine them with their own reducers.
+ */
+export const sharedReducers = {
     tokens: tokensReducer,
     user: userReducer,
 };
-// Create the root reducer
-let rootReducer = combineReducers(initialReducers);
-// Configure the store
-export const store = configureStore({
-    reducer: rootReducer,
-    middleware: (getDefaultMiddleware) => getDefaultMiddleware({
-        serializableCheck: {
-            // Ignore these action types for serializable check
-            ignoredActions: ['user/fetchUser/rejected'],
-        },
-    }),
-    devTools: true
-});
-// Method to add reducers dynamically
-export const injectReducer = (key, reducer) => {
-    const currentReducers = store.getState();
-    if (!(key in currentReducers)) {
-        // Add new reducer and recreate the root reducer
-        rootReducer = combineReducers({
-            ...initialReducers,
-            [key]: reducer,
-        });
-        // Replace the existing reducer with our new one
-        store.replaceReducer(rootReducer);
-    }
-};
-export const useAppDispatch = () => useDispatch();
-export const useAppSelector = useSelector;
+/**
+ * Export a combined root reducer for the shared state slices.
+ * This can be used directly by apps if they don't need to combine it with other reducers at the same level.
+ */
+export const sharedRootReducer = combineReducers(sharedReducers);
+// Removed configureStore, injectReducer, AppDispatch, RootState (specific to an instance), useAppDispatch, useAppSelector

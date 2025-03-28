@@ -1,19 +1,33 @@
-import { Reducer } from "@reduxjs/toolkit";
-import { TypedUseSelectorHook } from "react-redux";
-export declare const store: import("@reduxjs/toolkit").EnhancedStore<{
-    tokens: import("../../features/tokens/tokensSlice").TokensState;
-    user: import("../..").UserState;
-}, import("redux").UnknownAction, import("@reduxjs/toolkit").Tuple<[import("redux").StoreEnhancer<{
-    dispatch: import("redux-thunk").ThunkDispatch<{
-        tokens: import("../../features/tokens/tokensSlice").TokensState;
-        user: import("../..").UserState;
-    }, undefined, import("redux").UnknownAction>;
-}>, import("redux").StoreEnhancer]>>;
-export declare const injectReducer: (key: string, reducer: Reducer) => void;
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
-export declare const useAppDispatch: () => import("redux-thunk").ThunkDispatch<{
-    tokens: import("../../features/tokens/tokensSlice").TokensState;
-    user: import("../..").UserState;
-}, undefined, import("redux").UnknownAction> & import("redux").Dispatch<import("redux").UnknownAction>;
-export declare const useAppSelector: TypedUseSelectorHook<RootState>;
+import { TokensState } from "../../features/tokens/tokensSlice";
+import { UserState } from "../../features/user/types";
+/**
+ * Define the root state shape for the shared reducers.
+ * This interface describes the part of the state managed by the shared package.
+ */
+export interface SharedRootState {
+    tokens: TokensState;
+    user: UserState;
+}
+/**
+ * Export the individual shared reducers.
+ * Apps can import these and combine them with their own reducers.
+ */
+export declare const sharedReducers: {
+    tokens: import("redux").Reducer<TokensState>;
+    user: import("redux").Reducer<UserState>;
+};
+/**
+ * Export a combined root reducer for the shared state slices.
+ * This can be used directly by apps if they don't need to combine it with other reducers at the same level.
+ */
+export declare const sharedRootReducer: import("redux").Reducer<{
+    tokens: TokensState;
+    user: UserState;
+}, import("redux").UnknownAction, Partial<{
+    tokens: TokensState | undefined;
+    user: UserState | undefined;
+}>>;
+/**
+ * Generic type for a selector function operating on the SharedRootState.
+ */
+export type SharedStateSelector<T> = (state: SharedRootState) => T;

@@ -5,18 +5,15 @@
  */
 
 export const API_CONFIG = {
-  // Base URL for all API requests
-  baseUrl: 'https://d2agqx8n7tecm4.cloudfront.net',
+  // Base URL for all API requests, including the API version path
+  baseUrl: 'https://d2agqx8n7tecm4.cloudfront.net/api/v1',
   
-  // API version prefix
-  apiVersion: 'v1',
-  
-  // Endpoints - add new ones as needed
+  // Endpoints - relative to the baseUrl
   endpoints: {
-    health: '/api/v1/Health',
-    posts: '/api/v1/posts',
-    users: '/api/v1/Users',
-    currentUser: '/api/v1/Users/me'
+    posts: '/posts',
+    users: '/users',
+    currentUser: '/users/me',
+    tags: '/tags'
   },
   
   // Headers to include with all requests
@@ -24,4 +21,4 @@ export const API_CONFIG = {
     'Content-Type': 'application/json',
     'Accept': '*/*',
   }
-}; 
+};

@@ -1,50 +1,37 @@
-import { configureStore, combineReducers, Reducer } from "@reduxjs/toolkit";
-import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
-import tokensReducer from "../../features/tokens/tokensSlice";
+import { combineReducers } from "@reduxjs/toolkit";
+import tokensReducer, { TokensState } from "../../features/tokens/tokensSlice";
 import userReducer from "../../features/user/userSlice";
+import { UserState } from "../../features/user/types";
 // Reducer imports are commented out to avoid circular dependencies
 // Theme and accessibility reducers will be added dynamically
 
-// Initial reducers
-const initialReducers = {
+/**
+ * Define the root state shape for the shared reducers.
+ * This interface describes the part of the state managed by the shared package.
+ */
+export interface SharedRootState {
+  tokens: TokensState;
+  user: UserState;
+}
+
+/**
+ * Export the individual shared reducers.
+ * Apps can import these and combine them with their own reducers.
+ */
+export const sharedReducers = {
   tokens: tokensReducer,
   user: userReducer,
 };
 
-// Create the root reducer
-let rootReducer = combineReducers(initialReducers);
+/**
+ * Export a combined root reducer for the shared state slices.
+ * This can be used directly by apps if they don't need to combine it with other reducers at the same level.
+ */
+export const sharedRootReducer = combineReducers(sharedReducers);
 
-// Configure the store
-export const store = configureStore({
-  reducer: rootReducer,
-  middleware: (getDefaultMiddleware) => 
-    getDefaultMiddleware({
-      serializableCheck: {
-        // Ignore these action types for serializable check
-        ignoredActions: ['user/fetchUser/rejected'],
-      },
-    }),
-  devTools: true
-});
+/**
+ * Generic type for a selector function operating on the SharedRootState.
+ */
+export type SharedStateSelector<T> = (state: SharedRootState) => T;
 
-// Method to add reducers dynamically
-export const injectReducer = (key: string, reducer: Reducer) => {
-  const currentReducers = store.getState() as Record<string, unknown>;
-  
-  if (!(key in currentReducers)) {
-    // Add new reducer and recreate the root reducer
-    rootReducer = combineReducers({
-      ...initialReducers,
-      [key]: reducer,
-    });
-    
-    // Replace the existing reducer with our new one
-    store.replaceReducer(rootReducer);
-  }
-};
-
-export type RootState = ReturnType<typeof store.getState>;
-export type AppDispatch = typeof store.dispatch;
-
-export const useAppDispatch = () => useDispatch<AppDispatch>();
-export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
+// Removed configureStore, injectReducer, AppDispatch, RootState (specific to an instance), useAppDispatch, useAppSelector

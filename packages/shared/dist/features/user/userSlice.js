@@ -8,9 +8,9 @@ const initialState = {
     isOnboarded: false
 };
 // Async thunks
-export const fetchUser = createAsyncThunk('user/fetchUser', async (_, { rejectWithValue }) => {
+export const fetchUser = createAsyncThunk('user/fetchUser', async ({ apiClient }, { rejectWithValue }) => {
     try {
-        const user = await fetchCurrentUser();
+        const user = await fetchCurrentUser(apiClient);
         return user;
     }
     catch (error) {
@@ -70,10 +70,8 @@ export const userSlice = createSlice({
 });
 // Export actions and reducer
 export const { clearUser, setOnboardingStatus } = userSlice.actions;
-// Selector to check if onboarding is needed
+// Selectors - Use SharedStateSelector and explicitly type state
 export const selectNeedsOnboarding = (state) => state.user?.isOnboarded === false;
-// Selector to get current user
 export const selectCurrentUser = (state) => state.user?.currentUser;
-// Selector to get loading status
 export const selectUserLoadingStatus = (state) => state.user?.status || 'idle';
 export default userSlice.reducer;

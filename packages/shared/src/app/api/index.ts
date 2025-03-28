@@ -1,9 +1,6 @@
-import api from './api';
-import { HealthResponse, checkHealth } from './health';
+// Export the function that creates the api client
+export { createApiClient } from './api';
 
-// Export the API instance and health-related types and functions
-export {
-  api,
-  HealthResponse,
-  checkHealth
-};
+// Export related configuration or types if needed
+export * from './config';
+// export * from './health'; // Example if you have other files

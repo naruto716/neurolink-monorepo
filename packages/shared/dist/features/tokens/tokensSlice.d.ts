@@ -1,4 +1,5 @@
 import { PayloadAction } from '@reduxjs/toolkit';
+import { SharedStateSelector } from '../../app/store/store';
 export interface TokensState {
     accessToken?: string;
     idToken?: string;
@@ -13,6 +14,10 @@ export declare const tokensSlice: import("@reduxjs/toolkit").Slice<TokensState, 
     setRefreshToken: (state: import("immer").WritableDraft<TokensState>, action: PayloadAction<string | undefined>) => void;
     setGroups: (state: import("immer").WritableDraft<TokensState>, action: PayloadAction<string[] | undefined>) => void;
 }, "tokens", "tokens", import("@reduxjs/toolkit").SliceSelectors<TokensState>>;
+export declare const selectAccessToken: SharedStateSelector<string | undefined>;
+export declare const selectIdToken: SharedStateSelector<string | undefined>;
+export declare const selectRefreshToken: SharedStateSelector<string | undefined>;
+export declare const selectGroups: SharedStateSelector<string[]>;
 export declare const setTokens: import("@reduxjs/toolkit").ActionCreatorWithPayload<TokensState, "tokens/setTokens">, clearTokens: import("@reduxjs/toolkit").ActionCreatorWithoutPayload<"tokens/clearTokens">, setAccessToken: import("@reduxjs/toolkit").ActionCreatorWithOptionalPayload<string | undefined, "tokens/setAccessToken">, setIdToken: import("@reduxjs/toolkit").ActionCreatorWithOptionalPayload<string | undefined, "tokens/setIdToken">, setRefreshToken: import("@reduxjs/toolkit").ActionCreatorWithOptionalPayload<string | undefined, "tokens/setRefreshToken">, setGroups: import("@reduxjs/toolkit").ActionCreatorWithOptionalPayload<string[] | undefined, "tokens/setGroups">;
 declare const _default: import("redux").Reducer<TokensState>;
 export default _default;

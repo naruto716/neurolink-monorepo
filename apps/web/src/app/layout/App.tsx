@@ -1,14 +1,14 @@
 import { Outlet, Navigate } from "react-router-dom";
 import { ToastContainer } from 'react-toastify';
+import { useAppDispatch, useAppSelector } from "../store/initStore";
 import { 
-  useAppDispatch, 
-  useAppSelector, 
   setTokens,
   fetchUser,
   selectUserLoadingStatus,
   selectNeedsOnboarding,
   setOnboardingStatus
 } from "@neurolink/shared";
+import apiClient from "../api/apiClient";
 import { useAuth } from "react-oidc-context";
 import { useEffect, useState } from "react";
 import Layout from "./Layout";
@@ -51,8 +51,8 @@ function App() {
           // Start with a clean slate
           dispatch(setOnboardingStatus(false));
           
-          // Fetch the user data
-          await dispatch(fetchUser()).unwrap();
+          // Fetch the user data, passing the apiClient instance
+          await dispatch(fetchUser({ apiClient })).unwrap();
         } catch (error) {
           // Handle error case
           const errorMessage = typeof error === 'string' ? error : 'Unknown error';

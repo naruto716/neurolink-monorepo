@@ -2,7 +2,8 @@ import { useEffect } from 'react';
 import { Box, Typography, CircularProgress, useTheme } from '@mui/material';
 import { useAuth } from 'react-oidc-context';
 import { signOutRedirect } from '../../features/auth/auth';
-import { useAppDispatch, clearTokens } from '@neurolink/shared';
+import { clearTokens } from '@neurolink/shared'; // Keep clearTokens from shared
+import { useAppDispatch } from '../../app/store/initStore'; // Import useAppDispatch from web app store
 
 const AuthPage = () => {
     const theme = useTheme();
@@ -48,4 +49,4 @@ const AuthPage = () => {
     );
 };
 
-export default AuthPage; 
+export default AuthPage;

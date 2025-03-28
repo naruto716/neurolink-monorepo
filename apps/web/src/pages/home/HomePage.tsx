@@ -1,54 +1,30 @@
-import { useEffect, useState } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Grid, 
-  Card, 
-  CardContent, 
-  Avatar, 
-  IconButton,
+import {
+  Avatar,
+  Box,
   Button,
-  useTheme,
+  Card,
+  CardContent,
   Chip,
+  Grid,
+  IconButton,
   Tooltip,
-  Alert,
-  Snackbar
+  Typography,
+  useTheme
 } from '@mui/material';
-import { 
-  Plus, 
-  Heart,
-  ChatDots,
+import {
   BookmarkSimple,
-  ShareNetwork,
-  DotsThree
+  ChatDots,
+  DotsThree,
+  Heart,
+  Plus,
+  ShareNetwork
 } from '@phosphor-icons/react';
 import { AccessibleTypography } from '../../app/components/AccessibleTypography';
-import { checkHealth, HealthResponse } from '@neurolink/shared';
 
 const PLACEHOLDER_IMAGE = "https://d2ymeg1i7s1elw.cloudfront.net/646a09264a49e84e5f28d73c_0_0.png?quality=lossless";
 
 const HomePage = () => {
   const theme = useTheme();
-  const [healthStatus, setHealthStatus] = useState<HealthResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [openSnackbar, setOpenSnackbar] = useState(false);
-
-  // Check API health on component mount
-  useEffect(() => {
-    const fetchHealthStatus = async () => {
-      try {
-        const response = await checkHealth();
-        setHealthStatus(response);
-        setOpenSnackbar(true);
-      } catch (err) {
-        console.error('Error checking API health:', err);
-        setError('Failed to connect to the API. Please check if the server is running.');
-        setOpenSnackbar(true);
-      }
-    };
-
-    fetchHealthStatus();
-  }, []);
 
   // Sample story data
   const stories = [
@@ -95,28 +71,9 @@ const HomePage = () => {
     }
   ];
 
-  const handleCloseSnackbar = () => {
-    setOpenSnackbar(false);
-  };
 
   return (
     <Box sx={{ maxWidth: '1200px', mx: 'auto', py: 4, px: { xs: 2, md: 4 } }}>
-      {/* API Status Snackbar */}
-      <Snackbar
-        open={openSnackbar}
-        autoHideDuration={6000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-      >
-        <Alert 
-          onClose={handleCloseSnackbar} 
-          severity={error ? 'error' : 'success'} 
-          sx={{ width: '100%' }}
-        >
-          {error || `API connection successful: ${healthStatus?.status || 'OK'}`}
-        </Alert>
-      </Snackbar>
-
       {/* Recent Stories Section */}
       <Box sx={{ mb: 6 }}>
         <Typography variant="h5" component="h2" sx={{ mb: 3, fontWeight: 600, color: theme.palette.text.primary }}>
