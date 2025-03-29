@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Container, Box } from '@mui/material';
+import React, { useState, useEffect } from 'react'; // Added useEffect
+import { Container, Box, useMediaQuery, useTheme } from '@mui/material'; // Added useMediaQuery, useTheme
 import Navbar, { NAVBAR_HEIGHT } from './navbar/Navbar';
 import { LeftSidebar } from './navbar/LeftSidebar';
 import { RightSidebar } from './navbar/RightSidebar';
@@ -12,8 +12,19 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
-  const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
+  const theme = useTheme();
+  // Check if the screen size is 'sm' or larger (desktop/tablet)
+  const isDesktop = useMediaQuery(theme.breakpoints.up('md')); 
+  
+  // Initialize sidebar state based on screen size
+  const [leftSidebarOpen, setLeftSidebarOpen] = useState(isDesktop); 
   const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
+
+  // Effect to handle sidebar state changes on resize
+  // Close sidebar on mobile if it was open, open on desktop if it was closed
+  useEffect(() => {
+    setLeftSidebarOpen(isDesktop);
+  }, [isDesktop]);
 
   return (
     <Box sx={{ display: 'flex' }}>
@@ -59,4 +70,4 @@ export default function Layout({ children }: LayoutProps) {
       </RightSidebar>
     </Box>
   );
-} 
+}

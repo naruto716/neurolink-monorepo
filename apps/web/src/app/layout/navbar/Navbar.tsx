@@ -59,7 +59,7 @@ export default function Navbar({
           : 'rgba(18, 18, 18, 0.8)',
         backdropFilter: 'blur(10px)',
         WebkitBackdropFilter: 'blur(10px)',
-        zIndex: (theme) => theme.zIndex.drawer + 1,
+        // zIndex: (theme) => theme.zIndex.drawer + 1, // Removed to allow Drawers to be on top
         left: { xs: 0, md: leftSidebarWidth },
         right: { xs: 0, md: rightSidebarWidth },
         width: { 
@@ -195,4 +195,4 @@ export default function Navbar({
       </Toolbar>
     </AppBar>
   );
-} 
+}

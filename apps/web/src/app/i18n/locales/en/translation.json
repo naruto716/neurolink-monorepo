@@ -9,7 +9,8 @@
     "accessibility": "Accessibility",
     "profile": "Profile",
     "signIn": "Sign In",
-    "signOut": "Sign Out"
+    "signOut": "Sign Out",
+    "onboarding": "Onboarding" 
   },
   "theme": {
     "light": "Light Mode",
@@ -96,10 +97,20 @@
     "submit": "Submit",
     "cancel": "Cancel",
     "save": "Save",
+    "title": "Complete Your Profile",
+    "stepDefault": "Onboarding Step",
+    "cancelled": "Onboarding cancelled.",
     "error": {
       "required": "This field is required",
       "email": "Please enter a valid email address",
-      "loadingTags": "Failed to load tags"
+      "loadingTags": "Failed to load tags",
+      "noIdToken": "Authentication error: ID token not found.",
+      "invalidToken": "Authentication error: Invalid ID token.",
+      "noEmail": "Authentication error: Email not found in token.",
+      "submitFailed": "Failed to create profile"
+    },
+    "success": {
+      "profileCreated": "Profile created successfully!"
     }
   }
-} 
+}

@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react'; // Added useCallback
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom'; // Added useNavigate
+import { jwtDecode } from 'jwt-decode'; // Added jwt-decode
 import {
   Box,
   Container,
@@ -17,9 +19,15 @@ import {
   styled
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close';
-import { fetchTags } from '@neurolink/shared/src/features/user/userAPI';
-import { Tag } from '@neurolink/shared/src/features/user/types';
+import { fetchTags, createUser } from '@neurolink/shared/src/features/user/userAPI'; // Added createUser
+import { Tag, UserPreferences } from '@neurolink/shared/src/features/user/types'; // Added UserPreferences
+import { selectIdToken } from '@neurolink/shared/src/features/tokens/tokensSlice'; // Added token selector
+import { useAppSelector, useAppDispatch } from '../../app/store/initStore'; // Added Redux hooks
+import apiClient from '../../app/api/apiClient'; // Corrected: Import the instance directly
+import { setOnboardingStatus } from '@neurolink/shared/src/features/user/userSlice'; // Corrected: Import setOnboardingStatus
 import { AccessibleTypography } from '../../app/components/AccessibleTypography';
+import Breadcrumb from '../../app/components/Breadcrumb'; // Added Breadcrumb
+import { toast } from 'react-toastify'; // Added toast for notifications
 
 // Custom styled components for modern UI
 const StyledPaper = styled(Paper)(({ theme }) => ({
@@ -103,14 +111,35 @@ const initialFormValues = {
   profilePicture: '',
   age: '',
   bio: '',
-  selectedTags: [] as Tag[]
+  selectedTags: [] as Tag[],
+  // Add a default preferences structure based on UserPreferences
+  preferences: {
+    visibility: 'private', // Default visibility
+    accessibility: {
+      colorScheme: 'system', // Default color scheme
+      highContrastMode: false, // Default contrast mode
+    },
+    communication: ['email'], // Default communication method
+  } as UserPreferences
 };
+
+// Define Decoded ID Token type
+interface DecodedIdToken {
+  email: string;
+  // Add other relevant fields if needed, e.g., sub for user ID
+  sub: string; 
+}
 
 const OnboardingPage: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const idToken = useAppSelector(selectIdToken);
   const [activeStep, setActiveStep] = useState(0);
   const [formValues, setFormValues] = useState(initialFormValues);
   const [formError, setFormError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null); // Added for submission errors
+  const [isSubmitting, setIsSubmitting] = useState(false); // Added for loading state
   const [tags, setTags] = useState<Tag[]>([]);
   const [tagsLoading, setTagsLoading] = useState(false);
   const [tagsError, setTagsError] = useState<string | null>(null);
@@ -119,16 +148,19 @@ const OnboardingPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Tag[]>([]);
 
-  // Fetch tags from API
+  // Fetch tags from API using apiClient
   useEffect(() => {
     const getTags = async () => {
       setTagsLoading(true);
       setTagsError(null);
       try {
-        const fetchedTags = await fetchTags();
+        // Pass the apiClient instance to fetchTags
+        const fetchedTags = await fetchTags(apiClient); 
         setTags(fetchedTags);
       } catch (error) {
-        setTagsError((error as Error).message || t('onboarding.error.loadingTags'));
+        const errorMessage = (error instanceof Error) ? error.message : String(error);
+        setTagsError(errorMessage || t('onboarding.error.loadingTags'));
+        toast.error(t('onboarding.error.loadingTags') + `: ${errorMessage}`);
       } finally {
         setTagsLoading(false);
       }
@@ -217,26 +249,74 @@ const OnboardingPage: React.FC = () => {
     }
   };
 
-  // Handle form submission
-  const handleSubmit = () => {
-    // Prepare the data for API
-    const userData = {
+  // Handle form submission (Marked as async)
+  const handleSubmit = async () => { 
+    setIsSubmitting(true); // Set submitting state
+    setSubmitError(null); // Clear previous errors
+
+    if (!idToken) {
+      setSubmitError(t('onboarding.error.noIdToken'));
+      toast.error(t('onboarding.error.noIdToken'));
+      setIsSubmitting(false);
+      return;
+    }
+
+    let decodedToken: DecodedIdToken;
+    try {
+      decodedToken = jwtDecode<DecodedIdToken>(idToken);
+    } catch (err) { // Use the error variable or rename if unused
+      console.error("Error decoding token:", err); // Log the error
+      setSubmitError(t('onboarding.error.invalidToken'));
+      toast.error(t('onboarding.error.invalidToken'));
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!decodedToken.email) {
+      setSubmitError(t('onboarding.error.noEmail'));
+      toast.error(t('onboarding.error.noEmail'));
+      setIsSubmitting(false); // Added missing setIsSubmitting
+      return; // Added missing return
+    } // Added missing closing brace
+
+    // Prepare the data for API, including email and preferences
+    const profileData = { // Renamed variable to avoid conflict
+      email: decodedToken.email, // Add email from decoded token
       displayName: formValues.displayName,
       profilePicture: formValues.profilePicture || undefined,
       age: formValues.age ? parseInt(formValues.age, 10) : undefined,
       bio: formValues.bio || undefined,
-      tags: formValues.selectedTags
+      tags: formValues.selectedTags,
+      preferences: formValues.preferences // Add preferences
     };
-    
-    console.log('Form submitted with values:', userData);
-    // Will implement actual API call in next step
+
+    try {
+      // Pass the renamed profileData
+      const createdUser = await createUser(apiClient, profileData); 
+      console.log('User created successfully:', createdUser);
+      toast.success(t('onboarding.success.profileCreated'));
+      
+      // Update Redux state to indicate onboarding is complete
+      dispatch(setOnboardingStatus(true));
+      
+      // Navigate to the user's profile page or dashboard
+      navigate('/profile'); // Or '/dashboard' or wherever appropriate
+
+    } catch (err) { // Use the error variable
+      const errorMessage = (err instanceof Error) ? err.message : String(err);
+      setSubmitError(errorMessage || t('onboarding.error.submitFailed'));
+      toast.error(t('onboarding.error.submitFailed') + `: ${errorMessage}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  // Handle close/cancel
-  const handleCancel = () => {
-    // Just for demonstration, would typically navigate away
-    console.log('Cancelled onboarding');
-  };
+  // Handle close/cancel - navigate back or to home
+  const handleCancel = useCallback(() => {
+    // Navigate to home or previous page
+    navigate('/'); 
+    toast.info(t('onboarding.cancelled'));
+  }, [navigate, t]);
 
   // Step 1: Basic information form
   const renderBasicInfoForm = () => (
@@ -323,7 +403,7 @@ const OnboardingPage: React.FC = () => {
             color="text.secondary" 
             sx={{ mt: 1, display: 'block', textAlign: 'right' }}
           >
-            {formValues.bio.length}/500
+            {formValues.bio?.length || 0}/500 {/* Handle potential undefined bio */}
           </Typography>
         </Grid>
       </Grid>
@@ -502,17 +582,28 @@ const OnboardingPage: React.FC = () => {
       case 3:
         return t('onboarding.reviewInfo');
       default:
-        return t('New');
+        return t('onboarding.stepDefault'); // Added default translation key
     }
   };
+  
+  // Define breadcrumb items
+  const breadcrumbItems = [
+    { label: t('nav.home'), path: '/' },
+    { label: t('onboarding.title'), path: '/onboarding' }
+  ];
 
   return (
     <Container maxWidth="md" sx={{ py: 4, px: { xs: 2, sm: 3 } }}>
+      {/* Add Breadcrumb */}
+      <Box sx={{ mb: 3 }}>
+        <Breadcrumb customItems={breadcrumbItems} />
+      </Box>
+      
       <StyledPaper>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" component="h1" sx={{ fontWeight: 600 }}>
+          <AccessibleTypography variant="h4" component="h1" sx={{ fontWeight: 600 }}> {/* Use AccessibleTypography */}
             {getStepTitle()}
-          </Typography>
+          </AccessibleTypography>
           <IconButton 
             onClick={handleCancel}
             sx={{ 
@@ -526,7 +617,7 @@ const OnboardingPage: React.FC = () => {
 
         {formError && (
           <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
-            {formError}
+            {formError || submitError /* Show submit error as well */}
           </Alert>
         )}
 
@@ -548,9 +639,14 @@ const OnboardingPage: React.FC = () => {
           <ActionButton
             variant="contained"
             onClick={activeStep === 3 ? handleSubmit : handleNext}
+            disabled={isSubmitting} // Disable button while submitting
             disableElevation
           >
-            {activeStep === 3 ? t('onboarding.save') : t('onboarding.next')}
+            {isSubmitting ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              activeStep === 3 ? t('onboarding.save') : t('onboarding.next')
+            )}
           </ActionButton>
         </Box>
       </StyledPaper>
@@ -558,4 +654,4 @@ const OnboardingPage: React.FC = () => {
   );
 };
 
-export default OnboardingPage; 
+export default OnboardingPage;

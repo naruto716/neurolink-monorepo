@@ -101,3 +101,38 @@ For most new pages, you don't need to do anything - the breadcrumbs will work au
 If you want a nicer display name, just add your new route to the `routeNameMap` in the Breadcrumb component as shown above.
 
 Would you like me to create a useBreadcrumb hook to make it easier to set custom breadcrumbs from any page?
+
+## User Preferences Structure
+
+The user profile includes a `preferences` field which is an object defined by the `UserPreferences` interface in `packages/shared/src/features/user/types.ts`. This object is initially set during the onboarding process.
+
+The structure is as follows:
+
+```typescript
+interface UserPreferences {
+  visibility: string; // e.g., 'public', 'private', 'friends'
+  accessibility: {
+    colorScheme: string; // e.g., 'light', 'dark', 'system'
+    highContrastMode: boolean;
+  };
+  communication: string[]; // e.g., ['email', 'in-app']
+}
+```
+
+During onboarding (`OnboardingPage.tsx`), default values are set:
+
+```typescript
+const initialFormValues = {
+  // ... other fields
+  preferences: {
+    visibility: 'private', 
+    accessibility: {
+      colorScheme: 'system', 
+      highContrastMode: false, 
+    },
+    communication: ['email'], 
+  } as UserPreferences
+};
+```
+
+This structure is sent to the backend via the `createUser` API call.
