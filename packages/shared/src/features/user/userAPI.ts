@@ -1,8 +1,8 @@
-import { AxiosInstance } from 'axios'; // Import AxiosInstance type
-import { User, Tag } from './types';
+import { AxiosInstance, AxiosRequestConfig } from 'axios'; // Import AxiosInstance type and AxiosRequestConfig
+import { User, Tag, PaginatedUsersResponse, UserProfileInput } from './types'; // Added PaginatedUsersResponse and UserProfileInput
 
 const API_ENDPOINT_USER = '/users/me';
-const API_ENDPOINT_USERS = '/users';
+const API_ENDPOINT_USERS = '/users'; // Base endpoint for users
 const API_ENDPOINT_TAGS = '/tags';
 
 /**
@@ -30,12 +30,13 @@ export const fetchCurrentUser = async (apiClient: AxiosInstance): Promise<User> 
 /**
  * Create a new user profile during onboarding
  * @param apiClient The Axios instance to use.
- * @param userData The user data to create
+ * @param userData The user data to create (using UserProfileInput type)
  * @returns Promise with the created user data
  */
-export const createUser = async (apiClient: AxiosInstance, userData: Partial<User>): Promise<User> => {
+export const createUser = async (apiClient: AxiosInstance, userData: UserProfileInput): Promise<User> => {
     try {
-        const response = await apiClient.post<User>(API_ENDPOINT_USERS, userData);
+        // Ensure UserProfileInput is compatible with CreateUserDto if they differ significantly
+        const response = await apiClient.post<User>(API_ENDPOINT_USERS, userData); 
         return response.data;
     } catch (error: any) {
         console.error("Error creating user:", error.response?.data || error.message);
@@ -68,4 +69,51 @@ export const fetchTags = async (apiClient: AxiosInstance): Promise<Tag[]> => {
         // For other API failures
         throw new Error('Failed to fetch available tags');
     }
-}; 
+};
+
+// Define and export parameters for fetching users based on OpenAPI spec
+export interface FetchUsersParams {
+    q?: string;
+    minAge?: number;
+    maxAge?: number;
+    tagTypes?: string[];
+    tagValues?: string[];
+    page?: number;
+    limit?: number;
+}
+
+/**
+ * Fetch a list of users with pagination and filtering (GET /users)
+ * @param apiClient The Axios instance to use.
+ * @param params Query parameters for filtering and pagination
+ * @returns Promise with paginated user data
+ */
+export const fetchUsers = async (apiClient: AxiosInstance, params: FetchUsersParams = {}): Promise<PaginatedUsersResponse> => {
+    try {
+        // Construct query parameters, filtering out undefined values
+        const queryParams: Record<string, string | number | string[]> = {};
+        if (params.q !== undefined) queryParams.q = params.q;
+        if (params.minAge !== undefined) queryParams.minAge = params.minAge;
+        if (params.maxAge !== undefined) queryParams.maxAge = params.maxAge;
+        if (params.tagTypes !== undefined) queryParams.tagTypes = params.tagTypes;
+        if (params.tagValues !== undefined) queryParams.tagValues = params.tagValues;
+        queryParams.page = params.page || 1; // Default page 1
+        queryParams.limit = params.limit || 10; // Default limit 10
+
+        const config: AxiosRequestConfig = {
+            params: queryParams,
+            // Axios typically handles array serialization correctly for query params
+            // If backend expects specific format (e.g., comma-separated), adjust here or use paramsSerializer
+        };
+
+        const response = await apiClient.get<PaginatedUsersResponse>(API_ENDPOINT_USERS, config); 
+        console.log("Users fetched successfully:", response.data);
+        return response.data;
+    } catch (error: any) {
+        console.error("Error fetching users:", error.response?.data || error.message);
+        if (error.response?.data?.message) {
+            throw new Error(`Failed to fetch users: ${error.response.data.message}`);
+        }
+        throw new Error('Failed to fetch users');
+    }
+};

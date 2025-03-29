@@ -16,7 +16,8 @@ import {
   House,
   Info,
   User,
-  Wheelchair
+  Wheelchair,
+  Users // Added Users icon
 } from '@phosphor-icons/react';
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -47,6 +48,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ open, onClose }) => {
   
   const navItems = [
     { key: 'home', label: 'Home', path: '/', icon: <House weight="regular" size={20} /> },
+    { key: 'people', label: 'People', path: '/people', icon: <Users weight="regular" size={20} /> }, // Added People link
     { key: 'about', label: 'About', path: '/about', icon: <Info weight="regular" size={20} /> },
     // { key: 'courses', label: 'Online Courses', path: '/courses', icon: <BookOpen weight="regular" size={20} /> },
     { key: 'commitment', label: 'Commitment', path: '/courses', icon: <BookOpen weight="regular" size={20} /> },
@@ -208,4 +210,4 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ open, onClose }) => {
   );
 };
 
-export default LeftSidebar; 
+export default LeftSidebar;

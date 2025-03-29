@@ -1,37 +1,38 @@
-import { combineReducers } from "@reduxjs/toolkit";
-import tokensReducer, { TokensState } from "../../features/tokens/tokensSlice";
-import userReducer from "../../features/user/userSlice";
-import { UserState } from "../../features/user/types";
-// Reducer imports are commented out to avoid circular dependencies
-// Theme and accessibility reducers will be added dynamically
+import { configureStore, combineReducers } from '@reduxjs/toolkit';
+import tokensReducer, { TokensState } from '../../features/tokens/tokensSlice';
+import userReducer from '../../features/user/userSlice'; 
+import { UserState } from '../../features/user/types'; 
+// Import the renamed slice and its state type correctly
+import paginatedUsersReducer, { PaginatedUsersState } from '../../features/user/paginatedUsersSlice'; 
 
-/**
- * Define the root state shape for the shared reducers.
- * This interface describes the part of the state managed by the shared package.
- */
+// Define the shape of the shared root state
 export interface SharedRootState {
   tokens: TokensState;
-  user: UserState;
+  user: UserState; 
+  paginatedUsers: PaginatedUsersState; // Use the correct state type name
 }
 
-/**
- * Export the individual shared reducers.
- * Apps can import these and combine them with their own reducers.
- */
+// Export individual reducers for apps to combine
 export const sharedReducers = {
   tokens: tokensReducer,
   user: userReducer,
+  paginatedUsers: paginatedUsersReducer, 
 };
 
-/**
- * Export a combined root reducer for the shared state slices.
- * This can be used directly by apps if they don't need to combine it with other reducers at the same level.
- */
-export const sharedRootReducer = combineReducers(sharedReducers);
+// Combine reducers *only* for defining the SharedRootState type and example store
+const rootReducer = combineReducers(sharedReducers);
 
-/**
- * Generic type for a selector function operating on the SharedRootState.
- */
-export type SharedStateSelector<T> = (state: SharedRootState) => T;
+// Type for selectors using the shared state
+// Use 'any' for the state type to allow flexibility for app-specific root states
+export type SharedStateSelector<T> = (state: any) => T; 
 
-// Removed configureStore, injectReducer, AppDispatch, RootState (specific to an instance), useAppDispatch, useAppSelector
+// Note: This store configuration is primarily for type inference.
+// Individual apps (web, mobile) should import `sharedReducers`
+// and combine them with their own app-specific reducers.
+
+// Example store for type inference
+const exampleStore = configureStore({
+  reducer: rootReducer,
+});
+
+export type SharedDispatch = typeof exampleStore.dispatch;

@@ -1,26 +1,18 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from '../../app/store/initStore';
 
-// Local storage key for screen reader preference
-const SCREEN_READER_STORAGE_KEY = 'neurolink-screen-reader-enabled';
-
-// Get initial screen reader state from localStorage
-const getInitialScreenReaderState = (): boolean => {
-  if (typeof window !== 'undefined') {
-    const savedPreference = localStorage.getItem(SCREEN_READER_STORAGE_KEY);
-    return savedPreference === 'true';
-  }
-  return false;
-};
-
-interface AccessibilityState {
+// Define and export the state interface
+export interface AccessibilityState {
   screenReaderEnabled: boolean;
   isSpeaking: boolean;
+  fontSize: number; // Example: store font size preference
 }
 
+// Initial state
 const initialState: AccessibilityState = {
-  screenReaderEnabled: getInitialScreenReaderState(),
+  screenReaderEnabled: false,
   isSpeaking: false,
+  fontSize: 16, // Default font size
 };
 
 export const accessibilitySlice = createSlice({
@@ -29,28 +21,37 @@ export const accessibilitySlice = createSlice({
   reducers: {
     toggleScreenReader: (state) => {
       state.screenReaderEnabled = !state.screenReaderEnabled;
-      // Persist to localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(SCREEN_READER_STORAGE_KEY, state.screenReaderEnabled.toString());
-      }
-    },
-    setScreenReaderEnabled: (state, action: PayloadAction<boolean>) => {
-      state.screenReaderEnabled = action.payload;
-      // Persist to localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(SCREEN_READER_STORAGE_KEY, state.screenReaderEnabled.toString());
-      }
     },
     setIsSpeaking: (state, action: PayloadAction<boolean>) => {
       state.isSpeaking = action.payload;
+    },
+    setFontSize: (state, action: PayloadAction<number>) => {
+      // Add validation if needed (e.g., min/max font size)
+      state.fontSize = action.payload;
+    },
+    increaseFontSize: (state) => {
+      // Example logic: increase font size by 2, up to a max
+      state.fontSize = Math.min(state.fontSize + 2, 24); 
+    },
+    decreaseFontSize: (state) => {
+      // Example logic: decrease font size by 2, down to a min
+      state.fontSize = Math.max(state.fontSize - 2, 12); 
     },
   },
 });
 
 // Export actions and reducer
-export const { toggleScreenReader, setScreenReaderEnabled, setIsSpeaking } = accessibilitySlice.actions;
+export const { 
+  toggleScreenReader, 
+  setIsSpeaking,
+  setFontSize,
+  increaseFontSize,
+  decreaseFontSize
+} = accessibilitySlice.actions;
+
 export default accessibilitySlice.reducer;
 
 // Selectors - Use the web app's RootState
-export const selectScreenReaderEnabled = (state: RootState) => state.accessibility.screenReaderEnabled; // Direct access
-export const selectIsSpeaking = (state: RootState) => state.accessibility.isSpeaking; // Direct access 
+export const selectScreenReaderEnabled = (state: RootState) => state.accessibility.screenReaderEnabled;
+export const selectIsSpeaking = (state: RootState) => state.accessibility.isSpeaking;
+export const selectFontSize = (state: RootState) => state.accessibility.fontSize;

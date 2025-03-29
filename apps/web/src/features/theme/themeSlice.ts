@@ -24,7 +24,8 @@ const getInitialMode = (): PaletteMode => {
   return 'light';
 };
 
-interface ThemeState {
+// Export the state interface
+export interface ThemeState {
   mode: PaletteMode;
 }
 
@@ -58,4 +59,4 @@ export const { toggleTheme, setThemeMode } = themeSlice.actions;
 export default themeSlice.reducer;
 
 // Selectors - Use the web app's RootState
-export const selectThemeMode = (state: RootState) => state.theme.mode; // Direct access 
+export const selectThemeMode = (state: RootState) => state.theme.mode; // Direct access

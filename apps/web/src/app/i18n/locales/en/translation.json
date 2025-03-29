@@ -10,7 +10,8 @@
     "profile": "Profile",
     "signIn": "Sign In",
     "signOut": "Sign Out",
-    "onboarding": "Onboarding" 
+    "onboarding": "Onboarding",
+    "people": "People" 
   },
   "theme": {
     "light": "Light Mode",
@@ -109,8 +110,16 @@
       "noEmail": "Authentication error: Email not found in token.",
       "submitFailed": "Failed to create profile"
     },
-    "success": {
+    "success": { 
       "profileCreated": "Profile created successfully!"
     }
+  },
+  "people": { 
+    "title": "People",
+    "header": "Find People",
+    "searchLabel": "Search by name, skill, interest...",
+    "searchButton": "Search",
+    "errorLoading": "Failed to load people.",
+    "noResults": "No people found matching your criteria."
   }
 }

@@ -1,33 +1,27 @@
-import { TokensState } from "../../features/tokens/tokensSlice";
-import { UserState } from "../../features/user/types";
-/**
- * Define the root state shape for the shared reducers.
- * This interface describes the part of the state managed by the shared package.
- */
+import { TokensState } from '../../features/tokens/tokensSlice';
+import { UserState } from '../../features/user/types';
+import { PaginatedUsersState } from '../../features/user/paginatedUsersSlice';
 export interface SharedRootState {
     tokens: TokensState;
     user: UserState;
+    paginatedUsers: PaginatedUsersState;
 }
-/**
- * Export the individual shared reducers.
- * Apps can import these and combine them with their own reducers.
- */
 export declare const sharedReducers: {
     tokens: import("redux").Reducer<TokensState>;
     user: import("redux").Reducer<UserState>;
+    paginatedUsers: import("redux").Reducer<PaginatedUsersState>;
 };
-/**
- * Export a combined root reducer for the shared state slices.
- * This can be used directly by apps if they don't need to combine it with other reducers at the same level.
- */
-export declare const sharedRootReducer: import("redux").Reducer<{
+export type SharedStateSelector<T> = (state: any) => T;
+declare const exampleStore: import("@reduxjs/toolkit").EnhancedStore<{
     tokens: TokensState;
     user: UserState;
-}, import("redux").UnknownAction, Partial<{
-    tokens: TokensState | undefined;
-    user: UserState | undefined;
-}>>;
-/**
- * Generic type for a selector function operating on the SharedRootState.
- */
-export type SharedStateSelector<T> = (state: SharedRootState) => T;
+    paginatedUsers: PaginatedUsersState;
+}, import("redux").UnknownAction, import("@reduxjs/toolkit").Tuple<[import("redux").StoreEnhancer<{
+    dispatch: import("redux-thunk").ThunkDispatch<{
+        tokens: TokensState;
+        user: UserState;
+        paginatedUsers: PaginatedUsersState;
+    }, undefined, import("redux").UnknownAction>;
+}>, import("redux").StoreEnhancer]>>;
+export type SharedDispatch = typeof exampleStore.dispatch;
+export {};

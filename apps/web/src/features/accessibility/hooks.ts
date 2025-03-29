@@ -3,8 +3,8 @@ import { useAppDispatch, useAppSelector } from '../../app/store/initStore';
 import { 
   selectScreenReaderEnabled, 
   selectIsSpeaking, 
-  toggleScreenReader, 
-  setScreenReaderEnabled 
+  toggleScreenReader 
+  // Removed setScreenReaderEnabled as it's not exported from the slice
 } from './accessibilitySlice';
 import { useTextToSpeech } from './useTextToSpeech';
 
@@ -23,17 +23,18 @@ export const useAccessibility = () => {
     dispatch(toggleScreenReader());
   }, [dispatch]);
   
-  const handleSetScreenReaderEnabled = useCallback((enabled: boolean) => {
-    dispatch(setScreenReaderEnabled(enabled));
-  }, [dispatch]);
+  // Removed handleSetScreenReaderEnabled function as the action doesn't exist
+  // const handleSetScreenReaderEnabled = useCallback((enabled: boolean) => {
+  //   dispatch(setScreenReaderEnabled(enabled));
+  // }, [dispatch]);
   
   return {
     screenReaderEnabled,
     isSpeaking,
     isSupported,
     toggleScreenReader: handleToggleScreenReader,
-    setScreenReaderEnabled: handleSetScreenReaderEnabled,
+    // Removed setScreenReaderEnabled from returned object
     speak,
     stop
   };
-}; 
+};
