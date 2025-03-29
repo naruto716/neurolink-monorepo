@@ -1,26 +1,31 @@
 import { Biotech, Psychology, Science } from '@mui/icons-material';
-import { Avatar, Box, Card, CardContent, Divider, Grid, Paper, Typography } from '@mui/material';
+import { Avatar, Box, Card, CardContent, Divider, Grid, Paper } from '@mui/material'; // Removed Typography
+import { AccessibleTypography } from '../../app/components/AccessibleTypography'; // Added AccessibleTypography
 
 const AboutPage = () => {
   return (
     <Box>
       <Paper elevation={2} sx={{ p: 4, mb: 4, borderRadius: 2 }}>
-        <Typography variant="h3" component="h1" gutterBottom>
+        {/* Replaced Typography */}
+        <AccessibleTypography variant="h3" component="h1" gutterBottom>
           About Neurolink
-        </Typography>
-        <Typography variant="body1" paragraph>
+        </AccessibleTypography>
+        {/* Replaced Typography */}
+        <AccessibleTypography variant="body1" paragraph>
           Neurolink is a pioneering platform dedicated to advancing neuroscience research and collaboration. 
           Our mission is to provide researchers with powerful tools to analyze, visualize, and share their findings.
-        </Typography>
-        <Typography variant="body1" paragraph>
+        </AccessibleTypography>
+        {/* Replaced Typography */}
+        <AccessibleTypography variant="body1" paragraph>
           Founded in 2023, we've been working closely with leading neuroscience institutions to develop 
           tools that meet the evolving needs of the research community.
-        </Typography>
+        </AccessibleTypography>
       </Paper>
 
-      <Typography variant="h4" gutterBottom sx={{ mb: 3 }}>
+      {/* Replaced Typography */}
+      <AccessibleTypography variant="h4" gutterBottom sx={{ mb: 3 }}>
         Our Research Areas
-      </Typography>
+      </AccessibleTypography>
       
       <Grid container spacing={3} sx={{ mb: 4 }}>
         {[
@@ -46,12 +51,14 @@ const AboutPage = () => {
                 <Avatar sx={{ bgcolor: 'primary.main', width: 56, height: 56, mb: 2 }}>
                   {area.icon}
                 </Avatar>
-                <Typography variant="h5" component="h3" gutterBottom>
+                {/* Replaced Typography */}
+                <AccessibleTypography variant="h5" component="h3" gutterBottom>
                   {area.title}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                </AccessibleTypography>
+                {/* Replaced Typography */}
+                <AccessibleTypography variant="body2" color="text.secondary">
                   {area.description}
-                </Typography>
+                </AccessibleTypography>
               </CardContent>
             </Card>
           </Grid>
@@ -60,16 +67,18 @@ const AboutPage = () => {
 
       <Divider sx={{ my: 4 }} />
       
-      <Typography variant="h4" gutterBottom>
+      {/* Replaced Typography */}
+      <AccessibleTypography variant="h4" gutterBottom>
         Our Vision
-      </Typography>
-      <Typography variant="body1" paragraph>
+      </AccessibleTypography>
+      {/* Replaced Typography */}
+      <AccessibleTypography variant="body1" paragraph>
         We envision a future where neuroscience research is more accessible, collaborative, and impactful.
         Through Neurolink, we aim to break down barriers between researchers and accelerate discoveries
         that could transform our understanding of the human brain and lead to breakthroughs in treating neurological conditions.
-      </Typography>
+      </AccessibleTypography>
     </Box>
   );
 };
 
-export default AboutPage; 
+export default AboutPage;

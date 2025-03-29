@@ -1,7 +1,7 @@
 For the web app,
 When adding new pages, always set up breadcrumbs in components/breadcrumb.
 Always use i18n text, and when you use text, please change the en/translate.json file accordingly. 
-When using Typography, use accessibleTypography where possible.
+When using Typography, use accessibleTypography where possible. You should not just use accessibleTypography for the main content, use it for wherever you want Typography.
 This application is served for neurodivergent students
 For business logic, use the shared repo.
 If you need critical information, never assume it. Ask me instead.

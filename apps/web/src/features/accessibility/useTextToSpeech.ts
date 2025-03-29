@@ -80,8 +80,9 @@ export const useTextToSpeech = (options: TextToSpeechOptions = {}) => {
     (element.style as ExtendedCSSStyleDeclaration).webkitBackgroundClip = 'text';
     element.style.color = 'transparent';
     (element.style as ExtendedCSSStyleDeclaration).webkitTextFillColor = 'transparent';
-    element.style.animation = 'textGradientSlide 6s ease-in-out infinite';
-    element.style.transition = 'all 0.3s ease';
+    // Slow down the animation duration
+    element.style.animation = 'textGradientSlide 12s ease-in-out infinite'; 
+    element.style.transition = 'color 0.5s ease-out'; // Only transition color back
   }, []);
 
   // Remove highlight with smooth transition
@@ -89,23 +90,20 @@ export const useTextToSpeech = (options: TextToSpeechOptions = {}) => {
     if (highlightedElementRef.current) {
       const element = highlightedElementRef.current;
       
-      // Get original values from data attributes
-      const originalColor = element.dataset.originalColor || '';
-      
-      // Reset all styling properties
+      // Reset all styling properties applied during highlight
       element.style.background = '';
       element.style.backgroundSize = '';
       element.style.backgroundClip = '';
       (element.style as ExtendedCSSStyleDeclaration).webkitBackgroundClip = '';
       element.style.animation = '';
-      (element.style as ExtendedCSSStyleDeclaration).webkitTextFillColor = '';
+      (element.style as ExtendedCSSStyleDeclaration).webkitTextFillColor = ''; // Reset webkit fill color
+      element.style.transition = ''; // Clear the transition property after use
       
-      // Smooth transition back to original style
-      element.style.transition = 'all 0.5s ease-out';
-      element.style.color = originalColor;
+      // Remove the inline color style to inherit the current theme's color
+      element.style.removeProperty('color'); 
       
-      // Clean up data attributes
-      delete element.dataset.originalColor;
+      // Clean up data attributes (still useful if we need original for other reasons)
+      // delete element.dataset.originalColor; // Keep it for now, might be useful later
       
       // Clear reference
       highlightedElementRef.current = null;
@@ -168,4 +166,4 @@ export const useTextToSpeech = (options: TextToSpeechOptions = {}) => {
     stop,
     isSupported: typeof window !== 'undefined' && 'speechSynthesis' in window
   };
-}; 
+};

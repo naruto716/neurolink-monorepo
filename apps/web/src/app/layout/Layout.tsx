@@ -1,19 +1,40 @@
-import React, { useState, useEffect } from 'react'; // Added useEffect
-import { Container, Box, useMediaQuery, useTheme } from '@mui/material'; // Added useMediaQuery, useTheme
+import React, { useState, useEffect } from 'react';
+import { Container, Box, useMediaQuery, useTheme } from '@mui/material';
 import Navbar, { NAVBAR_HEIGHT } from './navbar/Navbar';
 import { LeftSidebar } from './navbar/LeftSidebar';
 import { RightSidebar } from './navbar/RightSidebar';
 import { useLocation } from 'react-router-dom';
-import { getSidebarContent, getSidebarTitle } from './navbar/SidebarContent';
+// Removed incorrect import: import { getSidebarContent, getSidebarTitle } from './navbar/SidebarContent';
+import { AccessibleTypography } from '../components/AccessibleTypography'; // Keep this import
 
 interface LayoutProps {
   children: React.ReactNode;
 }
 
+// --- Placeholder Functions ---
+// TODO: Replace these with actual logic to determine sidebar content/title based on path
+const getSidebarTitle = (pathname: string): string => {
+  // Example logic: return different titles based on path
+  if (pathname.startsWith('/profile')) return 'Profile Actions';
+  if (pathname.startsWith('/settings')) return 'Settings Options';
+  return 'Quick Tools'; // Default title
+};
+
+const getSidebarContent = (pathname: string): React.ReactNode => {
+  // Example logic: return different components or elements based on path
+  return (
+    <AccessibleTypography variant="body2" color="text.secondary">
+      Sidebar content for {pathname}. (Placeholder)
+    </AccessibleTypography>
+  );
+};
+// --- End Placeholder Functions ---
+
+
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const theme = useTheme();
-  // Check if the screen size is 'sm' or larger (desktop/tablet)
+  // Check if the screen size is 'md' or larger (desktop/tablet) - Adjusted breakpoint
   const isDesktop = useMediaQuery(theme.breakpoints.up('md')); 
   
   // Initialize sidebar state based on screen size
@@ -23,7 +44,9 @@ export default function Layout({ children }: LayoutProps) {
   // Effect to handle sidebar state changes on resize
   // Close sidebar on mobile if it was open, open on desktop if it was closed
   useEffect(() => {
-    setLeftSidebarOpen(isDesktop);
+    // Only force open/close based on breakpoint if user hasn't manually toggled it?
+    // For now, let's keep the simpler logic: always match breakpoint default
+    setLeftSidebarOpen(isDesktop); 
   }, [isDesktop]);
 
   return (
@@ -34,11 +57,13 @@ export default function Layout({ children }: LayoutProps) {
         display: 'flex', 
         flexDirection: 'column', 
         flexGrow: 1,
+        // Adjust width calculation based on sidebar states and breakpoints
         width: { 
           xs: '100%',
-          sm: `calc(100% - ${leftSidebarOpen ? 212 : 0}px - ${rightSidebarOpen ? 280 : 0}px)` 
+          // Use 'md' breakpoint consistent with isDesktop check
+          md: `calc(100% - ${leftSidebarOpen ? 212 : 0}px - ${rightSidebarOpen ? 280 : 0}px)` 
         },
-        ml: { xs: 0, sm: leftSidebarOpen ? 0 : 0 },
+        ml: { xs: 0, md: leftSidebarOpen ? 0 : 0 }, // Use 'md' breakpoint
         transition: theme => theme.transitions.create(['width', 'margin'], {
           easing: theme.transitions.easing.sharp,
           duration: theme.transitions.duration.enteringScreen,
@@ -64,9 +89,11 @@ export default function Layout({ children }: LayoutProps) {
       <RightSidebar 
         open={rightSidebarOpen} 
         onClose={() => setRightSidebarOpen(false)} 
-        title={getSidebarTitle(location.pathname)}
+        // Use the locally defined placeholder functions
+        title={getSidebarTitle(location.pathname)} 
       >
-        {getSidebarContent(location.pathname)}
+        {/* Use the locally defined placeholder functions */}
+        {getSidebarContent(location.pathname)} 
       </RightSidebar>
     </Box>
   );

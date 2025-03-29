@@ -1,7 +1,8 @@
 import React, { useMemo } from 'react';
-import { Box, Typography, Link } from '@mui/material';
+import { Box, Link } from '@mui/material'; // Removed Typography
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { AccessibleTypography } from './AccessibleTypography'; // Added AccessibleTypography
 
 interface BreadcrumbProps {
   // Optional custom items to override automatic breadcrumb creation
@@ -29,6 +30,8 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ customItems }) => {
       '/profile': t('nav.profile'),
       '/accessibility': t('nav.accessibility'),
       '/settings': t('nav.settings'),
+      // Add onboarding route if needed, or rely on customItems
+      '/onboarding': t('nav.onboarding'), 
     };
   }, [t]);
   
@@ -87,7 +90,8 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ customItems }) => {
       {routes.map((route, index) => (
         <React.Fragment key={route.path}>
           {index > 0 && (
-            <Typography
+            /* Replaced Typography */
+            <AccessibleTypography
               sx={{
                 color: 'text.secondary',
                 fontWeight: 400,
@@ -95,11 +99,12 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ customItems }) => {
               }}
             >
               /
-            </Typography>
+            </AccessibleTypography>
           )}
           
           {route.isLast ? (
-            <Typography
+            /* Replaced Typography */
+            <AccessibleTypography
               variant="body1"
               sx={{
                 fontWeight: 600,
@@ -107,7 +112,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ customItems }) => {
               }}
             >
               {route.label}
-            </Typography>
+            </AccessibleTypography>
           ) : (
             <Link
               component={RouterLink}
@@ -123,7 +128,10 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ customItems }) => {
                 },
               }}
             >
-              {route.label}
+              {/* Use AccessibleTypography inside Link */}
+              <AccessibleTypography component="span" sx={{ fontSize: 'inherit', fontWeight: 'inherit' }}>
+                {route.label}
+              </AccessibleTypography>
             </Link>
           )}
         </React.Fragment>
@@ -132,4 +140,4 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ customItems }) => {
   );
 };
 
-export default Breadcrumb; 
+export default Breadcrumb;

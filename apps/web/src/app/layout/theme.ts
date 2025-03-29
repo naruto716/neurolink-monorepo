@@ -1,4 +1,4 @@
-import { createTheme, PaletteMode, ThemeOptions } from '@mui/material';
+import { createTheme, PaletteMode, ThemeOptions, alpha } from '@mui/material'; // Added alpha
 
 // Define the common theme settings
 const getThemeOptions = (mode: PaletteMode): ThemeOptions => ({
@@ -51,6 +51,45 @@ const getThemeOptions = (mode: PaletteMode): ThemeOptions => ({
         },
       },
     },
+    // Add base styles for Card and Paper
+    MuiCard: {
+      defaultProps: {
+        elevation: 0, // Use border instead of shadow by default
+      },
+      styleOverrides: {
+        root: ({ theme }) => ({
+          borderRadius: '12px', // Consistent rounded corners
+          border: `1px solid ${theme.palette.divider}`,
+          backgroundColor: theme.palette.background.paper, // Ensure paper background
+        }),
+      },
+    },
+    // MuiPaper override removed to avoid affecting layout elements like sidebars/appbar
+    // Add base styles for Button
+    MuiButton: {
+      defaultProps: {
+        disableElevation: true, // Flat buttons by default
+      },
+      styleOverrides: {
+        root: {
+          borderRadius: '8px', // Slightly rounded buttons
+          textTransform: 'none', // Already set in typography, but good to ensure
+          fontWeight: 600,
+          padding: '8px 16px', // Default padding
+        },
+        containedPrimary: ({ theme }) => ({
+          '&:hover': {
+            backgroundColor: theme.palette.primary.dark, // Darken on hover
+          },
+        }),
+        outlinedPrimary: ({ theme }) => ({
+          borderColor: theme.palette.primary.main,
+          '&:hover': {
+            backgroundColor: alpha(theme.palette.primary.main, 0.08), // Subtle background on hover using alpha
+          },
+        }),
+      },
+    },
     MuiMenu: {
       defaultProps: {
         elevation: 0,
@@ -66,7 +105,7 @@ const getThemeOptions = (mode: PaletteMode): ThemeOptions => ({
             ? '0 4px 20px rgba(0, 0, 0, 0.08)'
             : '0 4px 20px rgba(0, 0, 0, 0.25)',
           border: mode === 'light'
-            ? '1px solid rgba(230, 230, 230, 0.85)'
+            ? '1px solid rgba(230, 230, 230, 0.85)' // Keep specific border for menus
             : '1px solid rgba(70, 70, 70, 0.85)',
         },
         list: {
@@ -94,7 +133,7 @@ const getThemeOptions = (mode: PaletteMode): ThemeOptions => ({
             ? '0 4px 20px rgba(0, 0, 0, 0.08)'
             : '0 4px 20px rgba(0, 0, 0, 0.25)',
           border: mode === 'light'
-            ? '1px solid rgba(230, 230, 230, 0.85)'
+            ? '1px solid rgba(230, 230, 230, 0.85)' // Keep specific border for popovers
             : '1px solid rgba(70, 70, 70, 0.85)',
         },
       },
@@ -108,4 +147,4 @@ export const darkTheme = createTheme(getThemeOptions('dark'));
 
 // Export a function to get a theme by mode
 export const getTheme = (mode: PaletteMode) => 
-  mode === 'light' ? lightTheme : darkTheme; 
+  mode === 'light' ? lightTheme : darkTheme;

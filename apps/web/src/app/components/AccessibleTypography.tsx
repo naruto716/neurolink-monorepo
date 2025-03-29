@@ -42,46 +42,13 @@ export const AccessibleTypography: React.FC<TypographyProps> = (props) => {
         ...props.sx,
         position: 'relative',
         transition: 'all 0.3s ease',
-        color: theme.palette.text.primary,
-        ...(screenReaderEnabled && {
-          '&:focus': {
-            outline: 'none',
-          },
-          '&:focus::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: theme => 
-              theme.palette.mode === 'light' 
-                ? 'rgba(63, 81, 181, 0.08)' 
-                : 'rgba(92, 107, 192, 0.15)',
-            borderRadius: '4px',
-            boxShadow: theme => 
-              theme.palette.mode === 'light'
-                ? '0 0 0 2px rgba(63, 81, 181, 0.2)'
-                : '0 0 0 2px rgba(92, 107, 192, 0.3)',
-            zIndex: -1,
-          },
-          '&:hover::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: theme => 
-              theme.palette.mode === 'light' 
-                ? 'rgba(63, 81, 181, 0.04)' 
-                : 'rgba(92, 107, 192, 0.08)',
-            borderRadius: '4px',
-            zIndex: -1,
-          },
+        color: theme.palette.text.primary, // Ensure default color is set
+        // Apply only cursor style when screen reader is enabled, remove focus/hover effects
+        ...(screenReaderEnabled && { 
+          // cursor: 'pointer', // Removed pointer cursor
         }),
         // The useTextToSpeech hook handles highlighting of the specific element
       }}
     />
   );
-}; 
+};

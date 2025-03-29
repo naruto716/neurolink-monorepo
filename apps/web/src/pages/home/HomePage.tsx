@@ -1,339 +1,285 @@
+import React from 'react';
 import {
   Avatar,
   Box,
   Button,
   Card,
   CardContent,
-  Chip,
+  // Chip, // Removed unused import
   Grid,
   IconButton,
-  Tooltip,
+  Link,
+  Paper,
+  Stack,
+  // Tooltip, // Removed unused import
   Typography,
-  useTheme
+  useTheme,
+  Divider,
+  alpha // Added alpha import
 } from '@mui/material';
 import {
   BookmarkSimple,
   ChatDots,
   DotsThree,
   Heart,
-  Plus,
-  ShareNetwork
+  // Plus, // Removed unused import
+  ShareNetwork,
+  UserPlus // Icon for follow/connect button
 } from '@phosphor-icons/react';
 import { AccessibleTypography } from '../../app/components/AccessibleTypography';
+import { NAVBAR_HEIGHT } from '../../app/layout/navbar/Navbar'; // Added NAVBAR_HEIGHT import
 
-const PLACEHOLDER_IMAGE = "https://d2ymeg1i7s1elw.cloudfront.net/646a09264a49e84e5f28d73c_0_0.png?quality=lossless";
+// Placeholder data (can be replaced with actual API data later)
+const PLACEHOLDER_IMAGE = "https://via.placeholder.com/600x400"; // Generic placeholder
+const PLACEHOLDER_AVATAR = "https://via.placeholder.com/150"; // Generic avatar placeholder
 
-const HomePage = () => {
+// Sample post data
+const posts = [
+  {
+    id: 1,
+    username: 'Dr. Sarah Chen',
+    userHandle: '@sarah_neuro',
+    avatar: PLACEHOLDER_AVATAR,
+    date: '2h ago',
+    content: 'Excited about our latest findings on memory consolidation during sleep! 🧠 Preliminary results suggest specific neural pathways are more active than previously thought. #neuroscience #memory #research',
+    image: PLACEHOLDER_IMAGE,
+    likes: 142,
+    comments: 18,
+    shares: 5,
+  },
+  {
+    id: 2,
+    username: 'Cognitive Insights Lab',
+    userHandle: '@coginsights',
+    avatar: PLACEHOLDER_AVATAR,
+    date: 'Yesterday',
+    content: 'We\'re recruiting participants for a study on attention mechanisms in neurodivergent adults. DM us if interested! #research #neurodiversity #attention #study',
+    likes: 88,
+    comments: 25,
+    shares: 12,
+  },
+  {
+    id: 3,
+    username: 'Alex Rivera',
+    userHandle: '@alex_codes',
+    avatar: PLACEHOLDER_AVATAR,
+    date: '3 days ago',
+    content: 'Working on a new data visualization tool for EEG data. Trying to make complex patterns more accessible. Any suggestions for libraries? #dataviz #eeg #neurotech #opensource',
+    likes: 215,
+    comments: 45,
+    shares: 20,
+  }
+];
+
+// Sample "People You Might Like" data
+const suggestions = [
+  {
+    id: 101,
+    name: 'Larry',
+    title: 'Computer Science Student',
+    avatar: PLACEHOLDER_AVATAR,
+    interests: ['Coding', 'Drawing', 'Fitness', 'Reading', 'Hiking'],
+    bio: 'Fellow student with ADHD at UoA! My nickname is...'
+  },
+  {
+    id: 102,
+    name: 'Emma',
+    title: 'Psychology Student',
+    avatar: PLACEHOLDER_AVATAR,
+    interests: ['Netflix', 'Foodie', 'Coffee', 'Cooking'],
+    bio: 'Hi, my name is Emma! I study Psychology at UoA, hoping to...'
+  },
+  {
+    id: 103,
+    name: 'Sofia',
+    title: 'Law Student',
+    avatar: PLACEHOLDER_AVATAR,
+    interests: ['Netball', 'Film-making', 'Fashion', 'Hiking', 'Reading'],
+    bio: 'Hey there, I am Sofia. I have a passion for making short films...'
+  },
+];
+
+// --- Components for the new layout ---
+
+// Post Card Component
+const PostCard: React.FC<{ post: typeof posts[0] }> = ({ post }) => {
   const theme = useTheme();
-
-  // Sample story data
-  const stories = [
-    { id: 1, username: 'emma_psy', avatar: PLACEHOLDER_IMAGE },
-    { id: 2, username: 'neuro_mark', avatar: PLACEHOLDER_IMAGE },
-    { id: 3, username: 'brain_research', avatar: PLACEHOLDER_IMAGE },
-    { id: 4, username: 'cognitive_labs', avatar: PLACEHOLDER_IMAGE },
-    { id: 5, username: 'neural_net', avatar: PLACEHOLDER_IMAGE }
-  ];
-
-  // Sample post data
-  const posts = [
-    {
-      id: 1,
-      username: 'Dr. Sarah Chen',
-      avatar: PLACEHOLDER_IMAGE,
-      date: 'Today at 10:45 AM',
-      content: 'Just published our new research on cognitive neuroscience! The findings suggest that neural patterns during memory formation are more complex than previously thought.',
-      image: PLACEHOLDER_IMAGE,
-      likes: 42,
-      comments: 8,
-      tags: ['neuroscience', 'research', 'memory']
-    },
-    {
-      id: 2,
-      username: 'James Wilson',
-      avatar: PLACEHOLDER_IMAGE,
-      date: 'Yesterday at 3:22 PM',
-      content: 'Looking for collaborators on our new brain-computer interface project. We\'re exploring non-invasive methods for neural signal detection with promising early results.',
-      likes: 24,
-      comments: 15,
-      tags: ['BCI', 'collaboration', 'neurotechnology']
-    },
-    {
-      id: 3,
-      username: 'Neural Networks Lab',
-      avatar: PLACEHOLDER_IMAGE,
-      date: '2 days ago',
-      content: 'Excited to announce our latest breakthrough in neural networks for brain mapping! Our new algorithm achieves 40% better accuracy than previous methods.',
-      image: PLACEHOLDER_IMAGE,
-      likes: 153,
-      comments: 37,
-      tags: ['AI', 'neural-mapping', 'breakthrough']
-    }
-  ];
-
-
   return (
-    <Box sx={{ maxWidth: '1200px', mx: 'auto', py: 4, px: { xs: 2, md: 4 } }}>
-      {/* Recent Stories Section */}
-      <Box sx={{ mb: 6 }}>
-        <Typography variant="h5" component="h2" sx={{ mb: 3, fontWeight: 600, color: theme.palette.text.primary }}>
-          Recent Stories
-        </Typography>
-        
-        <Box sx={{ 
-          display: 'flex', 
-          gap: 3, 
-          overflowX: 'auto', 
-          pb: 2,
-          '::-webkit-scrollbar': {
-            height: '8px',
-          },
-          '::-webkit-scrollbar-track': {
-            background: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-            borderRadius: '10px',
-          },
-          '::-webkit-scrollbar-thumb': {
-            background: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.2)',
-            borderRadius: '10px',
-            '&:hover': {
-              background: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)',
-            }
-          }
-        }}>
-          {/* Add Story Button */}
-          <Box sx={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            alignItems: 'center',
-            gap: 1.5
-          }}>
-            <Avatar 
-              sx={{ 
-                width: 88, 
-                height: 88,
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(66, 133, 244, 0.15)' : '#E3F5FF',
-                color: theme.palette.primary.main,
-                cursor: 'pointer',
-                border: '2px dashed',
-                borderColor: theme.palette.primary.main,
-                transition: 'all 0.2s ease-in-out',
-                '&:hover': {
-                  transform: 'scale(1.05)',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.08)'
-                }
-              }}
-            >
-              <Plus size={36} weight="bold" />
-            </Avatar>
-            <Typography variant="caption" sx={{ fontWeight: 500, color: theme.palette.text.secondary }}>
-              Add Story
+    <Card sx={{ mb: 3 }}> {/* Use theme's default Card style */}
+      <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+        {/* Post Header */}
+        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+          <Avatar src={post.avatar} sx={{ width: 48, height: 48 }} />
+          <Box sx={{ flexGrow: 1 }}>
+            {/* Use AccessibleTypography for username */}
+            <AccessibleTypography variant="subtitle1" sx={{ fontWeight: 600 }}>
+              {post.username}
+            </AccessibleTypography>
+            <Typography variant="caption" color="text.secondary">
+              {post.userHandle} · {post.date}
             </Typography>
           </Box>
-          
-          {/* Story Items */}
-          {stories.map(story => (
-            <Box 
-              key={story.id}
-              sx={{ 
-                display: 'flex', 
-                flexDirection: 'column',
-                alignItems: 'center',
-                gap: 1.5
-              }}
-            >
-              <Avatar
-                src={story.avatar}
-                sx={{ 
-                  width: 88, 
-                  height: 88,
-                  cursor: 'pointer',
-                  boxShadow: '0 0 0 3px #E3F5FF, 0 0 0 6px rgba(66, 133, 244, 0.2)',
-                  transition: 'all 0.2s ease-in-out',
-                  '&:hover': {
-                    transform: 'scale(1.05)',
-                    boxShadow: '0 0 0 3px #E3F5FF, 0 0 0 6px rgba(66, 133, 244, 0.4)'
-                  }
-                }}
-              />
-              <Typography variant="caption" sx={{ fontWeight: 500, color: theme.palette.text.secondary }}>
-                {story.username}
-              </Typography>
-            </Box>
-          ))}
-        </Box>
-      </Box>
+          <IconButton size="small">
+            <DotsThree size={20} weight="bold" />
+          </IconButton>
+        </Stack>
 
-      {/* Recent Posts Section */}
-      <Box sx={{ mb: 6 }}>
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-          <Typography variant="h5" component="h2" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
-            Recent Posts
-          </Typography>
-          
-          <Tooltip title="Create post">
-            <IconButton 
-              sx={{ 
-                bgcolor: theme.palette.mode === 'dark' ? 'rgba(66, 133, 244, 0.15)' : '#E3F5FF',
-                color: theme.palette.primary.main,
-                width: 44,
-                height: 44,
-                transition: 'all 0.2s',
-                '&:hover': {
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(66, 133, 244, 0.25)' : '#D0EBFF',
-                  transform: 'translateY(-2px)'
-                }
-              }}
-            >
-              <Plus size={24} weight="bold" />
-            </IconButton>
-          </Tooltip>
-        </Box>
-        
-        <Grid container spacing={4}>
-          {posts.map(post => (
-            <Grid item xs={12} key={post.id}>
-              <Card 
-                elevation={0}
-                sx={{ 
-                  borderRadius: 4,
-                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.04)' : '#F8FCFF',
-                  border: '1px solid',
-                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.05)'
-                }}
-              >
-                <CardContent sx={{ p: 0 }}>
-                  {/* Post Header */}
-                  <Box sx={{ p: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Avatar 
-                        src={post.avatar} 
-                        sx={{ 
-                          width: 48, 
-                          height: 48,
-                          border: '2px solid',
-                          borderColor: theme.palette.primary.main
-                        }}
-                      />
-                      <Box>
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, color: theme.palette.text.primary }}>
-                          {post.username}
-                        </Typography>
-                        <Typography variant="caption" sx={{ color: theme.palette.text.secondary }}>
-                          {post.date}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    <IconButton>
-                      <DotsThree size={24} weight="bold" />
-                    </IconButton>
-                  </Box>
-                  
-                  {/* Post Content */}
-                  <Box sx={{ px: 3, pb: 2 }}>
-                    <AccessibleTypography 
-                      variant="body1" 
-                      sx={{ 
-                        mb: 2.5, 
-                        lineHeight: 1.6,
-                        color: theme.palette.text.primary,
-                        fontSize: '1rem'
-                      }}
-                    >
-                      {post.content}
-                    </AccessibleTypography>
+        {/* Post Content */}
+        <AccessibleTypography variant="body1" sx={{ mb: 2, whiteSpace: 'pre-wrap' }}> {/* Preserve line breaks */}
+          {post.content}
+        </AccessibleTypography>
 
-                    {/* Tags */}
-                    {post.tags && (
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2.5 }}>
-                        {post.tags.map(tag => (
-                          <Chip 
-                            key={tag} 
-                            label={`#${tag}`} 
-                            size="small"
-                            sx={{ 
-                              bgcolor: theme.palette.mode === 'dark' ? 'rgba(66, 133, 244, 0.15)' : '#E3F5FF',
-                              color: theme.palette.primary.main,
-                              fontWeight: 500,
-                              '&:hover': {
-                                bgcolor: theme.palette.mode === 'dark' ? 'rgba(66, 133, 244, 0.25)' : '#D0EBFF',
-                              }
-                            }}
-                          />
-                        ))}
-                      </Box>
-                    )}
-                  </Box>
-                  
-                  {/* Post Image */}
-                  {post.image && (
-                    <Box 
-                      sx={{ 
-                        width: '100%',
-                        height: { xs: 240, sm: 320, md: 380 },
-                        position: 'relative',
-                        mb: 2
-                      }}
-                    >
-                      <img 
-                        src={post.image}
-                        alt="Post attachment"
-                        style={{ 
-                          width: '100%', 
-                          height: '100%', 
-                          objectFit: 'cover',
-                          display: 'block'
-                        }}
-                      />
-                    </Box>
-                  )}
-                  
-                  {/* Post Actions */}
-                  <Box sx={{ px: 3, pb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Button 
-                        startIcon={<Heart weight="duotone" />}
-                        size="small"
-                        sx={{ 
-                          color: theme.palette.text.secondary,
-                          '&:hover': {
-                            backgroundColor: 'rgba(233, 30, 99, 0.08)',
-                            color: '#E91E63'
-                          }
-                        }}
-                      >
-                        {post.likes}
-                      </Button>
-                      <Button 
-                        startIcon={<ChatDots weight="duotone" />}
-                        size="small"
-                        sx={{ 
-                          color: theme.palette.text.secondary,
-                          '&:hover': {
-                            backgroundColor: 'rgba(33, 150, 243, 0.08)',
-                            color: theme.palette.primary.main
-                          }
-                        }}
-                      >
-                        {post.comments}
-                      </Button>
-                    </Box>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <IconButton size="small" sx={{ color: theme.palette.text.secondary }}>
-                        <BookmarkSimple weight="duotone" />
-                      </IconButton>
-                      <IconButton size="small" sx={{ color: theme.palette.text.secondary }}>
-                        <ShareNetwork weight="duotone" />
-                      </IconButton>
-                    </Box>
-                  </Box>
-                </CardContent>
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
-      </Box>
-    </Box>
+        {/* Post Image (Optional) */}
+        {post.image && (
+          <Box sx={{
+            borderRadius: '8px', // Rounded image corners
+            overflow: 'hidden',
+            mb: 2,
+            border: `1px solid ${theme.palette.divider}` // Subtle border
+          }}>
+            <img
+              src={post.image}
+              alt={`Post by ${post.username}`}
+              style={{ width: '100%', display: 'block', height: 'auto' }}
+            />
+          </Box>
+        )}
+
+        {/* Post Actions */}
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <Stack direction="row" spacing={1}>
+            <Button
+              size="small"
+              startIcon={<Heart size={18} />}
+              sx={{ color: 'text.secondary', '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.08), color: 'error.main' } }}
+            >
+              {post.likes}
+            </Button>
+            <Button
+              size="small"
+              startIcon={<ChatDots size={18} />}
+              sx={{ color: 'text.secondary', '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) } }}
+            >
+              {post.comments}
+            </Button>
+            <Button
+              size="small"
+              startIcon={<ShareNetwork size={18} />}
+              sx={{ color: 'text.secondary', '&:hover': { bgcolor: alpha(theme.palette.info.main, 0.08) } }}
+            >
+              {post.shares}
+            </Button>
+          </Stack>
+          <IconButton size="small" sx={{ color: 'text.secondary' }}>
+            <BookmarkSimple size={18} />
+          </IconButton>
+        </Stack>
+      </CardContent>
+    </Card>
   );
 };
 
-export default HomePage; 
+// Suggestion Card Component
+const SuggestionCard: React.FC<{ user: typeof suggestions[0] }> = ({ user }) => {
+  // const theme = useTheme(); // Removed unused theme variable
+  return (
+    <Stack direction="row" spacing={2} sx={{ mb: 2.5 }}>
+      <Avatar src={user.avatar} sx={{ width: 48, height: 48 }} />
+      <Box sx={{ flexGrow: 1 }}>
+        {/* Use AccessibleTypography for name */}
+        <AccessibleTypography variant="subtitle2" sx={{ fontWeight: 600 }}>{user.name}</AccessibleTypography>
+        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 0.5 }}>
+          {user.title}
+        </Typography>
+        {/* Optional: Show a snippet of bio or interests */}
+        {/* <Typography variant="caption" color="text.secondary">{user.bio.substring(0, 50)}...</Typography> */}
+      </Box>
+      <Button
+        size="small"
+        variant="outlined"
+        startIcon={<UserPlus size={16} />}
+        sx={{ alignSelf: 'center', flexShrink: 0 }}
+      >
+        Connect {/* Or Follow */}
+      </Button>
+    </Stack>
+  );
+};
+
+
+// --- Main HomePage Component ---
+const HomePage = () => {
+  // const theme = useTheme(); // Removed unused theme variable
+
+  return (
+    <Grid container spacing={3} sx={{ maxWidth: '1200px', mx: 'auto', px: { xs: 1, sm: 2, md: 3 } }}>
+
+      {/* --- Center Feed Column --- */}
+      <Grid item xs={12} md={8} lg={7}> {/* Adjust grid sizing as needed */}
+        {/* Optional: Create Post Input Area */}
+        {/* Apply Card-like styles directly to this Paper */}
+        <Paper sx={theme => ({ 
+          p: 2, 
+          mb: 3, 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 2,
+          borderRadius: '12px', // Re-apply rounded corners
+          border: `1px solid ${theme.palette.divider}`, // Re-apply border
+          // Add a subtle shadow for better visual separation
+          boxShadow: theme.palette.mode === 'light' 
+            ? '0 1px 2px rgba(0,0,0,0.05)' 
+            : '0 1px 2px rgba(0,0,0,0.2)', 
+        })}>
+           <Avatar src={PLACEHOLDER_AVATAR} />
+           <Typography color="text.secondary" sx={{ flexGrow: 1 }}>What's on your mind?</Typography>
+           <Button variant="contained">Post</Button>
+        </Paper>
+
+        {/* Post Feed */}
+        <Box>
+          {posts.map(post => (
+            <PostCard key={post.id} post={post} />
+          ))}
+        </Box>
+      </Grid>
+
+      {/* --- Right Sidebar Column (People You Might Like) --- */}
+      {/* Hide on smaller screens */}
+      <Grid item md={4} lg={5} sx={{ display: { xs: 'none', md: 'block' } }}>
+        {/* Apply Card-like styles directly to this Paper */}
+        <Paper sx={theme => ({ 
+          p: 2.5, 
+          position: 'sticky', 
+          top: NAVBAR_HEIGHT + 24, // Sticky sidebar
+          borderRadius: '12px', // Re-apply rounded corners
+          border: `1px solid ${theme.palette.divider}`, // Re-apply border
+           // Add a subtle shadow for better visual separation
+          boxShadow: theme.palette.mode === 'light' 
+            ? '0 1px 2px rgba(0,0,0,0.05)' 
+            : '0 1px 2px rgba(0,0,0,0.2)',
+        })}> 
+          <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
+            People You Might Like
+          </Typography>
+          <Stack spacing={0}> {/* Use spacing=0 on Stack if SuggestionCard has margin */}
+            {suggestions.map((user, index) => (
+              <React.Fragment key={user.id}>
+                <SuggestionCard user={user} />
+                {index < suggestions.length - 1 && <Divider sx={{ my: 1.5 }} />}
+              </React.Fragment>
+            ))}
+          </Stack>
+          <Box sx={{ mt: 2, textAlign: 'center' }}>
+             <Link href="#" variant="body2" sx={{ textDecoration: 'none' }}>
+               View All Suggestions
+             </Link>
+          </Box>
+        </Paper>
+      </Grid>
+
+    </Grid>
+  );
+};
+
+export default HomePage;

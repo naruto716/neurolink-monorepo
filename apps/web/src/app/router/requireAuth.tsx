@@ -3,8 +3,9 @@ import { Outlet } from "react-router-dom";
 import { useAuth } from "react-oidc-context";
 import { useAppDispatch, useAppSelector, RootState } from "../store/initStore";
 import { setTokens, clearTokens } from "@neurolink/shared";
-import { Box, Typography, CircularProgress, Paper, Button } from "@mui/material";
+import { Box, CircularProgress, Paper, Button } from "@mui/material"; // Removed Typography
 import { Warning, SignIn, Lock } from "@phosphor-icons/react";
+import { AccessibleTypography } from '../components/AccessibleTypography'; // Added AccessibleTypography
 
 // Styled component for auth messages
 const AuthMessageContainer = ({ 
@@ -46,12 +47,14 @@ const AuthMessageContainer = ({
             }}
         >
             <Box sx={{ mb: 2, color: 'primary.main' }}>{icon}</Box>
-            <Typography variant="h5" component="h1" gutterBottom>
+            {/* Replaced Typography */}
+            <AccessibleTypography variant="h5" component="h1" gutterBottom>
                 {title}
-            </Typography>
-            <Typography variant="body1" color="text.secondary" paragraph>
+            </AccessibleTypography>
+            {/* Replaced Typography */}
+            <AccessibleTypography variant="body1" color="text.secondary" paragraph>
                 {message}
-            </Typography>
+            </AccessibleTypography>
             {actionButton}
         </Paper>
     </Box>

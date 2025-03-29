@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Box, Typography, Paper, Avatar, TextField, Button, Grid, Card, CardContent, Divider, IconButton, InputAdornment } from '@mui/material';
+import { Box, Paper, Avatar, TextField, Button, Grid, Card, CardContent, Divider, IconButton, InputAdornment } from '@mui/material'; // Removed Typography
 import { Edit as EditIcon, Save as SaveIcon, Visibility as VisibilityIcon, VisibilityOff as VisibilityOffIcon } from '@mui/icons-material';
 import { useAuth } from 'react-oidc-context';
 import { toastSuccess, toastError, toastInfo } from '../../app/utils/toast';
 import { useAppSelector } from '../../app/store/initStore'; // Corrected import path
+import { AccessibleTypography } from '../../app/components/AccessibleTypography'; // Added AccessibleTypography
 
 const ProfilePage = () => {
   const auth = useAuth();
@@ -88,13 +89,15 @@ const ProfilePage = () => {
                 sx={{ mb: 1 }}
               />
             ) : (
-              <Typography variant="h4" component="h1" gutterBottom>
+              /* Replaced Typography */
+              <AccessibleTypography variant="h4" component="h1" gutterBottom>
                 {profileData.displayName}
-              </Typography>
+              </AccessibleTypography>
             )}
-            <Typography variant="subtitle1" color="text.secondary">
+            {/* Replaced Typography */}
+            <AccessibleTypography variant="subtitle1" color="text.secondary">
               {profileData.email}
-            </Typography>
+            </AccessibleTypography>
           </Box>
           <Box sx={{ ml: 'auto' }}>
             {isEditing ? (
@@ -122,9 +125,10 @@ const ProfilePage = () => {
 
         <Grid container spacing={3}>
           <Grid item xs={12} md={8}>
-            <Typography variant="h6" gutterBottom>
+            {/* Replaced Typography */}
+            <AccessibleTypography variant="h6" gutterBottom>
               About
-            </Typography>
+            </AccessibleTypography>
             {isEditing ? (
               <TextField
                 fullWidth
@@ -136,15 +140,17 @@ const ProfilePage = () => {
                 onChange={handleChange}
               />
             ) : (
-              <Typography paragraph>{profileData.bio}</Typography>
+              /* Replaced Typography */
+              <AccessibleTypography paragraph>{profileData.bio}</AccessibleTypography>
             )}
           </Grid>
           <Grid item xs={12} md={4}>
             <Card variant="outlined">
               <CardContent>
-                <Typography variant="h6" gutterBottom>
+                {/* Replaced Typography */}
+                <AccessibleTypography variant="h6" gutterBottom>
                   Professional Information
-                </Typography>
+                </AccessibleTypography>
                 {isEditing ? (
                   <>
                     <TextField
@@ -165,12 +171,14 @@ const ProfilePage = () => {
                   </>
                 ) : (
                   <>
-                    <Typography variant="body1" sx={{ mb: 1 }}>
+                    {/* Replaced Typography */}
+                    <AccessibleTypography variant="body1" sx={{ mb: 1 }}>
                       <strong>Institution:</strong> {profileData.institution}
-                    </Typography>
-                    <Typography variant="body1">
+                    </AccessibleTypography>
+                    {/* Replaced Typography */}
+                    <AccessibleTypography variant="body1">
                       <strong>Role:</strong> {profileData.role}
-                    </Typography>
+                    </AccessibleTypography>
                   </>
                 )}
               </CardContent>
@@ -181,12 +189,14 @@ const ProfilePage = () => {
 
       {/* Authentication Tokens Section */}
       <Paper elevation={3} sx={{ p: 4, mb: 4, borderRadius: 2 }}>
-        <Typography variant="h5" gutterBottom>
+        {/* Replaced Typography */}
+        <AccessibleTypography variant="h5" gutterBottom>
           Authentication Tokens
-        </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        </AccessibleTypography>
+        {/* Replaced Typography */}
+        <AccessibleTypography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           These are your current authentication tokens. For security reasons, tokens are partially hidden by default.
-        </Typography>
+        </AccessibleTypography>
         
         <Grid container spacing={2}>
           <Grid item xs={12}>
@@ -263,11 +273,13 @@ const ProfilePage = () => {
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              {/* Replaced Typography */}
+              <AccessibleTypography variant="h6" gutterBottom>
                 Recent Activity
-              </Typography>
+              </AccessibleTypography>
               <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
-                <Typography>No recent activity to display</Typography>
+                {/* Replaced Typography */}
+                <AccessibleTypography>No recent activity to display</AccessibleTypography>
                 <Button 
                   variant="text" 
                   color="primary"
@@ -283,9 +295,10 @@ const ProfilePage = () => {
         <Grid item xs={12} md={6}>
           <Card>
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              {/* Replaced Typography */}
+              <AccessibleTypography variant="h6" gutterBottom>
                 Notifications Settings
-              </Typography>
+              </AccessibleTypography>
               <Box sx={{ p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
                 <Button 
                   variant="contained" 
