@@ -1,4 +1,4 @@
-import { Outlet, Navigate } from "react-router-dom";
+import { Outlet, Navigate, useLocation } from "react-router-dom"; // Added useLocation
 import { ToastContainer } from 'react-toastify';
 import { useAppDispatch, useAppSelector } from "../store/initStore";
 import { 
@@ -13,11 +13,13 @@ import { useAuth } from "react-oidc-context";
 import { useEffect, useState } from "react";
 import Layout from "./Layout";
 
+
 function App() {
+  const location = useLocation(); // Add this line
   const auth = useAuth();
   const dispatch = useAppDispatch();
   const [hasFetched, setHasFetched] = useState(false);
-  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null); // Re-add fetchError state
   
   // Redux state selectors
   const userStatus = useAppSelector(selectUserLoadingStatus);
@@ -80,15 +82,18 @@ function App() {
     );
   }
 
-  // Redirect to onboarding if needed
-  if (auth.isAuthenticated && hasFetched && needsOnboarding) {
-    return <Navigate to="/onboarding" />;
+  // Redirect to onboarding if needed AND not already there
+  if (auth.isAuthenticated && hasFetched && needsOnboarding && location.pathname !== '/onboarding') { // Added location check
+    console.log('Redirecting to onboarding because needsOnboarding is true'); // Keep log for now
+    return <Navigate to="/onboarding" replace />; // Use Navigate component
   }
 
-  // Manual check for error conditions
-  if (auth.isAuthenticated && hasFetched && fetchError && 
-     (fetchError.includes('not found') || fetchError.includes('needs onboarding'))) {
-    return <Navigate to="/onboarding" />;
+  // Manual check for error conditions AND not already on onboarding
+  if (auth.isAuthenticated && hasFetched && fetchError &&
+     (fetchError.includes('not found') || fetchError.includes('needs onboarding')) &&
+     location.pathname !== '/onboarding') { // Added location check
+    console.log('Redirecting to onboarding due to fetch error'); // Keep log for now
+    return <Navigate to="/onboarding" replace />; // Use Navigate component
   }
 
   return (

@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { PaletteMode } from '@mui/material';
 import { useAppDispatch, useAppSelector } from '../../app/store/initStore';
 import { selectThemeMode, toggleTheme, setThemeMode } from './themeSlice';
-import { getTheme } from '../../app/layout/theme';
+import { getTheme } from './theme';
 
 export const useTheme = () => {
   const dispatch = useAppDispatch();

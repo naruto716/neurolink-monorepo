@@ -3,7 +3,7 @@ import { User, Tag, PaginatedUsersResponse, UserProfileInput } from './types'; /
 
 const API_ENDPOINT_USER = '/users/me';
 const API_ENDPOINT_USERS = '/users'; // Base endpoint for users
-const API_ENDPOINT_TAGS = '/tags';
+const API_ENDPOINT_TAGS = '/tags'; // Corrected endpoint path (base URL handles /api/v1)
 
 /**
  * Get the current user profile
@@ -53,20 +53,38 @@ export const createUser = async (apiClient: AxiosInstance, userData: UserProfile
 /**
  * Fetch all available tags for user profiles
  * @param apiClient The Axios instance to use.
- * @returns Promise with array of tags
+ * Fetch available tags, optionally filtered and paginated.
+ * @param apiClient The Axios instance to use.
+ * @param params Optional parameters for filtering and pagination (type, value, page, limit).
+ * @returns Promise with array of tags.
  */
-export const fetchTags = async (apiClient: AxiosInstance): Promise<Tag[]> => {
+export interface FetchTagsParams {
+    type?: string;
+    value?: string;
+    page?: number;
+    limit?: number;
+}
+
+export const fetchTags = async (apiClient: AxiosInstance, params: FetchTagsParams = {}): Promise<Tag[]> => {
     try {
-        const response = await apiClient.get<Tag[]>(API_ENDPOINT_TAGS);
+        // Construct query parameters, applying defaults
+        const queryParams: Record<string, string | number> = {};
+        if (params.type !== undefined) queryParams.type = params.type;
+        if (params.value !== undefined) queryParams.value = params.value;
+        queryParams.page = params.page || 1; // Default page 1
+        queryParams.limit = params.limit || 10; // Default limit 10
+
+        const config: AxiosRequestConfig = { params: queryParams };
+
+        // Use the updated endpoint and pass the config
+        const response = await apiClient.get<Tag[]>(API_ENDPOINT_TAGS, config);
+        console.log(`Tags fetched successfully with params:`, params);
         return response.data;
     } catch (error: any) {
         console.error("Error fetching tags:", error.response?.data || error.message);
-        // Provide a more detailed error message if available
         if (error.response?.data?.message) {
             throw new Error(`Failed to fetch tags: ${error.response.data.message}`);
         }
-        
-        // For other API failures
         throw new Error('Failed to fetch available tags');
     }
 };
