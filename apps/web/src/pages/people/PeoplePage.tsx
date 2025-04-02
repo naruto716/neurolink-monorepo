@@ -62,7 +62,7 @@ const PeoplePage = () => {
     };
   }, [dispatch]);
 
-  const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
     // Fetch new page with current search query
     dispatch(fetchPaginatedUsers({ apiClient, page: value, q: searchQuery || undefined }));
   };

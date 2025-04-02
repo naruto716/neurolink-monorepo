@@ -1,21 +1,19 @@
-import React, { useEffect } from 'react';
 import {
+  Alert,
+  alpha,
   Avatar,
   Box,
   Button,
   Card,
   CardContent,
+  CircularProgress,
+  Divider,
   Grid,
   IconButton,
   Paper,
   Stack,
-  Typography, 
-  useTheme,
-  Divider,
-  alpha,
-  CircularProgress,
-  Alert,
-  Link // Keep Link import
+  Typography,
+  useTheme
 } from '@mui/material';
 import {
   BookmarkSimple,
@@ -25,19 +23,20 @@ import {
   ShareNetwork,
   UserPlus
 } from '@phosphor-icons/react';
+import React, { useEffect } from 'react';
 import { AccessibleTypography } from '../../app/components/AccessibleTypography';
 import { NAVBAR_HEIGHT } from '../../app/layout/navbar/Navbar';
 // Import RootState along with the hooks
-import { useAppDispatch, useAppSelector, RootState } from '../../app/store/initStore'; 
+import { RootState, useAppDispatch, useAppSelector } from '../../app/store/initStore';
 // Import shared selectors with aliases
-import { 
-  fetchPaginatedUsers, 
-  selectPaginatedUsers as selectSharedPaginatedUsers, 
-  selectPaginatedUsersStatus as selectSharedPaginatedUsersStatus, 
-  selectPaginatedUsersError as selectSharedPaginatedUsersError 
-} from '@neurolink/shared/src/features/user/paginatedUsersSlice'; 
-import apiClient from '../../app/api/apiClient';
 import { User } from '@neurolink/shared';
+import {
+  fetchPaginatedUsers,
+  selectPaginatedUsers as selectSharedPaginatedUsers,
+  selectPaginatedUsersError as selectSharedPaginatedUsersError,
+  selectPaginatedUsersStatus as selectSharedPaginatedUsersStatus
+} from '@neurolink/shared/src/features/user/paginatedUsersSlice';
+import apiClient from '../../app/api/apiClient';
 
 // Placeholder data
 const PLACEHOLDER_IMAGE = "https://via.placeholder.com/600x400";

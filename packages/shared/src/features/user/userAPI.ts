@@ -60,7 +60,8 @@ export const createUser = async (apiClient: AxiosInstance, userData: UserProfile
  */
 export interface FetchTagsParams {
     type?: string;
-    value?: string;
+    value?: string; // Keep value for potential exact match filtering if needed later
+    q?: string; // Add query parameter for search
     page?: number;
     limit?: number;
 }
@@ -70,7 +71,8 @@ export const fetchTags = async (apiClient: AxiosInstance, params: FetchTagsParam
         // Construct query parameters, applying defaults
         const queryParams: Record<string, string | number> = {};
         if (params.type !== undefined) queryParams.type = params.type;
-        if (params.value !== undefined) queryParams.value = params.value;
+        if (params.value !== undefined) queryParams.value = params.value; // Keep value param
+        if (params.q !== undefined) queryParams.q = params.q; // Add q param
         queryParams.page = params.page || 1; // Default page 1
         queryParams.limit = params.limit || 10; // Default limit 10
 
