@@ -36,6 +36,32 @@ import { AccessibleTypography } from '../../app/components/AccessibleTypography'
 import Breadcrumb from '../../app/components/Breadcrumb';
 import { toast } from 'react-toastify';
 
+const BackgroundGradient = styled(Box)(({ theme }) => ({
+  position: 'fixed',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  background: `linear-gradient(135deg, ${theme.palette.primary.dark} 0%, ${theme.palette.secondary.main} 100%)`,
+  zIndex: -1,
+  height: '100vh',
+  width: '100vw',
+  overflow: 'hidden'
+}));
+
+const ContentContainer = styled(Box)(({ theme }) => ({
+  position: 'relative',
+  minHeight: '100vh',
+  zIndex: 1,
+  overflow: 'auto',
+  paddingTop: theme.spacing(2),
+  paddingBottom: theme.spacing(4),
+  [theme.breakpoints.up('md')]: {
+    paddingTop: theme.spacing(4),
+  }
+}));
+
+
 // --- Styled Components (Keep existing ones) ---
 const StyledPaper = styled(Paper)(({ theme }) => ({
   backgroundColor: theme.palette.background.paper,
@@ -578,76 +604,84 @@ const OnboardingPage: React.FC = () => {
   ];
 
   return (
-    <Container maxWidth="md" sx={{ py: { xs: 2, md: 4 }, px: { xs: 2, sm: 3 } }}>
-      <Box sx={{ mb: 3 }}>
-        <Breadcrumb customItems={breadcrumbItems} />
-      </Box>
-
-      <StyledPaper elevation={3}>
-        <IconButton
-          onClick={handleCancel}
-          sx={{
-            position: 'absolute',
-            top: 16,
-            right: 16,
-            bgcolor: 'action.hover',
-            '&:hover': { bgcolor: 'action.selected' }
-          }}
-          aria-label={t('common.close')}
-        >
-          <CloseIcon />
-        </IconButton>
-
-        <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
-          {steps.map((labelKey) => (
-            <Step key={labelKey}>
-              <StepLabel>{t(labelKey)}</StepLabel>
-            </Step>
-          ))}
-        </Stepper>
-
-         <AccessibleTypography variant="h4" component="h1" sx={{ fontWeight: 600, mb: 1, textAlign: 'center' }}>
-           {t(steps[activeStep])}
-         </AccessibleTypography>
-         <Divider sx={{ mb: 3 }}/>
-
-        {formError && !isSubmitting && (
-          <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
-            {formError}
-          </Alert>
-        )}
-
-        {renderStepContent()}
-
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 5, pt: 3, borderTop: 1, borderColor: 'divider' }}>
-          <ActionButton
-            variant="outlined"
-            onClick={handleBack}
-            disabled={activeStep === 0 || isSubmitting}
-            sx={{
-              color: 'text.secondary',
-              borderColor: 'divider',
-              '&:hover': { borderColor: 'text.primary', bgcolor: 'action.hover' }
-            }}
-          >
-            {t('common.back')}
-          </ActionButton>
-
-          <ActionButton
-            variant="contained"
-            onClick={activeStep === steps.length - 1 ? handleSubmit : handleNext}
-            disabled={isSubmitting}
-            disableElevation
-          >
-            {isSubmitting ? (
-              <CircularProgress size={24} color="inherit" />
-            ) : (
-              activeStep === steps.length - 1 ? t('onboarding.saveProfile') : t('common.next')
+    <>
+      {/* Fixed Gradient Background */}
+      <BackgroundGradient />
+      
+      {/* Scrollable Content */}
+      <ContentContainer>
+        <Container maxWidth="md" sx={{ px: { xs: 2, sm: 3 } }}>
+          <Box sx={{ mb: 3 }}>
+            <Breadcrumb customItems={breadcrumbItems} />
+          </Box>
+  
+          <StyledPaper elevation={3}>
+            <IconButton
+              onClick={handleCancel}
+              sx={{
+                position: 'absolute',
+                top: 16,
+                right: 16,
+                bgcolor: 'action.hover',
+                '&:hover': { bgcolor: 'action.selected' }
+              }}
+              aria-label={t('common.close')}
+            >
+              <CloseIcon />
+            </IconButton>
+  
+            <Stepper activeStep={activeStep} alternativeLabel sx={{ mb: 4 }}>
+              {steps.map((labelKey) => (
+                <Step key={labelKey}>
+                  <StepLabel>{t(labelKey)}</StepLabel>
+                </Step>
+              ))}
+            </Stepper>
+  
+            <AccessibleTypography variant="h4" component="h1" sx={{ fontWeight: 600, mb: 1, textAlign: 'center' }}>
+              {t(steps[activeStep])}
+            </AccessibleTypography>
+            <Divider sx={{ mb: 3 }}/>
+  
+            {formError && !isSubmitting && (
+              <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
+                {formError}
+              </Alert>
             )}
-          </ActionButton>
-        </Box>
-      </StyledPaper>
-    </Container>
+  
+            {renderStepContent()}
+  
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 5, pt: 3, borderTop: 1, borderColor: 'divider' }}>
+              <ActionButton
+                variant="outlined"
+                onClick={handleBack}
+                disabled={activeStep === 0 || isSubmitting}
+                sx={{
+                  color: 'text.secondary',
+                  borderColor: 'divider',
+                  '&:hover': { borderColor: 'text.primary', bgcolor: 'action.hover' }
+                }}
+              >
+                {t('common.back')}
+              </ActionButton>
+  
+              <ActionButton
+                variant="contained"
+                onClick={activeStep === steps.length - 1 ? handleSubmit : handleNext}
+                disabled={isSubmitting}
+                disableElevation
+              >
+                {isSubmitting ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  activeStep === steps.length - 1 ? t('onboarding.saveProfile') : t('common.next')
+                )}
+              </ActionButton>
+            </Box>
+          </StyledPaper>
+        </Container>
+      </ContentContainer>
+    </>
   );
 };
 
