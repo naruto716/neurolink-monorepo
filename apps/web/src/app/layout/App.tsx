@@ -1,17 +1,16 @@
-import { Outlet, Navigate, useLocation } from "react-router-dom"; // Added useLocation
-import { ToastContainer } from 'react-toastify';
-import { useAppDispatch, useAppSelector } from "../store/initStore";
-import { 
-  setTokens,
+import {
   fetchUser,
-  selectUserLoadingStatus,
   selectNeedsOnboarding,
-  setOnboardingStatus
+  selectUserLoadingStatus,
+  setOnboardingStatus,
+  setTokens
 } from "@neurolink/shared";
-import apiClient from "../api/apiClient";
-import { useAuth } from "react-oidc-context";
 import { useEffect, useState } from "react";
-import Layout from "./Layout";
+import { useAuth } from "react-oidc-context";
+import { Navigate, Outlet, useLocation } from "react-router-dom"; // Added useLocation
+import { ToastContainer } from 'react-toastify';
+import apiClient from "../api/apiClient";
+import { useAppDispatch, useAppSelector } from "../store/initStore";
 
 
 function App() {
@@ -114,9 +113,7 @@ function App() {
           Error loading profile: {fetchError}
         </div>
       )}
-      <Layout>
-        <Outlet />
-      </Layout>
+      <Outlet />
     </>
   );
 }

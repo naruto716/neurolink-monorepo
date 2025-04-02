@@ -3,13 +3,9 @@ import { Container, Box, useMediaQuery, useTheme } from '@mui/material';
 import Navbar, { NAVBAR_HEIGHT } from './navbar/Navbar';
 import { LeftSidebar } from './navbar/LeftSidebar';
 import { RightSidebar } from './navbar/RightSidebar';
-import { useLocation } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 // Removed incorrect import: import { getSidebarContent, getSidebarTitle } from './navbar/SidebarContent';
 import { AccessibleTypography } from '../components/AccessibleTypography'; // Keep this import
-
-interface LayoutProps {
-  children: React.ReactNode;
-}
 
 // --- Placeholder Functions ---
 // TODO: Replace these with actual logic to determine sidebar content/title based on path
@@ -31,7 +27,7 @@ const getSidebarContent = (pathname: string): React.ReactNode => {
 // --- End Placeholder Functions ---
 
 
-export default function Layout({ children }: LayoutProps) {
+export default function Layout() {
   const location = useLocation();
   const theme = useTheme();
   // Check if the screen size is 'md' or larger (desktop/tablet) - Adjusted breakpoint
@@ -82,7 +78,7 @@ export default function Layout({ children }: LayoutProps) {
         
         {/* Main content */}
         <Container component="main" sx={{ mt: 4, mb: 4, flexGrow: 1 }}>
-          {children}
+          <Outlet />
         </Container>
       </Box>
       
