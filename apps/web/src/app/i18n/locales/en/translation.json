@@ -64,8 +64,8 @@
     "stepReview": "Review & Confirm",
     "displayName": "Display Name",
     "displayNameHelp": "This name will be visible to others on Neurolink.",
-    "profilePictureUrl": "Profile Picture URL (Optional)",
-    "profilePictureHelp": "Link to an image online (e.g., Gravatar, LinkedIn).",
+    "profilePicture": "Profile Picture",
+    "uploadProfilePictureLabel": "Upload or change profile picture",
     "age": "Age (Optional)",
     "ageOptional": "Enter your age",
     "bio": "Bio (Optional)",
@@ -102,11 +102,21 @@
       "noEmail": "Could not verify your email. Please sign in again.",
       "submitFailed": "There was an issue creating your profile. Please try again.",
       "tagLimitReached": "You can select a maximum of {{max}} tags.",
-      "tagAlreadySelected": "Tag '{{tag}}' is already selected for this category."
+      "tagAlreadySelected": "Tag '{{tag}}' is already selected for this category.",
+      "invalidFileType": "Invalid file type. Please upload an image.",
+      "uploadFailedGeneric": "Failed to upload profile picture. Please try again.",
+      "cameraAccessDenied": "Could not access the camera. Please check permissions.",
+      "captureFailed": "Failed to capture image from camera."
     },
     "success": {
-      "profileCreated": "Welcome to Neurolink! Your profile is ready."
-    }
+      "profileCreated": "Welcome to Neurolink! Your profile is ready.",
+      "pictureUploaded": "Profile picture uploaded successfully."
+    },
+    "profilePictureHelpUpload": "Click to upload or take a new photo.",
+    "useCamera": "Use Camera",
+    "takePhoto": "Take Photo",
+    "usePhoto": "Use This Photo",
+    "capture": "Capture"
   },
   "people": { 
     "title": "People",
@@ -114,7 +124,11 @@
     "searchLabel": "Search by name, skill, interest...",
     "searchButton": "Search",
     "errorLoading": "Failed to load people.",
-    "noResults": "No people found matching your criteria."
+    "noResults": "No people found matching your criteria.",
+    "selectCategory": "Select Category",
+    "searchTagsPlaceholder": "Search tags...",
+    "addTag": "Add tag",
+    "cancel": "Cancel"
   },
   "common": {
     "back": "Back",
@@ -125,6 +139,7 @@
     "error": "Error",
     "selectCategory": "Select Category",
     "searchTagsPlaceholder": "Search tags...",
-    "addTag": "Add tag"
+    "addTag": "Add tag",
+    "cancel": "Cancel"
   }
 }

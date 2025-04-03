@@ -16,9 +16,20 @@ export declare const createUser: (apiClient: AxiosInstance, userData: UserProfil
 /**
  * Fetch all available tags for user profiles
  * @param apiClient The Axios instance to use.
- * @returns Promise with array of tags
+ * Fetch available tags, optionally filtered and paginated.
+ * @param apiClient The Axios instance to use.
+ * @param params Optional parameters for filtering and pagination (type, value, page, limit).
+ * @returns Promise with array of tags.
  */
-export declare const fetchTags: (apiClient: AxiosInstance) => Promise<Tag[]>;
+export interface FetchTagsParams {
+    type?: string;
+    value?: string;
+    page?: number;
+    limit?: number;
+    fuzzyThreshold?: number;
+}
+export declare const fetchTags: (apiClient: AxiosInstance, params?: FetchTagsParams) => Promise<Tag[]>;
+export declare const uploadProfilePicture: (apiClient: AxiosInstance, file: File) => Promise<string>;
 export interface FetchUsersParams {
     q?: string;
     minAge?: number;

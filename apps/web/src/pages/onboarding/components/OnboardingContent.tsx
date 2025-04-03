@@ -7,6 +7,9 @@ import {
   Sparkle, // Replacing InterestsIcon
   MagnifyingGlass, // Replacing SearchIcon
   Plus, // For the new Add button
+  PencilSimple, // For editing profile picture
+  UploadSimple, // For uploading profile picture
+  Camera, // For camera option
 } from '@phosphor-icons/react';
 import {
   Alert,
@@ -16,6 +19,10 @@ import {
   Chip,
   CircularProgress,
   Container,
+  Dialog, // Added for camera modal
+  DialogActions, // Added for camera modal
+  DialogContent, // Added for camera modal
+  DialogTitle, // Added for camera modal
   // FormControl, // Removed unused import
   Grid,
   IconButton,
@@ -39,18 +46,19 @@ import {
 } from '@mui/material';
 import { selectIdToken } from '@neurolink/shared/src/features/tokens/tokensSlice';
 import { Tag, UserPreferences, UserProfileInput } from '@neurolink/shared/src/features/user/types';
-// Import FetchTagsParams from the correct path
-import { createUser, fetchTags, FetchTagsParams } from '@neurolink/shared/src/features/user/userAPI';
+// Import FetchTagsParams and uploadProfilePicture from the correct path
+import { createUser, fetchTags, FetchTagsParams, uploadProfilePicture } from '@neurolink/shared/src/features/user/userAPI';
 import { setOnboardingStatus } from '@neurolink/shared/src/features/user/userSlice';
 import { jwtDecode } from 'jwt-decode';
 import { debounce } from 'lodash'; // Added for debouncing search
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'; // Added useRef
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import apiClient from '../../../app/api/apiClient';
 import { AccessibleTypography } from '../../../app/components/AccessibleTypography';
 import { useAppDispatch, useAppSelector } from '../../../app/store/initStore';
+import Webcam from 'react-webcam'; // Import Webcam
 
 // --- Styled Components ---
 const ContentContainer = styled(Box)(({ theme }) => ({
@@ -117,15 +125,38 @@ const AvatarPlaceholder = styled(Box)(({ theme }) => ({
   width: 110, // Larger avatar
   height: 110,
   borderRadius: '50%',
-  backgroundColor: theme.palette.action.hover, // Softer background
+  // Use a light primary background for the placeholder itself
+  backgroundColor: theme.palette.mode === 'light' ? theme.palette.primary.light + '40' : theme.palette.primary.dark + '60', // Added transparency
   display: 'flex',
   justifyContent: 'center',
   alignItems: 'center',
   margin: '0 auto',
-  marginBottom: theme.spacing(4), // Increased margin
   position: 'relative',
-  border: `2px solid ${theme.palette.divider}` // Add subtle border
+  border: `2px solid ${theme.palette.primary.main}`, // Keep primary color border
+  cursor: 'pointer', // Make it clickable
+  overflow: 'hidden', // Hide overflow for the overlay
+  '&:hover .upload-overlay, &:focus-within .upload-overlay': { // Show overlay on hover/focus
+    opacity: 1,
+  },
 }));
+
+// Overlay for upload icon/progress
+const UploadOverlay = styled(Box)({
+  position: 'absolute',
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  display: 'flex',
+  justifyContent: 'center',
+  alignItems: 'center',
+  color: 'white',
+  opacity: 0, // Hidden by default
+  transition: 'opacity 0.2s ease-in-out',
+  borderRadius: '50%', // Match parent border radius
+});
+
 
 const StyledChip = styled(Chip)(({ theme }) => ({
   borderRadius: theme.shape.borderRadius * 1.5, // Consistent rounding
@@ -254,7 +285,7 @@ const steps = [
 // Initial form values
 const initialFormValues = {
   displayName: '',
-  profilePicture: '',
+  profilePicture: '', // Will store the URL from the API
   age: '',
   bio: '',
   selectedTags: [] as Tag[],
@@ -289,16 +320,26 @@ const OnboardingContent: React.FC = () => {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // --- Profile Picture State ---
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null); // Ref for hidden file input
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const webcamRef = useRef<Webcam>(null);
+  // --- End Profile Picture State ---
+
+
   // --- Tag Search State ---
   const [allTags, setAllTags] = useState<Record<string, Tag[]>>({}); // Store all fetched tags per category
   const [tagFetchStatus, setTagFetchStatus] = useState<Record<string, TagFetchStatus>>(
     () => Object.fromEntries(tagCategories.map(cat => [cat.type, 'idle']))
   );
-  // Removed unused tagFetchError state
-  // const [tagFetchError, setTagFetchError] = useState<Record<string, string | null>>(...)
   const [selectedTagCategory, setSelectedTagCategory] = useState<string>(tagCategories[0]?.type || '');
-  const [tagSearchQuery, setTagSearchQuery] = useState<string>(''); // Input value for Autocomplete
-  const [debouncedTagSearchQuery, setDebouncedTagSearchQuery] = useState<string>(''); // State for debounced query
+  const [tagSearchQuery, setTagSearchQuery] = useState<string>('');
+  const [debouncedTagSearchQuery, setDebouncedTagSearchQuery] = useState<string>('');
   // --- End Tag Search State ---
 
   // Define filter options for Autocomplete (adjust type for freeSolo)
@@ -321,8 +362,6 @@ const OnboardingContent: React.FC = () => {
     }
     // Reset status for the specific category if query changes, force loading state
     setTagFetchStatus(prev => ({ ...prev, [categoryType]: 'loading' }));
-    // Removed tagFetchError reset
-    // setTagFetchError(prev => ({ ...prev, [categoryType]: null }));
 
     try {
       const fetchParams: FetchTagsParams = { type: categoryType, limit: 20 };
@@ -337,11 +376,10 @@ const OnboardingContent: React.FC = () => {
       const categoryLabel = t(tagCategories.find(c => c.type === categoryType)?.label || categoryType);
       const specificErrorMsg = t('onboarding.error.loadingTagsSpecific', { category: categoryLabel });
       console.error(`Error fetching tags for ${categoryType}:`, errorMessage);
-      // Removed setting tagFetchError state
       setTagFetchStatus(prev => ({ ...prev, [categoryType]: 'error' }));
       toast.error(`${specificErrorMsg}: ${errorMessage || t('onboarding.error.loadingTagsGeneric')}`); // Show generic error if specific is missing
     }
-  }, [t]); // Removed tagFetchStatus dependency as we handle loading state directly
+  }, [t]);
 
   // Fetch tags when the selected category or debounced search query changes
   useEffect(() => {
@@ -349,7 +387,7 @@ const OnboardingContent: React.FC = () => {
   }, [selectedTagCategory, debouncedTagSearchQuery, handleFetchCategoryTags]);
 
   // Handle form input changes (for non-tag fields)
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => { // Updated type
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormValues(prev => ({ ...prev, [name]: value }));
   };
@@ -357,23 +395,21 @@ const OnboardingContent: React.FC = () => {
   // Handle tag category selection change
   const handleCategoryChange = (event: SelectChangeEvent<string>) => {
     setSelectedTagCategory(event.target.value);
-    setTagSearchQuery(''); // Clear search query when category changes
-    setDebouncedTagSearchQuery(''); // Clear debounced query as well
+    setTagSearchQuery('');
+    setDebouncedTagSearchQuery('');
   };
 
   // Handle Autocomplete input change - update local state immediately, debounce the fetch trigger
   const handleTagInputChange = (event: React.SyntheticEvent, newInputValue: string) => {
-    setTagSearchQuery(newInputValue); // Update immediate input value
-    // Only debounce if it's user input, not selection clearing
+    setTagSearchQuery(newInputValue);
     if (event?.type === 'change') {
-       debouncedSetQuery(newInputValue); // Trigger debounced fetch query update
+       debouncedSetQuery(newInputValue);
     }
   };
 
 
   // Handle adding/removing tags via Autocomplete
   const handleTagsChange = (event: React.SyntheticEvent, newValue: (Tag | { inputValue: string; title: string } | string)[]) => {
-    // Calculate potential new total tag count considering only actual tags added/removed
     const newActualTags = newValue.filter(v => typeof v !== 'string' && !('inputValue' in v)) as Tag[];
     const otherCategoryTagsCount = formValues.selectedTags.filter(tag => tag.type !== selectedTagCategory).length;
     const potentialTotalCount = otherCategoryTagsCount + newActualTags.length;
@@ -381,8 +417,6 @@ const OnboardingContent: React.FC = () => {
 
     if (potentialTotalCount > 20) {
       toast.warn(t('onboarding.error.tagLimitReached', { max: 20 }));
-       // Prevent adding more if the limit is reached or exceeded by this change
-       // Allow removals by checking if the new count is less than the previous count for this category
        if (newActualTags.length > currentCategorySelectedTags.length) {
           return;
        }
@@ -390,28 +424,23 @@ const OnboardingContent: React.FC = () => {
 
 
     setFormValues(prev => {
-      // Process the new value from Autocomplete
       const currentCategoryNewTags = newValue
         .map(option => {
-          // Handle direct string input (freeSolo)
           if (typeof option === 'string') {
-            if (!option.trim()) return null; // Ignore empty/whitespace
+            if (!option.trim()) return null;
             return { type: selectedTagCategory, value: option.trim() };
           }
-          // Handle the "Add..." suggestion object
           if (typeof option === 'object' && option && 'inputValue' in option) {
-             if (!option.inputValue.trim()) return null; // Ignore empty/whitespace
+             if (!option.inputValue.trim()) return null;
             return { type: selectedTagCategory, value: option.inputValue.trim() };
           }
-          // Handle existing Tag object suggestions
           if (typeof option === 'object' && option && 'type' in option && 'value' in option) {
             return option;
           }
-          return null; // Ignore invalid options
+          return null;
         })
-        .filter(tag => tag !== null) as Tag[]; // Filter out nulls and assert type
+        .filter(tag => tag !== null) as Tag[];
 
-      // Filter out duplicates within the current category's new tags based on value
       const uniqueCurrentCategoryNewTags = currentCategoryNewTags.filter((tag, index, self) =>
         index === self.findIndex((t) => (
           t.value === tag.value
@@ -419,24 +448,17 @@ const OnboardingContent: React.FC = () => {
       );
 
 
-      // Get tags from other categories that are already selected
       const otherCategoryTags = prev.selectedTags.filter(tag => tag.type !== selectedTagCategory);
 
-      // Combine tags from other categories with the unique new tags for the current category
       const updatedSelectedTags = [...otherCategoryTags, ...uniqueCurrentCategoryNewTags];
 
-      // Ensure the final list doesn't exceed the limit (double-check)
       if (updatedSelectedTags.length > 20) {
-         // This case might happen if duplicates existed across categories, though less likely with this structure
-         // We simply slice to enforce the limit strictly.
          updatedSelectedTags.length = 20;
-         // Consider if a warning is needed here too
       }
 
 
       return { ...prev, selectedTags: updatedSelectedTags };
     });
-     // Clear the input field after adding a tag
      setTagSearchQuery('');
      setDebouncedTagSearchQuery('');
   };
@@ -444,39 +466,29 @@ const OnboardingContent: React.FC = () => {
   // Handle clicking the explicit "Add" button
   const handleAddTagClick = () => {
     const valueToAdd = tagSearchQuery.trim();
-    if (!valueToAdd) return; // Don't add empty tags
+    if (!valueToAdd) return;
 
-    // Check total tag limit first
     if (formValues.selectedTags.length >= 20) {
       toast.warn(t('onboarding.error.tagLimitReached', { max: 20 }));
       return;
     }
 
-    // Check if tag already exists in the current category or overall
     const alreadySelected = formValues.selectedTags.some(tag => tag.value === valueToAdd && tag.type === selectedTagCategory);
     if (alreadySelected) {
-      toast.info(t('onboarding.error.tagAlreadySelected', { tag: valueToAdd })); // Add this translation key
+      toast.info(t('onboarding.error.tagAlreadySelected', { tag: valueToAdd }));
       return;
     }
 
-    // Add the new tag
     setFormValues(prev => {
        const newTag: Tag = { type: selectedTagCategory, value: valueToAdd };
-       // Ensure final list doesn't exceed limit (should be caught above, but double-check)
        const updatedSelectedTags = [...prev.selectedTags, newTag].slice(0, 20);
        return { ...prev, selectedTags: updatedSelectedTags };
     });
 
-    // Clear input
     setTagSearchQuery('');
     setDebouncedTagSearchQuery('');
   };
 
-
-  // Removed unused handleTagToggle function
-
-  // Check if a tag is selected (Now handled by Autocomplete's value prop)
-  // const isTagSelected = (tag: Tag) => { ... };
 
   // Filter selected tags for the current category to pass to Autocomplete value prop
   const currentCategorySelectedTags = useMemo(() => {
@@ -484,8 +496,110 @@ const OnboardingContent: React.FC = () => {
   }, [formValues.selectedTags, selectedTagCategory]);
 
 
-  // Remove unused filteredTags variable as filtering is now done via API query
-  // const filteredTags = useMemo(() => { ... });
+  // --- Profile Picture Upload Logic ---
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith('image/')) {
+        setUploadError(t('onboarding.error.invalidFileType'));
+        toast.error(t('onboarding.error.invalidFileType'));
+        return;
+      }
+      setSelectedFile(file);
+      setUploadError(null);
+
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreviewUrl(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Effect to upload the file when selectedFile changes
+  useEffect(() => {
+    if (!selectedFile) return;
+
+    const upload = async () => {
+      setIsUploading(true);
+      setUploadError(null);
+      try {
+        const uploadedUrl = await uploadProfilePicture(apiClient, selectedFile);
+        setFormValues(prev => ({ ...prev, profilePicture: uploadedUrl }));
+        setPreviewUrl(uploadedUrl);
+        toast.success(t('onboarding.success.pictureUploaded'));
+      } catch (error) {
+        const message = (error instanceof Error) ? error.message : t('onboarding.error.uploadFailedGeneric');
+        setUploadError(message);
+        toast.error(message);
+      } finally {
+        setIsUploading(false);
+      }
+    };
+
+    upload();
+  }, [selectedFile, t]);
+
+  // --- Camera Logic (Refactored for react-webcam) ---
+  const openCameraModal = () => {
+    setCapturedImage(null);
+    setShowCameraModal(true);
+  };
+
+  const closeCameraModal = () => {
+    setShowCameraModal(false);
+    setCapturedImage(null);
+  };
+
+  const handleCapture = useCallback(() => {
+    if (webcamRef.current) {
+      const imageSrc = webcamRef.current.getScreenshot();
+      if (imageSrc) {
+        setCapturedImage(imageSrc);
+      } else {
+        console.error("Failed to get screenshot from webcam.");
+        toast.error(t('onboarding.error.captureFailed'));
+      }
+    }
+  }, [webcamRef, t]);
+
+  // Helper function to convert base64 to Blob
+  const dataURLtoBlob = (dataurl: string): Blob | null => {
+      try {
+        const arr = dataurl.split(',');
+        if (arr.length < 2) return null;
+        const mimeMatch = arr[0].match(/:(.*?);/);
+        if (!mimeMatch || mimeMatch.length < 2) return null;
+        const mime = mimeMatch[1];
+        const bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while(n--){
+            u8arr[n] = bstr.charCodeAt(n);
+        }
+        return new Blob([u8arr], {type:mime});
+      } catch (e) {
+        console.error("Error converting data URL to blob:", e);
+        return null;
+      }
+  }
+
+  const handleUseCapturedImage = () => {
+    if (capturedImage) {
+      const blob = dataURLtoBlob(capturedImage);
+      if (blob) {
+          const capturedFile = new File([blob], `capture-${Date.now()}.png`, { type: blob.type || 'image/png' });
+          setSelectedFile(capturedFile);
+          setPreviewUrl(capturedImage);
+          closeCameraModal();
+      } else {
+         toast.error(t('onboarding.error.captureFailed'));
+         closeCameraModal();
+      }
+    }
+  };
+  // --- End Camera Logic ---
+
 
   // Validate step before proceeding
   const validateStep = () => {
@@ -495,7 +609,6 @@ const OnboardingContent: React.FC = () => {
       toast.warn(errorMsg);
       return false;
     }
-    // Add other step validations if needed
     setFormError(null);
     return true;
   };
@@ -556,14 +669,14 @@ const OnboardingContent: React.FC = () => {
       console.log('User created successfully:', createdUser);
       toast.success(t('onboarding.success.profileCreated'));
       dispatch(setOnboardingStatus(true));
-      navigate('/profile'); // Navigate to profile page on success
+      navigate('/profile');
     } catch (err) {
       const errorMsg = t('onboarding.error.submitFailed');
       const detailedError = (err instanceof Error) ? err.message : String(err);
       setSubmitError(detailedError || errorMsg);
       toast.error(`${errorMsg}: ${detailedError}`);
     } finally {
-      setIsSubmitting(false); // Ensure this runs even on error
+      setIsSubmitting(false);
     }
   };
 
@@ -576,41 +689,73 @@ const OnboardingContent: React.FC = () => {
   // --- Render Functions for Steps ---
   const renderBasicInfoForm = () => (
     <Box sx={{ mt: 4 }}>
-      <AvatarPlaceholder>
-        {formValues.profilePicture ? (
-          <Avatar src={formValues.profilePicture} alt={formValues.displayName || 'User'} sx={{ width: '100%', height: '100%' }} />
-        ) : (
-          <Avatar sx={{ width: 56, height: 56, bgcolor: 'transparent', color: 'text.secondary' }}>
-            {/* Use Phosphor UserCircle */}
-            <UserCircle size={60} color={theme.palette.text.secondary} />
-          </Avatar>
-        )}
-      </AvatarPlaceholder>
-      <Grid container spacing={3}> {/* Increased spacing */}
+      {/* Hidden File Input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept="image/*"
+        style={{ display: 'none' }}
+        id="profile-picture-upload"
+      />
+      {/* Clickable Avatar Area */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
+         <label htmlFor="profile-picture-upload" style={{ display: 'block', width: 'fit-content', margin: '0 auto', cursor: 'pointer' }}>
+            <AvatarPlaceholder
+              tabIndex={0}
+              aria-label={t('onboarding.uploadProfilePictureLabel')}
+            >
+              <Avatar
+                src={previewUrl || formValues.profilePicture || undefined}
+                alt={formValues.displayName || 'User'}
+                sx={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  bgcolor: 'transparent'
+                }}
+              >
+                {!previewUrl && !formValues.profilePicture && <UserCircle size={60} color={theme.palette.primary.main} />}
+              </Avatar>
+              <UploadOverlay className="upload-overlay">
+                {isUploading ? <CircularProgress color="inherit" size={30} /> : (previewUrl || formValues.profilePicture ? <PencilSimple size={30} /> : <UploadSimple size={30} />)}
+              </UploadOverlay>
+           </AvatarPlaceholder>
+          </label>
+        {/* Helper Text & Camera Button */}
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
+          {t('onboarding.profilePictureHelpUpload')}
+        </Typography>
+        <Button
+          variant="text"
+          startIcon={<Camera size={18} />}
+          onClick={openCameraModal}
+          size="small"
+          sx={{ mt: 0.5, textTransform: 'none' }}
+        >
+          {t('onboarding.useCamera')}
+        </Button>
+      </Box>
+      {/* Upload Error Message */}
+      {uploadError && <Alert severity="error" sx={{ mb: 2, borderRadius: theme.shape.borderRadius }}>{uploadError}</Alert>}
+
+      <Grid container spacing={3}>
         <Grid item xs={12}>
-          {/* Removed htmlFor from AccessibleTypography */}
           <AccessibleTypography component="label" sx={{ mb: 1, display: 'block', fontWeight: 500 }}>{t('onboarding.displayName')}*</AccessibleTypography>
           <StyledTextField required fullWidth id="displayName" name="displayName" value={formValues.displayName} onChange={handleInputChange} error={!!formError && !formValues.displayName} helperText={t('onboarding.displayNameHelp')} aria-describedby="displayName-helper-text" />
-        </Grid>
-        <Grid item xs={12}>
-          {/* Removed htmlFor from AccessibleTypography */}
-          <AccessibleTypography component="label" sx={{ mb: 1, display: 'block', fontWeight: 500 }}>{t('onboarding.profilePictureUrl')}</AccessibleTypography>
-          <StyledTextField fullWidth id="profilePicture" name="profilePicture" value={formValues.profilePicture} onChange={handleInputChange} helperText={t('onboarding.profilePictureHelp')} aria-describedby="profilePicture-helper-text" />
         </Grid>
       </Grid>
     </Box>
   );
 
   const renderAboutYouForm = () => (
-    <Box sx={{ mt: 5 }}> {/* Increased top margin */}
-      <Grid container spacing={3}> {/* Increased spacing */}
+    <Box sx={{ mt: 5 }}>
+      <Grid container spacing={3}>
         <Grid item xs={12} sm={6}>
-           {/* Removed htmlFor from AccessibleTypography */}
           <AccessibleTypography component="label" sx={{ mb: 1, display: 'block', fontWeight: 500 }}>{t('onboarding.age')}</AccessibleTypography>
           <StyledTextField fullWidth id="age" name="age" label={t('onboarding.ageOptional')} type="number" value={formValues.age} onChange={handleInputChange} InputProps={{ inputProps: { min: 0, max: 120 } }} />
         </Grid>
         <Grid item xs={12}>
-           {/* Removed htmlFor from AccessibleTypography */}
           <AccessibleTypography component="label" sx={{ mb: 1, display: 'block', fontWeight: 500 }}>{t('onboarding.bio')}</AccessibleTypography>
           <StyledTextField fullWidth id="bio" name="bio" label={t('onboarding.bioOptional')} multiline rows={4} value={formValues.bio} onChange={handleInputChange} helperText={t('onboarding.bioHelp')} inputProps={{ maxLength: 500 }} aria-describedby="bio-helper-text" />
           <AccessibleTypography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block', textAlign: 'right' }} aria-live="polite">
@@ -627,29 +772,28 @@ const OnboardingContent: React.FC = () => {
         {t('onboarding.selectTagsHelp')}
       </AccessibleTypography>
       <AccessibleTypography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-        {t('onboarding.selectCategoryAndAddTags')} {/* Updated translation key */}
+        {t('onboarding.selectCategoryAndAddTags')}
       </AccessibleTypography>
 
-      {/* Combined Input Container */}
       <StyledInputContainer>
         <Select
-          variant="standard" // Use standard variant inside the container
-          disableUnderline // Remove underline
+          variant="standard"
+          disableUnderline
           value={selectedTagCategory}
           onChange={handleCategoryChange}
           sx={{
-            minWidth: 150, // Adjust width as needed
-            mr: 1, // Margin between select and autocomplete
+            minWidth: 150,
+            mr: 1,
             fontWeight: 500,
             fontSize: '0.9rem',
             '& .MuiSelect-select': {
-              paddingRight: '24px !important', // Ensure space for icon
-              paddingLeft: '0px', // Adjust padding
-              paddingTop: '12px', // Align text vertically
+              paddingRight: '24px !important',
+              paddingLeft: '0px',
+              paddingTop: '12px',
               paddingBottom: '12px',
             },
           }}
-          MenuProps={{ // Style dropdown menu
+          MenuProps={{
             PaperProps: {
               sx: {
                 borderRadius: theme.shape.borderRadius * 1.5,
@@ -665,46 +809,37 @@ const OnboardingContent: React.FC = () => {
           ))}
         </Select>
 
-        {/* Separator */}
         <Box sx={{ borderLeft: `1px solid ${theme.palette.divider}`, height: '30px', alignSelf: 'center' }} />
 
-        {/* Autocomplete Input - Adjust generic types */}
         <Autocomplete<Tag | { inputValue: string; title: string }, true, false, true>
           multiple
-          freeSolo // Allow custom input
+          freeSolo
           fullWidth
-          value={currentCategorySelectedTags} // Still Tag[]
+          value={currentCategorySelectedTags}
           onChange={handleTagsChange}
           inputValue={tagSearchQuery}
           onInputChange={handleTagInputChange}
-          options={allTags[selectedTagCategory] || []} // Still Tag[]
+          options={allTags[selectedTagCategory] || []}
           loading={tagFetchStatus[selectedTagCategory] === 'loading'}
           getOptionLabel={(option) => {
-            // Handle string input from freeSolo
             if (typeof option === 'string') {
               return option;
             }
-            // Handle the "Add..." suggestion object
             if (option && 'inputValue' in option) {
               return option.title;
             }
-            // Handle Tag object
             return option?.value || '';
           }}
           isOptionEqualToValue={(option, val) => {
-             // Need robust comparison for Tag objects
              if (typeof option === 'object' && 'value' in option && typeof val === 'object' && 'value' in val) {
                return option.value === val.value && option.type === val.type;
              }
-             return false; // Don't consider strings or "Add..." objects equal to Tags
+             return false;
           }}
           filterOptions={(options, params) => {
             const filtered = filter(options, params);
             const { inputValue } = params;
-            // Suggest the creation of a new value if input is not empty and not already selected/suggested
-            // Use a more explicit type guard within .some()
             const isExistingSuggestion = options.some((option) => {
-              // Check if it's a Tag object before accessing 'value'
               if (typeof option === 'object' && option && 'value' in option && 'type' in option) {
                 return option.value === inputValue;
               }
@@ -713,7 +848,6 @@ const OnboardingContent: React.FC = () => {
             const isAlreadySelected = currentCategorySelectedTags.some(tag => tag.value === inputValue);
 
             if (inputValue !== '' && !isExistingSuggestion && !isAlreadySelected) {
-              // Push the special object type for the "Add" suggestion
               filtered.push({
                 inputValue: inputValue,
                 title: `Add "${inputValue}"`,
@@ -722,31 +856,27 @@ const OnboardingContent: React.FC = () => {
             return filtered;
           }}
           renderOption={(props, option) => {
-            // Handle rendering the "Add..." suggestion object
             if (typeof option === 'object' && 'title' in option) {
               return <li {...props}>{option.title}</li>;
             }
-            // Handle rendering Tag objects
             if (typeof option === 'object' && 'value' in option) {
                return <li {...props}>{option.value}</li>;
             }
-            // Fallback for unexpected types (shouldn't happen)
             return <li {...props}></li>;
           }}
-          renderTags={() => null} // Don't render chips inside the input field itself
+          renderTags={() => null}
           renderInput={(params) => (
             <TextField
               {...params}
-              variant="standard" // Use standard variant inside container
-              placeholder={selectedTagCategory ? t('onboarding.searchOrAddTagPlaceholder') : t('onboarding.selectCategoryFirst')} // Dynamic placeholder
-              disabled={!selectedTagCategory} // Disable if no category selected
+              variant="standard"
+              placeholder={selectedTagCategory ? t('onboarding.searchOrAddTagPlaceholder') : t('onboarding.selectCategoryFirst')}
+              disabled={!selectedTagCategory}
               InputProps={{
                 ...params.InputProps,
-                disableUnderline: true, // Remove underline for standard variant
+                disableUnderline: true,
                 startAdornment: (
                   <>
                     <InputAdornment position="start" sx={{ pl: 1 }}>
-                      {/* Use Phosphor MagnifyingGlass */}
                       <MagnifyingGlass size={20} color={theme.palette.action.active} />
                     </InputAdornment>
                     {params.InputProps.startAdornment}
@@ -759,34 +889,31 @@ const OnboardingContent: React.FC = () => {
                   </>
                 ),
               }}
-              sx={{ // Adjust padding for standard variant
+              sx={{
                 '& .MuiInputBase-root': {
                   paddingTop: '2px',
                   paddingBottom: '2px',
                 },
                  '& .MuiInputBase-input': {
-                   padding: theme.spacing(1.5, 1, 1.5, 0), // Adjust padding
+                   padding: theme.spacing(1.5, 1, 1.5, 0),
                    fontSize: '0.95rem',
                  },
               }}
             />
           )}
-          // Remove sx prop from Autocomplete itself
         />
-         {/* Add Button */}
          <IconButton
             onClick={handleAddTagClick}
             disabled={!tagSearchQuery.trim() || !selectedTagCategory || formValues.selectedTags.length >= 20}
             size="small"
-            sx={{ ml: 0.5 }} // Margin left for spacing
-            aria-label={t('common.addTag')} // Add translation key
+            sx={{ ml: 0.5 }}
+            aria-label={t('common.addTag')}
           >
             <Plus size={20} weight="bold" />
           </IconButton>
       </StyledInputContainer>
 
 
-       {/* Display ALL Selected Tags */}
        {formValues.selectedTags.length > 0 && (
         <Box sx={{ mt: 4 }}>
           <AccessibleTypography variant="h6" component="h3" sx={{ mb: 2, fontWeight: 500 }}>
@@ -795,17 +922,16 @@ const OnboardingContent: React.FC = () => {
           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, p: 1.5, border: `1px dashed ${theme.palette.divider}`, borderRadius: theme.shape.borderRadius * 1.5 }}>
             {formValues.selectedTags.map((tag) => (
               <StyledChip
-                key={`selected-${tag.type}-${tag.value}`} // Ensure unique key
-                label={`${tag.value} (${t(tagCategories.find(c => c.type === tag.type)?.label || tag.type)})`} // Show value and category type
+                key={`selected-${tag.type}-${tag.value}`}
+                label={`${tag.value} (${t(tagCategories.find(c => c.type === tag.type)?.label || tag.type)})`}
                 onDelete={() => {
-                  // Remove tag from the main list
                   setFormValues(prev => ({
                     ...prev,
                     selectedTags: prev.selectedTags.filter(t => !(t.type === tag.type && t.value === tag.value))
                   }));
                 }}
-                color="secondary" // Use secondary color for selected tags
-                size="medium" // Use medium size for better readability
+                color="secondary"
+                size="medium"
               />
             ))}
           </Box>
@@ -815,10 +941,9 @@ const OnboardingContent: React.FC = () => {
   );
 
    const renderReviewForm = () => (
-    <Box sx={{ mt: 5 }}> {/* Increased top margin */}
+    <Box sx={{ mt: 5 }}>
       <AccessibleTypography variant="h5" component="h2" gutterBottom sx={{ mb: 4, fontWeight: 500 }}>{t('onboarding.reviewInfo')}</AccessibleTypography>
 
-      {/* Basic Info Section */}
       <Box sx={{ mb: 4, p: 2.5, border: `1px solid ${theme.palette.divider}`, borderRadius: theme.shape.borderRadius * 2 }}>
         <AccessibleTypography variant="h6" sx={{ mb: 2, fontWeight: 500 }}>{t('onboarding.basicInfo')}</AccessibleTypography>
         <Grid container spacing={1.5}>
@@ -829,21 +954,21 @@ const OnboardingContent: React.FC = () => {
             <Grid item xs={12} sm={8}><Typography>{formValues.age}</Typography></Grid>
           </>)}
           {formValues.profilePicture && (<>
-            <Grid item xs={12} sm={4}><Typography fontWeight="medium">{t('onboarding.profilePictureUrl')}:</Typography></Grid>
-            <Grid item xs={12} sm={8}><Typography sx={{ wordBreak: 'break-all' }}>{formValues.profilePicture}</Typography></Grid>
+            <Grid item xs={12} sm={4}><Typography fontWeight="medium">{t('onboarding.profilePicture')}:</Typography></Grid>
+            <Grid item xs={12} sm={8}>
+               <Avatar src={formValues.profilePicture} alt={formValues.displayName || 'Profile'} sx={{ width: 60, height: 60 }} />
+            </Grid>
           </>)}
         </Grid>
       </Box>
 
-      {/* Bio Section */}
       {formValues.bio && (
         <Box sx={{ mb: 4, p: 2.5, border: `1px solid ${theme.palette.divider}`, borderRadius: theme.shape.borderRadius * 2 }}>
           <AccessibleTypography variant="h6" sx={{ mb: 2, fontWeight: 500 }}>{t('onboarding.bio')}</AccessibleTypography>
-          <Typography sx={{ whiteSpace: 'pre-wrap' }}>{formValues.bio}</Typography> {/* Preserve line breaks */}
+          <Typography sx={{ whiteSpace: 'pre-wrap' }}>{formValues.bio}</Typography>
         </Box>
       )}
 
-      {/* Tags Section */}
       {formValues.selectedTags.length > 0 && (
         <Box sx={{ mb: 4, p: 2.5, border: `1px solid ${theme.palette.divider}`, borderRadius: theme.shape.borderRadius * 2 }}>
           <AccessibleTypography variant="h6" sx={{ mb: 2, fontWeight: 500 }}>{t('onboarding.tags')}</AccessibleTypography>
@@ -852,17 +977,16 @@ const OnboardingContent: React.FC = () => {
               <StyledChip
                 key={`review-${tag.type}-${tag.value}-${idx}`}
                 label={tag.value}
-                title={t(tagCategories.find(c => c.type === tag.type)?.label || tag.type)} // Show category on hover
-                color="secondary" // Match selected color in tag form
-                variant="filled" // Keep filled for review
-                size="medium" // Use medium size for review
+                title={t(tagCategories.find(c => c.type === tag.type)?.label || tag.type)}
+                color="secondary"
+                variant="filled"
+                size="medium"
               />
             ))}
           </Box>
         </Box>
       )}
 
-      {/* Submission Error */}
       {submitError && (<Alert severity="error" sx={{ mt: 3, borderRadius: theme.shape.borderRadius }}>{submitError}</Alert>)}
     </Box>
   );
@@ -883,34 +1007,25 @@ const OnboardingContent: React.FC = () => {
       <Container maxWidth="md" sx={{ px: { xs: 2, sm: 3 } }}>
         <StyledPaper elevation={3}>
           <IconButton onClick={handleCancel} sx={{ position: 'absolute', top: 16, right: 16, bgcolor: 'action.hover', '&:hover': { bgcolor: 'action.selected' } }} aria-label={t('common.close')}>
-            {/* Use Phosphor X */}
             <X size={20} />
           </IconButton>
 
-          {/* Use Custom Stepper */}
           <Stepper activeStep={activeStep} alternativeLabel connector={<QontoConnector />} sx={{ mb: 5 }}>
-             {/* Removed unused index */}
             {steps.map((labelKey) => (
               <Step key={labelKey}>
-                {/* Pass the custom icon component */}
                 <StepLabel StepIconComponent={QontoStepIcon}>{t(labelKey)}</StepLabel>
               </Step>
             ))}
           </Stepper>
 
-          {/* Step Title */}
           <AccessibleTypography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 4, textAlign: 'center' }}>
             {t(steps[activeStep])}
           </AccessibleTypography>
-          {/* Removed Divider */}
 
-          {/* Form Validation Error */}
           {formError && !isSubmitting && (<Alert severity="warning" sx={{ mb: 3, borderRadius: theme.shape.borderRadius }}>{formError}</Alert>)}
 
-          {/* Render Active Step Content */}
           {renderStepContent()}
 
-          {/* Navigation Buttons */}
           <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 6, pt: 3, borderTop: `1px solid ${theme.palette.divider}` }}>
             <ActionButton
               variant="outlined"
@@ -922,7 +1037,7 @@ const OnboardingContent: React.FC = () => {
                 '&:hover': { borderColor: 'text.primary', bgcolor: 'action.hover' }
               }}
             >
-              {t('common.back')} {/* Assuming common.back exists */}
+              {t('common.back')}
             </ActionButton>
             <ActionButton
               variant="contained"
@@ -930,11 +1045,38 @@ const OnboardingContent: React.FC = () => {
               disabled={isSubmitting}
               disableElevation
             >
-              {isSubmitting ? (<CircularProgress size={24} color="inherit" />) : (activeStep === steps.length - 1 ? t('onboarding.saveProfile') : t('common.next'))} {/* Assuming common.next exists */}
+              {isSubmitting ? (<CircularProgress size={24} color="inherit" />) : (activeStep === steps.length - 1 ? t('onboarding.saveProfile') : t('common.next'))}
             </ActionButton>
           </Box>
         </StyledPaper>
       </Container>
+
+      <Dialog open={showCameraModal} onClose={closeCameraModal} maxWidth="sm" fullWidth>
+        <DialogTitle>{t('onboarding.takePhoto')}</DialogTitle>
+        <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+          {capturedImage ? (
+            <img src={capturedImage} alt={t('onboarding.capture')} style={{ maxWidth: '100%', height: 'auto', borderRadius: theme.shape.borderRadius }} />
+          ) : (
+            <Webcam
+              audio={false}
+              ref={webcamRef}
+              screenshotFormat="image/png"
+              width="100%"
+              videoConstraints={{ facingMode: "user" }}
+              style={{ borderRadius: theme.shape.borderRadius }}
+            />
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closeCameraModal}>{t('common.cancel')}</Button>
+          {capturedImage ? (
+             <Button onClick={handleUseCapturedImage} variant="contained">{t('onboarding.usePhoto')}</Button>
+          ) : (
+             <Button onClick={handleCapture} variant="contained">{t('onboarding.capture')}</Button>
+          )}
+        </DialogActions>
+      </Dialog>
+
     </ContentContainer>
   );
 };

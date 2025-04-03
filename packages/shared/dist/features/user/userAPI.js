@@ -1,6 +1,6 @@
 const API_ENDPOINT_USER = '/users/me';
 const API_ENDPOINT_USERS = '/users'; // Base endpoint for users
-const API_ENDPOINT_TAGS = '/tags';
+const API_ENDPOINT_TAGS = '/tags'; // Corrected endpoint path (base URL handles /api/v1)
 /**
  * Get the current user profile
  * @param apiClient The Axios instance to use.
@@ -44,24 +44,56 @@ export const createUser = async (apiClient, userData) => {
         throw new Error('Failed to create user profile');
     }
 };
-/**
- * Fetch all available tags for user profiles
- * @param apiClient The Axios instance to use.
- * @returns Promise with array of tags
- */
-export const fetchTags = async (apiClient) => {
+export const fetchTags = async (apiClient, params = {}) => {
     try {
-        const response = await apiClient.get(API_ENDPOINT_TAGS);
+        // Construct query parameters, applying defaults
+        const queryParams = {};
+        if (params.type !== undefined)
+            queryParams.type = params.type;
+        if (params.value !== undefined)
+            queryParams.value = params.value; // Use value for search
+        queryParams.page = params.page || 1; // Default page 1
+        queryParams.limit = params.limit || 10; // Default limit 10
+        queryParams.fuzzyThreshold = params.fuzzyThreshold || 70; // Default fuzzy threshold 70
+        const config = { params: queryParams };
+        // Use the updated endpoint and pass the config
+        const response = await apiClient.get(API_ENDPOINT_TAGS, config);
+        console.log(`Tags fetched successfully with params:`, params);
         return response.data;
     }
     catch (error) {
         console.error("Error fetching tags:", error.response?.data || error.message);
-        // Provide a more detailed error message if available
         if (error.response?.data?.message) {
             throw new Error(`Failed to fetch tags: ${error.response.data.message}`);
         }
-        // For other API failures
         throw new Error('Failed to fetch available tags');
+    }
+};
+/**
+ * Upload a profile picture for the current user
+ * @param apiClient The Axios instance to use.
+ * @param file The image file to upload.
+ * @returns Promise with the URL of the uploaded picture.
+ */
+const API_ENDPOINT_PROFILE_PICTURE = '/users/me/profile-picture';
+export const uploadProfilePicture = async (apiClient, file) => {
+    const formData = new FormData();
+    formData.append('file', file); // The API expects the file under the key 'file'
+    try {
+        const response = await apiClient.post(API_ENDPOINT_PROFILE_PICTURE, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        console.log("Profile picture uploaded successfully:", response.data.url);
+        return response.data.url;
+    }
+    catch (error) {
+        console.error("Error uploading profile picture:", error.response?.data || error.message);
+        if (error.response?.data?.message) {
+            throw new Error(`Failed to upload profile picture: ${error.response.data.message}`);
+        }
+        throw new Error('Failed to upload profile picture');
     }
 };
 /**

@@ -7,7 +7,7 @@ export { default as paginatedUsersReducer } from './features/user/paginatedUsers
 export type { TokensState } from './features/tokens/tokensSlice';
 export type { UserState } from './features/user/types';
 export type { PaginatedUsersState } from './features/user/paginatedUsersSlice';
-export * from './features/user/types';
+export type { Tag, UserPreferences, User, UserProfileInput, ListedUser, PaginatedUsersResponse } from './features/user/types';
 export * from './features/user/userAPI';
 export * from './features/tokens/tokensSlice';
 export * from './features/user/userSlice';

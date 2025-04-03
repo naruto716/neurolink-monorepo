@@ -91,6 +91,41 @@ export const fetchTags = async (apiClient: AxiosInstance, params: FetchTagsParam
     }
 };
 
+
+/**
+ * Upload a profile picture for the current user
+ * @param apiClient The Axios instance to use.
+ * @param file The image file to upload.
+ * @returns Promise with the URL of the uploaded picture.
+ */
+const API_ENDPOINT_PROFILE_PICTURE = '/users/me/profile-picture';
+
+interface UploadResponse {
+  url: string;
+}
+
+export const uploadProfilePicture = async (apiClient: AxiosInstance, file: File): Promise<string> => {
+    const formData = new FormData();
+    formData.append('file', file); // The API expects the file under the key 'file'
+
+    try {
+        const response = await apiClient.post<UploadResponse>(API_ENDPOINT_PROFILE_PICTURE, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data',
+            },
+        });
+        console.log("Profile picture uploaded successfully:", response.data.url);
+        return response.data.url;
+    } catch (error: any) {
+        console.error("Error uploading profile picture:", error.response?.data || error.message);
+        if (error.response?.data?.message) {
+            throw new Error(`Failed to upload profile picture: ${error.response.data.message}`);
+        }
+        throw new Error('Failed to upload profile picture');
+    }
+};
+
+
 // Define and export parameters for fetching users based on OpenAPI spec
 export interface FetchUsersParams {
     q?: string;
