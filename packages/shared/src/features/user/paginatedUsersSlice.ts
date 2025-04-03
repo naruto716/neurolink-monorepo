@@ -1,9 +1,9 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { AxiosInstance } from 'axios';
-// Use the correct ListedUser type
-import { ListedUser, PaginatedUsersResponse } from './types'; 
-import { fetchUsers, FetchUsersParams } from './userAPI'; 
-import { SharedRootState } from '../../app/store/store'; 
+// Use the correct ListedUser type and import Tag
+import { ListedUser, PaginatedUsersResponse, Tag } from './types';
+import { fetchUsers, FetchUsersParams } from './userAPI';
+import { SharedRootState } from '../../app/store/store';
 
 // Define the state structure for paginated users
 export interface PaginatedUsersState {
@@ -11,8 +11,8 @@ export interface PaginatedUsersState {
   currentPage: number;
   totalPages: number; // Calculate this based on totalUsers and pageSize
   totalCount: number; // Use totalUsers from API response
-  pageSize: number; 
-  currentFilters: Omit<FetchUsersParams, 'page' | 'limit'>; 
+  pageSize: number;
+  currentFilters: Omit<FetchUsersParams, 'page' | 'limit'>; // This type will be updated by FetchUsersParams change
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
   error: string | null;
 }
@@ -23,13 +23,13 @@ const initialState: PaginatedUsersState = {
   currentPage: 1,
   totalPages: 0,
   totalCount: 0,
-  pageSize: 10, 
-  currentFilters: {}, 
+  pageSize: 10,
+  currentFilters: {}, // Initial filters are empty
   status: 'idle',
   error: null,
 };
 
-// Define parameters for the async thunk
+// Define parameters for the async thunk (FetchUsersParams is defined in userAPI.ts, needs update there too)
 interface FetchPaginatedUsersArgs extends FetchUsersParams {
   apiClient: AxiosInstance;
 }
@@ -61,14 +61,15 @@ export const paginatedUsersSlice = createSlice({
         state.currentPage = 1;
         state.totalPages = 0;
         state.totalCount = 0;
-        state.currentFilters = {};
+        state.currentFilters = {}; // Reset filters
         state.status = 'idle';
         state.error = null;
     },
+    // Ensure payload matches the structure expected by FetchUsersParams (excluding page/limit)
     setUsersFilters: (state, action: PayloadAction<Omit<FetchUsersParams, 'page' | 'limit'>>) => {
         state.currentFilters = action.payload;
-        state.currentPage = 1; 
-        state.status = 'idle'; 
+        state.currentPage = 1;
+        state.status = 'idle';
     }
   },
   extraReducers: (builder) => {
@@ -76,12 +77,14 @@ export const paginatedUsersSlice = createSlice({
       .addCase(fetchPaginatedUsers.pending, (state, action) => {
         state.status = 'loading';
         state.error = null;
-        state.currentFilters = { 
+        // Store the filters used for this request, matching FetchUsersParams structure
+        state.currentFilters = {
             q: action.meta.arg.q,
             minAge: action.meta.arg.minAge,
             maxAge: action.meta.arg.maxAge,
             tagTypes: action.meta.arg.tagTypes,
             tagValues: action.meta.arg.tagValues,
+            // Removed incorrect 'tags' property
         };
         state.pageSize = action.meta.arg.limit || 10;
       })
@@ -129,7 +132,7 @@ export const selectUsersTotalCount = (state: SharedRootState): number =>
 export const selectUsersPageSize = (state: SharedRootState): number => 
   state.paginatedUsers?.pageSize || 10;
 
-export const selectUsersCurrentFilters = (state: SharedRootState): Omit<FetchUsersParams, 'page' | 'limit'> => 
+export const selectUsersCurrentFilters = (state: SharedRootState): Omit<FetchUsersParams, 'page' | 'limit'> =>
   state.paginatedUsers?.currentFilters || {};
 
 

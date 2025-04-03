@@ -418,7 +418,7 @@ const OnboardingContent: React.FC = () => {
 
 
   // Handle adding/removing tags via Autocomplete
-  const handleTagsChange = (event: React.SyntheticEvent, newValue: (Tag | { inputValue: string; title: string } | string)[]) => {
+  const handleTagsChange = (_event: React.SyntheticEvent, newValue: (Tag | { inputValue: string; title: string } | string)[]) => {
     const newActualTags = newValue.filter(v => typeof v !== 'string' && !('inputValue' in v)) as Tag[];
     const otherCategoryTagsCount = formValues.selectedTags.filter(tag => tag.type !== selectedTagCategory).length;
     const potentialTotalCount = otherCategoryTagsCount + newActualTags.length;

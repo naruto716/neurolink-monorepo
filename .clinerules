@@ -5,8 +5,24 @@ When using Typography, use accessibleTypography where possible. You should not j
 This application is served for neurodivergent students
 For business logic, use the shared repo.
 If you need critical information, never assume it. Ask me instead.
+If you need critical information, never assume it. Ask me instead.
+If you need critical information, never assume it. Ask me instead.
+If you need critical information, never assume it. Ask me instead.
+If you need critical information, never assume it. Ask me instead.
+If you need critical information, never assume it. Ask me instead.
+If you need critical information, never assume it. Ask me instead.
+If you need critical information, never assume it. Ask me instead.
+If you need critical information, never assume it. Ask me instead.
+If you need critical information, never assume it. Ask me instead.
+If you need critical information, never assume it. Ask me instead.
+If you need critical information, never assume it. Ask me instead.
+If you need critical information, never assume it. Ask me instead.
+If you need critical information, never assume it. Ask me instead.
+If you need critical information, never assume it. Ask me instead.
+
 
 For APIs, use the shared package.
 
 This project uses monorepo with react (apps/web) and react native (apps/mobile).
+
 For package management, please stick with yarn workplace.

@@ -124,14 +124,24 @@
   "people": { 
     "title": "People",
     "header": "Find People",
-    "searchLabel": "Search by name, skill, interest...",
+    "searchLabel": "Search by name...",
     "searchButton": "Search",
     "errorLoading": "Failed to load people.",
     "noResults": "No people found matching your criteria.",
-    "selectCategory": "Select Category",
-    "searchTagsPlaceholder": "Search tags...",
-    "addTag": "Add tag",
-    "cancel": "Cancel"
+    "endOfResults": "You've reached the end of the results",
+    "selectCategoryPlaceholder": "Select Category...",
+    "searchTagPlaceholder": "Search tags...",
+    "selectCategoryFirst": "Select category first",
+    "noTagsFound": "No tags found",
+    "error": {
+      "loadingTagsSpecific": "Error loading tags for {{category}}",
+      "loadingTagsGeneric": "Could not load tags"
+    },
+    "activeFilters": "Filters:",
+    "yearsOld": "{{age}} years old",
+    "connectButton": "Connect",
+    "messageButton": "Message",
+    "viewProfileButton": "View Profile"
   },
   "common": {
     "back": "Back",
@@ -143,6 +153,8 @@
     "selectCategory": "Select Category",
     "searchTagsPlaceholder": "Search tags...",
     "addTag": "Add tag",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "scrollLeft": "Scroll left",
+    "scrollRight": "Scroll right"
   }
 }

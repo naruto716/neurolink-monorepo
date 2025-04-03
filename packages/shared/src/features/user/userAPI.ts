@@ -1,5 +1,6 @@
-import { AxiosInstance, AxiosRequestConfig } from 'axios'; // Import AxiosInstance type and AxiosRequestConfig
-import { User, Tag, PaginatedUsersResponse, UserProfileInput } from './types'; // Added PaginatedUsersResponse and UserProfileInput
+import { AxiosInstance, AxiosRequestConfig } from 'axios';
+import * as qs from 'qs'; // Import qs library
+import { User, Tag, PaginatedUsersResponse, UserProfileInput } from './types';
 
 const API_ENDPOINT_USER = '/users/me';
 const API_ENDPOINT_USERS = '/users'; // Base endpoint for users
@@ -133,6 +134,7 @@ export interface FetchUsersParams {
     maxAge?: number;
     tagTypes?: string[];
     tagValues?: string[];
+    tags?: Tag[]; // Add tags array for filtering
     page?: number;
     limit?: number;
 }
@@ -150,19 +152,23 @@ export const fetchUsers = async (apiClient: AxiosInstance, params: FetchUsersPar
         if (params.q !== undefined) queryParams.q = params.q;
         if (params.minAge !== undefined) queryParams.minAge = params.minAge;
         if (params.maxAge !== undefined) queryParams.maxAge = params.maxAge;
-        if (params.tagTypes !== undefined) queryParams.tagTypes = params.tagTypes;
-        if (params.tagValues !== undefined) queryParams.tagValues = params.tagValues;
+        // Keep tagTypes and tagValues as arrays in the queryParams object
+        if (params.tagTypes !== undefined && params.tagTypes.length > 0) queryParams.tagTypes = params.tagTypes;
+        if (params.tagValues !== undefined && params.tagValues.length > 0) queryParams.tagValues = params.tagValues;
+        // Removed incorrect 'tags' parameter handling
         queryParams.page = params.page || 1; // Default page 1
         queryParams.limit = params.limit || 10; // Default limit 10
 
         const config: AxiosRequestConfig = {
             params: queryParams,
-            // Axios typically handles array serialization correctly for query params
-            // If backend expects specific format (e.g., comma-separated), adjust here or use paramsSerializer
+            // Use qs to serialize arrays with repeated keys
+            paramsSerializer: params => {
+                return qs.stringify(params, { arrayFormat: 'repeat' });
+            }
         };
 
-        const response = await apiClient.get<PaginatedUsersResponse>(API_ENDPOINT_USERS, config); 
-        console.log("Users fetched successfully:", response.data);
+        const response = await apiClient.get<PaginatedUsersResponse>(API_ENDPOINT_USERS, config);
+        console.log("Users fetched successfully with params:", queryParams, "Response:", response.data);
         return response.data;
     } catch (error: any) {
         console.error("Error fetching users:", error.response?.data || error.message);
