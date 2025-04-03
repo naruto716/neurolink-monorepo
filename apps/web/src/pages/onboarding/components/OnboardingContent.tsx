@@ -10,6 +10,8 @@ import {
   PencilSimple, // For editing profile picture
   UploadSimple, // For uploading profile picture
   Camera, // For camera option
+  Check, // Added for Use Photo button
+  ArrowCounterClockwise // Added for Retake button
 } from '@phosphor-icons/react';
 import {
   Alert,
@@ -19,11 +21,6 @@ import {
   Chip,
   CircularProgress,
   Container,
-  Dialog, // Added for camera modal
-  DialogActions, // Added for camera modal
-  DialogContent, // Added for camera modal
-  DialogTitle, // Added for camera modal
-  // FormControl, // Removed unused import
   Grid,
   IconButton,
   InputAdornment, // Added for search icon
@@ -43,6 +40,8 @@ import {
   TextField,
   Typography,
   useTheme, // Added
+  Fade, // Added for transitions
+  Slide, // Added for transitions
 } from '@mui/material';
 import { selectIdToken } from '@neurolink/shared/src/features/tokens/tokensSlice';
 import { Tag, UserPreferences, UserProfileInput } from '@neurolink/shared/src/features/user/types';
@@ -122,8 +121,8 @@ const StyledTextField = styled(TextField)(({ theme }) => ({
 }));
 
 const AvatarPlaceholder = styled(Box)(({ theme }) => ({
-  width: 110, // Larger avatar
-  height: 110,
+  width: 150, // Increased size
+  height: 150, // Increased size
   borderRadius: '50%',
   // Use a light primary background for the placeholder itself
   backgroundColor: theme.palette.mode === 'light' ? theme.palette.primary.light + '40' : theme.palette.primary.dark + '60', // Added transparency
@@ -157,6 +156,14 @@ const UploadOverlay = styled(Box)({
   borderRadius: '50%', // Match parent border radius
 });
 
+// Add styling for the button group below the avatar
+const CameraActionButtons = styled(Box)(({ theme }) => ({
+  display: 'flex',
+  justifyContent: 'center',
+  gap: theme.spacing(1.5),
+  marginTop: theme.spacing(2),
+  flexWrap: 'wrap', // Allow wrapping on small screens
+}));
 
 const StyledChip = styled(Chip)(({ theme }) => ({
   borderRadius: theme.shape.borderRadius * 1.5, // Consistent rounding
@@ -319,15 +326,17 @@ const OnboardingContent: React.FC = () => {
   const [formError, setFormError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCompleting, setIsCompleting] = useState(false); // NEW: State for completion transition
 
   // --- Profile Picture State ---
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null); // Ref for hidden file input
-  const [showCameraModal, setShowCameraModal] = useState(false);
-  const [capturedImage, setCapturedImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  // --- Webcam specific state ---
+  const [isCameraActive, setIsCameraActive] = useState(false); // NEW: Track if camera view is active
+  const [stagedCapturedImage, setStagedCapturedImage] = useState<string | null>(null); // NEW: Temp storage for snapped pic
   const webcamRef = useRef<Webcam>(null);
   // --- End Profile Picture State ---
 
@@ -505,66 +514,47 @@ const OnboardingContent: React.FC = () => {
         toast.error(t('onboarding.error.invalidFileType'));
         return;
       }
-      setSelectedFile(file);
+      setIsCameraActive(false); // Deactivate camera if user uploads file
+      setStagedCapturedImage(null); // Clear any staged image
+      setSelectedFile(file); // This triggers the upload useEffect
       setUploadError(null);
-
       const reader = new FileReader();
       reader.onloadend = () => {
-        setPreviewUrl(reader.result as string);
+        setPreviewUrl(reader.result as string); // Show preview immediately
       };
       reader.readAsDataURL(file);
     }
   };
 
-  // Effect to upload the file when selectedFile changes
+  // Upload effect remains the same (triggered by selectedFile change)
   useEffect(() => {
     if (!selectedFile) return;
-
     const upload = async () => {
       setIsUploading(true);
       setUploadError(null);
       try {
         const uploadedUrl = await uploadProfilePicture(apiClient, selectedFile);
         setFormValues(prev => ({ ...prev, profilePicture: uploadedUrl }));
-        setPreviewUrl(uploadedUrl);
+        setPreviewUrl(uploadedUrl); // Update preview to final URL *after* upload
         toast.success(t('onboarding.success.pictureUploaded'));
       } catch (error) {
         const message = (error instanceof Error) ? error.message : t('onboarding.error.uploadFailedGeneric');
         setUploadError(message);
         toast.error(message);
+        // Clear the file/preview if upload fails?
+        // setSelectedFile(null);
+        // setPreviewUrl(formValues.profilePicture || null); // Revert preview to last uploaded?
       } finally {
         setIsUploading(false);
       }
     };
-
     upload();
-  }, [selectedFile, t]);
+  }, [selectedFile, t, dispatch]); // Added dispatch to dependencies
 
-  // --- Camera Logic (Refactored for react-webcam) ---
-  const openCameraModal = () => {
-    setCapturedImage(null);
-    setShowCameraModal(true);
-  };
+  // --- Camera Logic (Refactored for inline view) ---
 
-  const closeCameraModal = () => {
-    setShowCameraModal(false);
-    setCapturedImage(null);
-  };
-
-  const handleCapture = useCallback(() => {
-    if (webcamRef.current) {
-      const imageSrc = webcamRef.current.getScreenshot();
-      if (imageSrc) {
-        setCapturedImage(imageSrc);
-      } else {
-        console.error("Failed to get screenshot from webcam.");
-        toast.error(t('onboarding.error.captureFailed'));
-      }
-    }
-  }, [webcamRef, t]);
-
-  // Helper function to convert base64 to Blob
-  const dataURLtoBlob = (dataurl: string): Blob | null => {
+  // Helper function to convert base64 to Blob (remains the same)
+   const dataURLtoBlob = (dataurl: string): Blob | null => {
       try {
         const arr = dataurl.split(',');
         if (arr.length < 2) return null;
@@ -574,30 +564,61 @@ const OnboardingContent: React.FC = () => {
         const bstr = atob(arr[1]);
         let n = bstr.length;
         const u8arr = new Uint8Array(n);
-        while(n--){
-            u8arr[n] = bstr.charCodeAt(n);
-        }
+        while(n--){ u8arr[n] = bstr.charCodeAt(n); }
         return new Blob([u8arr], {type:mime});
-      } catch (e) {
-        console.error("Error converting data URL to blob:", e);
-        return null;
-      }
+      } catch (e) { console.error("Error converting data URL to blob:", e); return null; }
   }
 
-  const handleUseCapturedImage = () => {
-    if (capturedImage) {
-      const blob = dataURLtoBlob(capturedImage);
-      if (blob) {
-          const capturedFile = new File([blob], `capture-${Date.now()}.png`, { type: blob.type || 'image/png' });
-          setSelectedFile(capturedFile);
-          setPreviewUrl(capturedImage);
-          closeCameraModal();
+  // Toggle camera view on/off
+  const toggleCameraView = () => {
+      setIsCameraActive(prev => !prev);
+      setStagedCapturedImage(null); // Clear staged image when toggling
+      // If turning off camera, maybe clear preview? Or keep last uploaded?
+      // setPreviewUrl(formValues.profilePicture || null); // Example: revert to last uploaded
+  };
+
+  // Capture photo from webcam feed
+  const handleCapture = useCallback(() => {
+    if (webcamRef.current) {
+      const imageSrc = webcamRef.current.getScreenshot();
+      if (imageSrc) {
+        setStagedCapturedImage(imageSrc); // Store captured image temporarily
       } else {
-         toast.error(t('onboarding.error.captureFailed'));
-         closeCameraModal();
+        console.error("Failed to get screenshot from webcam.");
+        toast.error(t('onboarding.error.captureFailed'));
       }
     }
+  }, [webcamRef, t]);
+
+  // Use the staged captured photo
+  const handleUseStagedImage = () => {
+    if (stagedCapturedImage) {
+      const blob = dataURLtoBlob(stagedCapturedImage);
+      if (blob) {
+          const capturedFile = new File([blob], `capture-${Date.now()}.png`, { type: blob.type || 'image/png' });
+          setSelectedFile(capturedFile); // This triggers the upload useEffect
+          setPreviewUrl(stagedCapturedImage); // Show captured image as main preview immediately
+      } else {
+         toast.error(t('onboarding.error.captureFailed'));
+      }
+      // Deactivate camera view and clear staged image regardless of blob success
+      setIsCameraActive(false);
+      setStagedCapturedImage(null);
+    }
   };
+
+  // Retake photo (clear staged image, keep camera active)
+  const handleRetake = () => {
+      setStagedCapturedImage(null);
+  };
+
+  // Cancel camera view (deactivate, clear staged)
+   const handleCancelCamera = () => {
+      setIsCameraActive(false);
+      setStagedCapturedImage(null);
+      // Maybe revert preview?
+      // setPreviewUrl(formValues.profilePicture || null);
+   }
   // --- End Camera Logic ---
 
 
@@ -629,12 +650,12 @@ const OnboardingContent: React.FC = () => {
 
   // Handle form submission
   const handleSubmit = async () => {
-    setIsSubmitting(true);
+    setIsSubmitting(true); // Keep this to disable buttons immediately
     setSubmitError(null);
     if (!idToken) {
-      setSubmitError(t('onboarding.error.noIdToken'));
-      toast.error(t('onboarding.error.noIdToken'));
-      setIsSubmitting(false);
+       setSubmitError(t('onboarding.error.noIdToken'));
+       toast.error(t('onboarding.error.noIdToken'));
+       setIsSubmitting(false);
       return;
     }
     let decodedToken: DecodedIdToken;
@@ -655,7 +676,7 @@ const OnboardingContent: React.FC = () => {
       setIsSubmitting(false);
       return;
     }
-    const profileData: UserProfileInput = {
+     const profileData: UserProfileInput = {
       email: decodedToken.email,
       displayName: formValues.displayName,
       profilePicture: formValues.profilePicture || undefined,
@@ -664,20 +685,30 @@ const OnboardingContent: React.FC = () => {
       tags: formValues.selectedTags,
       preferences: formValues.preferences
     };
+
     try {
       const createdUser = await createUser(apiClient, profileData);
       console.log('User created successfully:', createdUser);
       toast.success(t('onboarding.success.profileCreated'));
-      dispatch(setOnboardingStatus(true));
-      navigate('/profile');
+      dispatch(setOnboardingStatus(true)); // Mark onboarding as done
+
+      // Start completion transition instead of navigating immediately
+      setIsCompleting(true);
+
+      // Set a timeout to navigate after the animation
+      setTimeout(() => {
+        navigate('/'); // Navigate to home page
+      }, 2500); // Delay matching animation duration (adjust as needed)
+
     } catch (err) {
       const errorMsg = t('onboarding.error.submitFailed');
       const detailedError = (err instanceof Error) ? err.message : String(err);
       setSubmitError(detailedError || errorMsg);
       toast.error(`${errorMsg}: ${detailedError}`);
-    } finally {
+      // Ensure submitting state is reset on error
       setIsSubmitting(false);
     }
+    // Don't set isSubmitting back to false here if successful, keep buttons disabled
   };
 
   // Handle close/cancel
@@ -698,48 +729,92 @@ const OnboardingContent: React.FC = () => {
         style={{ display: 'none' }}
         id="profile-picture-upload"
       />
-      {/* Clickable Avatar Area */}
-      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 4 }}>
-         <label htmlFor="profile-picture-upload" style={{ display: 'block', width: 'fit-content', margin: '0 auto', cursor: 'pointer' }}>
-            <AvatarPlaceholder
-              tabIndex={0}
-              aria-label={t('onboarding.uploadProfilePictureLabel')}
-            >
-              <Avatar
-                src={previewUrl || formValues.profilePicture || undefined}
-                alt={formValues.displayName || 'User'}
-                sx={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'cover',
-                  bgcolor: 'transparent'
-                }}
-              >
-                {!previewUrl && !formValues.profilePicture && <UserCircle size={60} color={theme.palette.primary.main} />}
-              </Avatar>
-              <UploadOverlay className="upload-overlay">
-                {isUploading ? <CircularProgress color="inherit" size={30} /> : (previewUrl || formValues.profilePicture ? <PencilSimple size={30} /> : <UploadSimple size={30} />)}
-              </UploadOverlay>
-           </AvatarPlaceholder>
-          </label>
-        {/* Helper Text & Camera Button */}
-        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, textAlign: 'center' }}>
-          {t('onboarding.profilePictureHelpUpload')}
-        </Typography>
-        <Button
-          variant="text"
-          startIcon={<Camera size={18} />}
-          onClick={openCameraModal}
-          size="small"
-          sx={{ mt: 0.5, textTransform: 'none' }}
-        >
-          {t('onboarding.useCamera')}
-        </Button>
-      </Box>
-      {/* Upload Error Message */}
-      {uploadError && <Alert severity="error" sx={{ mb: 2, borderRadius: theme.shape.borderRadius }}>{uploadError}</Alert>}
+      {/* Combined Avatar/Webcam Area */}
+      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', mb: 2 }}>
+          <AvatarPlaceholder aria-label={t('onboarding.profilePicture')}>
+              {/* Conditional Rendering Inside Placeholder */}
+              {isCameraActive ? (
+                  stagedCapturedImage ? (
+                      // Show snapped photo
+                      <img src={stagedCapturedImage} alt={t('onboarding.capture')} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                      // Show live webcam feed
+                      <Webcam
+                          audio={false}
+                          ref={webcamRef}
+                          screenshotFormat="image/png"
+                          width="100%"
+                          height="100%"
+                          videoConstraints={{ facingMode: "user", width: 180, height: 180 }} // Constrain size
+                          mirrored={true} // Mirror selfie view
+                          style={{ objectFit: 'cover', width: '100%', height: '100%' }} // Ensure it fills circle
+                      />
+                  )
+              ) : (
+                  // Show default view: Uploaded photo, preview, or fallback icon
+                  <>
+                      <Avatar
+                          src={previewUrl || formValues.profilePicture || undefined}
+                          alt={formValues.displayName || 'User'}
+                          sx={{ width: '100%', height: '100%', objectFit: 'cover', bgcolor: 'transparent' }}
+                      >
+                          {!previewUrl && !formValues.profilePicture && <UserCircle size={60} color={theme.palette.primary.main} />}
+                      </Avatar>
+                      {/* Upload Overlay - show only when camera isn't active */}
+                      {!isCameraActive && (
+                           <UploadOverlay className="upload-overlay" onClick={() => fileInputRef.current?.click()}>
+                               {isUploading ? <CircularProgress color="inherit" size={30} /> : (previewUrl || formValues.profilePicture ? <PencilSimple size={30} /> : <UploadSimple size={30} />)}
+                           </UploadOverlay>
+                      )}
+                  </>
+              )}
+          </AvatarPlaceholder>
 
-      <Grid container spacing={3}>
+
+          {/* Action Buttons Below Avatar */}
+          {!isCameraActive ? (
+               <CameraActionButtons>
+                    {/* Button to trigger file input */}
+                    <Button variant="outlined" size="small" startIcon={<UploadSimple size={18}/>} onClick={() => fileInputRef.current?.click()}>
+                        {t('onboarding.uploadFile')} {/* ADD TRANSLATION KEY */}
+                    </Button>
+                    {/* Button to activate camera view */}
+                    <Button variant="outlined" size="small" startIcon={<Camera size={18} />} onClick={toggleCameraView}>
+                        {t('onboarding.useCamera')}
+                    </Button>
+               </CameraActionButtons>
+           ) : (
+                // Buttons for when camera is active
+                stagedCapturedImage ? (
+                    // Buttons after capturing photo
+                    <CameraActionButtons>
+                        <Button variant="contained" size="small" startIcon={<Check size={18} />} onClick={handleUseStagedImage}>
+                           {t('onboarding.usePhoto')}
+                        </Button>
+                        <Button variant="outlined" size="small" startIcon={<ArrowCounterClockwise size={18} />} onClick={handleRetake}>
+                           {t('onboarding.retake')} {/* ADD TRANSLATION KEY */}
+                        </Button>
+                    </CameraActionButtons>
+                ) : (
+                    // Buttons for live camera feed
+                     <CameraActionButtons>
+                        <Button variant="contained" size="small" startIcon={<Camera size={18} />} onClick={handleCapture}>
+                           {t('onboarding.capture')}
+                        </Button>
+                        <Button variant="outlined" size="small" onClick={handleCancelCamera}>
+                           {t('common.cancel')}
+                        </Button>
+                    </CameraActionButtons>
+                )
+           )}
+
+           {/* Upload Error Message */}
+          {uploadError && <Alert severity="error" sx={{ mt: 2, width: '100%', maxWidth: '300px' }}>{uploadError}</Alert>}
+      </Box>
+
+
+      {/* Display Name Grid */}
+      <Grid container spacing={3} sx={{ mt: 2 }}> {/* Add margin top */}
         <Grid item xs={12}>
           <AccessibleTypography component="label" sx={{ mb: 1, display: 'block', fontWeight: 500 }}>{t('onboarding.displayName')}*</AccessibleTypography>
           <StyledTextField required fullWidth id="displayName" name="displayName" value={formValues.displayName} onChange={handleInputChange} error={!!formError && !formValues.displayName} helperText={t('onboarding.displayNameHelp')} aria-describedby="displayName-helper-text" />
@@ -942,8 +1017,16 @@ const OnboardingContent: React.FC = () => {
 
    const renderReviewForm = () => (
     <Box sx={{ mt: 5 }}>
-      <AccessibleTypography variant="h5" component="h2" gutterBottom sx={{ mb: 4, fontWeight: 500 }}>{t('onboarding.reviewInfo')}</AccessibleTypography>
+      <AccessibleTypography variant="h5" component="h2" gutterBottom sx={{ mb: 2, fontWeight: 500, textAlign: 'center' }}>{t('onboarding.reviewInfo')}</AccessibleTypography>
 
+      {/* Display Uploaded Profile Picture - Centered at the top */}
+      {formValues.profilePicture && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mb: 4 }}>
+           <Avatar src={formValues.profilePicture} alt={formValues.displayName || 'Profile'} sx={{ width: 100, height: 100 }} />
+        </Box>
+      )}
+
+      {/* Basic Info Section - No Picture Here */}
       <Box sx={{ mb: 4, p: 2.5, border: `1px solid ${theme.palette.divider}`, borderRadius: theme.shape.borderRadius * 2 }}>
         <AccessibleTypography variant="h6" sx={{ mb: 2, fontWeight: 500 }}>{t('onboarding.basicInfo')}</AccessibleTypography>
         <Grid container spacing={1.5}>
@@ -953,15 +1036,11 @@ const OnboardingContent: React.FC = () => {
             <Grid item xs={12} sm={4}><Typography fontWeight="medium">{t('onboarding.age')}:</Typography></Grid>
             <Grid item xs={12} sm={8}><Typography>{formValues.age}</Typography></Grid>
           </>)}
-          {formValues.profilePicture && (<>
-            <Grid item xs={12} sm={4}><Typography fontWeight="medium">{t('onboarding.profilePicture')}:</Typography></Grid>
-            <Grid item xs={12} sm={8}>
-               <Avatar src={formValues.profilePicture} alt={formValues.displayName || 'Profile'} sx={{ width: 60, height: 60 }} />
-            </Grid>
-          </>)}
+          {/* Removed profile picture grid items from here */}
         </Grid>
       </Box>
 
+      {/* Bio Section */}
       {formValues.bio && (
         <Box sx={{ mb: 4, p: 2.5, border: `1px solid ${theme.palette.divider}`, borderRadius: theme.shape.borderRadius * 2 }}>
           <AccessibleTypography variant="h6" sx={{ mb: 2, fontWeight: 500 }}>{t('onboarding.bio')}</AccessibleTypography>
@@ -1005,78 +1084,91 @@ const OnboardingContent: React.FC = () => {
   return (
     <ContentContainer>
       <Container maxWidth="md" sx={{ px: { xs: 2, sm: 3 } }}>
-        <StyledPaper elevation={3}>
-          <IconButton onClick={handleCancel} sx={{ position: 'absolute', top: 16, right: 16, bgcolor: 'action.hover', '&:hover': { bgcolor: 'action.selected' } }} aria-label={t('common.close')}>
-            <X size={20} />
-          </IconButton>
+        {/* Wrap paper content in Fade for fade-out effect */}
+        <Fade in={!isCompleting} timeout={500} unmountOnExit>
+            <StyledPaper elevation={3}>
+              {/* Close Button */}
+              <IconButton onClick={handleCancel} disabled={isCompleting} sx={{ position: 'absolute', top: 16, right: 16, bgcolor: 'action.hover', '&:hover': { bgcolor: 'action.selected' } }} aria-label={t('common.close')}>
+                <X size={20} />
+              </IconButton>
 
-          <Stepper activeStep={activeStep} alternativeLabel connector={<QontoConnector />} sx={{ mb: 5 }}>
-            {steps.map((labelKey) => (
-              <Step key={labelKey}>
-                <StepLabel StepIconComponent={QontoStepIcon}>{t(labelKey)}</StepLabel>
-              </Step>
-            ))}
-          </Stepper>
+              {/* Stepper, Title, Form Error, Step Content */}
+               {/* Conditionally render or hide/disable these during completion */}
+                {!isCompleting && (
+                    <>
+                        <Stepper activeStep={activeStep} alternativeLabel connector={<QontoConnector />} sx={{ mb: 5 }}>
+                           {steps.map((labelKey) => (
+                                <Step key={labelKey}>
+                                    <StepLabel StepIconComponent={QontoStepIcon}>{t(labelKey)}</StepLabel>
+                                </Step>
+                           ))}
+                        </Stepper>
+                        <AccessibleTypography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 4, textAlign: 'center' }}>
+                            {t(steps[activeStep])}
+                        </AccessibleTypography>
+                        {formError && !isSubmitting && (<Alert severity="warning" sx={{ mb: 3, borderRadius: theme.shape.borderRadius }}>{formError}</Alert>)}
+                    </>
+                )}
 
-          <AccessibleTypography variant="h4" component="h1" sx={{ fontWeight: 700, mb: 4, textAlign: 'center' }}>
-            {t(steps[activeStep])}
-          </AccessibleTypography>
+                {renderStepContent()}
 
-          {formError && !isSubmitting && (<Alert severity="warning" sx={{ mb: 3, borderRadius: theme.shape.borderRadius }}>{formError}</Alert>)}
 
-          {renderStepContent()}
+              {/* Navigation Buttons - Disable during completion */}
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 6, pt: 3, borderTop: `1px solid ${theme.palette.divider}` }}>
+                <ActionButton
+                  variant="outlined"
+                  onClick={handleBack}
+                  disabled={activeStep === 0 || isSubmitting || isCompleting} // Disable if completing
+                  sx={{ color: 'text.secondary', borderColor: 'divider', '&:hover': { borderColor: 'text.primary', bgcolor: 'action.hover' } }}
+                >
+                  {t('common.back')}
+                </ActionButton>
+                <ActionButton
+                  variant="contained"
+                  onClick={activeStep === steps.length - 1 ? handleSubmit : handleNext}
+                  disabled={isSubmitting || isCompleting} // Disable if completing
+                  disableElevation
+                >
+                  {isSubmitting ? (<CircularProgress size={24} color="inherit" />) : (activeStep === steps.length - 1 ? t('onboarding.saveProfile') : t('common.next'))}
+                </ActionButton>
+              </Box>
+            </StyledPaper>
+          </Fade>
 
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 6, pt: 3, borderTop: `1px solid ${theme.palette.divider}` }}>
-            <ActionButton
-              variant="outlined"
-              onClick={handleBack}
-              disabled={activeStep === 0 || isSubmitting}
-              sx={{
-                color: 'text.secondary',
-                borderColor: 'divider',
-                '&:hover': { borderColor: 'text.primary', bgcolor: 'action.hover' }
-              }}
-            >
-              {t('common.back')}
-            </ActionButton>
-            <ActionButton
-              variant="contained"
-              onClick={activeStep === steps.length - 1 ? handleSubmit : handleNext}
-              disabled={isSubmitting}
-              disableElevation
-            >
-              {isSubmitting ? (<CircularProgress size={24} color="inherit" />) : (activeStep === steps.length - 1 ? t('onboarding.saveProfile') : t('common.next'))}
-            </ActionButton>
-          </Box>
-        </StyledPaper>
+          {/* Welcome Message Animation - Appears when completing */}
+          <Fade in={isCompleting} timeout={1000} style={{ transitionDelay: isCompleting ? '500ms' : '0ms' }}>
+             <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  textAlign: 'center',
+                  px: 3, // Add padding
+                  pointerEvents: 'none', // Allow clicks through if needed
+                }}
+              >
+                <Slide direction="up" in={isCompleting} timeout={1500} style={{ transitionDelay: isCompleting ? '600ms' : '0ms' }}>
+                  <Typography
+                     variant="h2" // Larger text
+                     component="h1"
+                     sx={{
+                         color: 'common.white', // Ensure white text
+                         fontWeight: 700,
+                         textShadow: '0px 2px 4px rgba(0,0,0,0.5)' // Add subtle shadow
+                     }}
+                    >
+                     {t('onboarding.welcomeMessage')}
+                  </Typography>
+                </Slide>
+            </Box>
+          </Fade>
+
       </Container>
-
-      <Dialog open={showCameraModal} onClose={closeCameraModal} maxWidth="sm" fullWidth>
-        <DialogTitle>{t('onboarding.takePhoto')}</DialogTitle>
-        <DialogContent sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-          {capturedImage ? (
-            <img src={capturedImage} alt={t('onboarding.capture')} style={{ maxWidth: '100%', height: 'auto', borderRadius: theme.shape.borderRadius }} />
-          ) : (
-            <Webcam
-              audio={false}
-              ref={webcamRef}
-              screenshotFormat="image/png"
-              width="100%"
-              videoConstraints={{ facingMode: "user" }}
-              style={{ borderRadius: theme.shape.borderRadius }}
-            />
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={closeCameraModal}>{t('common.cancel')}</Button>
-          {capturedImage ? (
-             <Button onClick={handleUseCapturedImage} variant="contained">{t('onboarding.usePhoto')}</Button>
-          ) : (
-             <Button onClick={handleCapture} variant="contained">{t('onboarding.capture')}</Button>
-          )}
-        </DialogActions>
-      </Dialog>
-
     </ContentContainer>
   );
 };

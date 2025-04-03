@@ -116,7 +116,10 @@
     "useCamera": "Use Camera",
     "takePhoto": "Take Photo",
     "usePhoto": "Use This Photo",
-    "capture": "Capture"
+    "capture": "Capture",
+    "uploadFile": "Upload File",
+    "retake": "Retake",
+    "welcomeMessage": "Welcome to Neurolink!"
   },
   "people": { 
     "title": "People",
