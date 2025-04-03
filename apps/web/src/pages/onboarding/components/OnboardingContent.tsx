@@ -1,9 +1,13 @@
-import AccountCircleIcon from '@mui/icons-material/AccountCircle'; // Added
-import CheckCircleIcon from '@mui/icons-material/CheckCircle'; // Added
-import CloseIcon from '@mui/icons-material/Close';
-import InfoIcon from '@mui/icons-material/Info'; // Added
-import InterestsIcon from '@mui/icons-material/Interests'; // Added
-import SearchIcon from '@mui/icons-material/Search'; // Added for search input
+// Replace MUI Icons with Phosphor Icons
+import {
+  UserCircle,
+  CheckCircle,
+  X,
+  Info,
+  Sparkle, // Replacing InterestsIcon
+  MagnifyingGlass, // Replacing SearchIcon
+  Plus, // For the new Add button
+} from '@phosphor-icons/react';
 import {
   Alert,
   Avatar,
@@ -21,6 +25,8 @@ import {
   Select, // Added for category select
   SelectChangeEvent, // Added for category select
   Step,
+  Autocomplete, // Added for tag input
+  createFilterOptions, // Added for Autocomplete
   StepConnector, // Added
   stepConnectorClasses, // Added
   StepIconProps, // Added
@@ -74,18 +80,20 @@ const StyledPaper = styled(Paper)(({ theme }) => ({
   margin: `${theme.spacing(4)} auto`
 }));
 
-// --- New Styled Component for Search Bar ---
-const StyledSearchContainer = styled(Paper)(({ theme }) => ({
+// --- New Styled Component for Combined Input ---
+const StyledInputContainer = styled(Box)(({ theme }) => ({
   display: 'flex',
   alignItems: 'center',
-  padding: theme.spacing(0.5, 1), // Adjust padding
-  borderRadius: theme.shape.borderRadius * 5, // Make it very round
-  boxShadow: theme.shadows[2], // Add elevation
+  borderRadius: theme.shape.borderRadius * 5, // Very round corners
+  border: `1px solid ${theme.palette.divider}`, // Add border
   backgroundColor: theme.palette.background.paper, // Use paper background
+  paddingLeft: theme.spacing(1.5), // Padding for select
+  paddingRight: theme.spacing(0.5), // Padding for button
   marginBottom: theme.spacing(3),
-  gap: theme.spacing(1), // Add gap between select and textfield
+  // Remove box shadow (elevation)
 }));
 // --- End New Styled Component ---
+
 
 const StyledTextField = styled(TextField)(({ theme }) => ({
   '& .MuiOutlinedInput-root': {
@@ -203,21 +211,21 @@ const QontoStepIconRoot = styled('div')<{ ownerState: { active?: boolean } }>(
 function QontoStepIcon(props: StepIconProps) {
   const { active, completed, className } = props;
 
-  // Map step index (1-based) to icons
+  // Map step index (1-based) to Phosphor icons
   const icons: { [index: string]: React.ReactElement } = {
-    1: <AccountCircleIcon />,
-    2: <InfoIcon />,
-    3: <InterestsIcon />,
-    4: <CheckCircleIcon />,
+    1: <UserCircle />,
+    2: <Info />,
+    3: <Sparkle />, // Use Sparkle for Interests/Skills step
+    4: <CheckCircle />,
   };
 
   return (
     <QontoStepIconRoot ownerState={{ active }} className={className}>
       {completed ? (
-        <CheckCircleIcon className="QontoStepIcon-completedIcon" />
+        <CheckCircle weight="fill" className="QontoStepIcon-completedIcon" /> // Use Phosphor CheckCircle
       ) : (
         // Render specific icon based on the step number (props.icon is 1-based index)
-        icons[String(props.icon)] || <div className="QontoStepIcon-circle" />
+        React.cloneElement(icons[String(props.icon)] || <div className="QontoStepIcon-circle" />, { size: 18 }) // Adjust size if needed
       )}
     </QontoStepIconRoot>
   );
@@ -286,13 +294,16 @@ const OnboardingContent: React.FC = () => {
   const [tagFetchStatus, setTagFetchStatus] = useState<Record<string, TagFetchStatus>>(
     () => Object.fromEntries(tagCategories.map(cat => [cat.type, 'idle']))
   );
-  const [tagFetchError, setTagFetchError] = useState<Record<string, string | null>>(
-    () => Object.fromEntries(tagCategories.map(cat => [cat.type, null]))
-  );
+  // Removed unused tagFetchError state
+  // const [tagFetchError, setTagFetchError] = useState<Record<string, string | null>>(...)
   const [selectedTagCategory, setSelectedTagCategory] = useState<string>(tagCategories[0]?.type || '');
-  const [tagSearchQuery, setTagSearchQuery] = useState<string>('');
+  const [tagSearchQuery, setTagSearchQuery] = useState<string>(''); // Input value for Autocomplete
   const [debouncedTagSearchQuery, setDebouncedTagSearchQuery] = useState<string>(''); // State for debounced query
   // --- End Tag Search State ---
+
+  // Define filter options for Autocomplete (adjust type for freeSolo)
+  const filter = createFilterOptions<Tag | { inputValue: string; title: string }>();
+
 
   // Debounced function to update the search query state used for fetching
   const debouncedSetQuery = useMemo(
@@ -310,12 +321,13 @@ const OnboardingContent: React.FC = () => {
     }
     // Reset status for the specific category if query changes, force loading state
     setTagFetchStatus(prev => ({ ...prev, [categoryType]: 'loading' }));
-    setTagFetchError(prev => ({ ...prev, [categoryType]: null }));
+    // Removed tagFetchError reset
+    // setTagFetchError(prev => ({ ...prev, [categoryType]: null }));
 
     try {
       const fetchParams: FetchTagsParams = { type: categoryType, limit: 20 };
       if (query) {
-        fetchParams.q = query; // Add query param if it exists
+        fetchParams.value = query; // Use value param for search
       }
       const fetchedTags = await fetchTags(apiClient, fetchParams);
       setAllTags(prev => ({ ...prev, [categoryType]: fetchedTags })); // Store fetched tags under the category
@@ -325,9 +337,9 @@ const OnboardingContent: React.FC = () => {
       const categoryLabel = t(tagCategories.find(c => c.type === categoryType)?.label || categoryType);
       const specificErrorMsg = t('onboarding.error.loadingTagsSpecific', { category: categoryLabel });
       console.error(`Error fetching tags for ${categoryType}:`, errorMessage);
-      setTagFetchError(prev => ({ ...prev, [categoryType]: errorMessage || t('onboarding.error.loadingTagsGeneric') }));
+      // Removed setting tagFetchError state
       setTagFetchStatus(prev => ({ ...prev, [categoryType]: 'error' }));
-      toast.error(`${specificErrorMsg}: ${errorMessage}`);
+      toast.error(`${specificErrorMsg}: ${errorMessage || t('onboarding.error.loadingTagsGeneric')}`); // Show generic error if specific is missing
     }
   }, [t]); // Removed tagFetchStatus dependency as we handle loading state directly
 
@@ -346,33 +358,131 @@ const OnboardingContent: React.FC = () => {
   const handleCategoryChange = (event: SelectChangeEvent<string>) => {
     setSelectedTagCategory(event.target.value);
     setTagSearchQuery(''); // Clear search query when category changes
+    setDebouncedTagSearchQuery(''); // Clear debounced query as well
   };
 
-  // Handle tag search input change - update local state immediately, debounce the fetch trigger
-  const handleTagSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newQuery = event.target.value;
-    setTagSearchQuery(newQuery); // Update immediate input value
-    debouncedSetQuery(newQuery); // Trigger debounced fetch query update
+  // Handle Autocomplete input change - update local state immediately, debounce the fetch trigger
+  const handleTagInputChange = (event: React.SyntheticEvent, newInputValue: string) => {
+    setTagSearchQuery(newInputValue); // Update immediate input value
+    // Only debounce if it's user input, not selection clearing
+    if (event?.type === 'change') {
+       debouncedSetQuery(newInputValue); // Trigger debounced fetch query update
+    }
   };
 
-  // Handle tag selection/deselection
-  const handleTagToggle = (tag: Tag) => {
+
+  // Handle adding/removing tags via Autocomplete
+  const handleTagsChange = (event: React.SyntheticEvent, newValue: (Tag | { inputValue: string; title: string } | string)[]) => {
+    // Calculate potential new total tag count considering only actual tags added/removed
+    const newActualTags = newValue.filter(v => typeof v !== 'string' && !('inputValue' in v)) as Tag[];
+    const otherCategoryTagsCount = formValues.selectedTags.filter(tag => tag.type !== selectedTagCategory).length;
+    const potentialTotalCount = otherCategoryTagsCount + newActualTags.length;
+
+
+    if (potentialTotalCount > 20) {
+      toast.warn(t('onboarding.error.tagLimitReached', { max: 20 }));
+       // Prevent adding more if the limit is reached or exceeded by this change
+       // Allow removals by checking if the new count is less than the previous count for this category
+       if (newActualTags.length > currentCategorySelectedTags.length) {
+          return;
+       }
+    }
+
+
     setFormValues(prev => {
-      // Revert to type/value check for existence
-      const tagExists = prev.selectedTags.some(t => t.type === tag.type && t.value === tag.value);
-      const updatedTags = tagExists
-        // Revert filter logic to use type/value
-        ? prev.selectedTags.filter(t => !(t.type === tag.type && t.value === tag.value))
-        : [...prev.selectedTags, tag];
-      return { ...prev, selectedTags: updatedTags };
+      // Process the new value from Autocomplete
+      const currentCategoryNewTags = newValue
+        .map(option => {
+          // Handle direct string input (freeSolo)
+          if (typeof option === 'string') {
+            if (!option.trim()) return null; // Ignore empty/whitespace
+            return { type: selectedTagCategory, value: option.trim() };
+          }
+          // Handle the "Add..." suggestion object
+          if (typeof option === 'object' && option && 'inputValue' in option) {
+             if (!option.inputValue.trim()) return null; // Ignore empty/whitespace
+            return { type: selectedTagCategory, value: option.inputValue.trim() };
+          }
+          // Handle existing Tag object suggestions
+          if (typeof option === 'object' && option && 'type' in option && 'value' in option) {
+            return option;
+          }
+          return null; // Ignore invalid options
+        })
+        .filter(tag => tag !== null) as Tag[]; // Filter out nulls and assert type
+
+      // Filter out duplicates within the current category's new tags based on value
+      const uniqueCurrentCategoryNewTags = currentCategoryNewTags.filter((tag, index, self) =>
+        index === self.findIndex((t) => (
+          t.value === tag.value
+        ))
+      );
+
+
+      // Get tags from other categories that are already selected
+      const otherCategoryTags = prev.selectedTags.filter(tag => tag.type !== selectedTagCategory);
+
+      // Combine tags from other categories with the unique new tags for the current category
+      const updatedSelectedTags = [...otherCategoryTags, ...uniqueCurrentCategoryNewTags];
+
+      // Ensure the final list doesn't exceed the limit (double-check)
+      if (updatedSelectedTags.length > 20) {
+         // This case might happen if duplicates existed across categories, though less likely with this structure
+         // We simply slice to enforce the limit strictly.
+         updatedSelectedTags.length = 20;
+         // Consider if a warning is needed here too
+      }
+
+
+      return { ...prev, selectedTags: updatedSelectedTags };
     });
+     // Clear the input field after adding a tag
+     setTagSearchQuery('');
+     setDebouncedTagSearchQuery('');
   };
 
-  // Check if a tag is selected
-  const isTagSelected = (tag: Tag) => {
-    // Revert to type/value check
-    return formValues.selectedTags.some(t => t.type === tag.type && t.value === tag.value);
+  // Handle clicking the explicit "Add" button
+  const handleAddTagClick = () => {
+    const valueToAdd = tagSearchQuery.trim();
+    if (!valueToAdd) return; // Don't add empty tags
+
+    // Check total tag limit first
+    if (formValues.selectedTags.length >= 20) {
+      toast.warn(t('onboarding.error.tagLimitReached', { max: 20 }));
+      return;
+    }
+
+    // Check if tag already exists in the current category or overall
+    const alreadySelected = formValues.selectedTags.some(tag => tag.value === valueToAdd && tag.type === selectedTagCategory);
+    if (alreadySelected) {
+      toast.info(t('onboarding.error.tagAlreadySelected', { tag: valueToAdd })); // Add this translation key
+      return;
+    }
+
+    // Add the new tag
+    setFormValues(prev => {
+       const newTag: Tag = { type: selectedTagCategory, value: valueToAdd };
+       // Ensure final list doesn't exceed limit (should be caught above, but double-check)
+       const updatedSelectedTags = [...prev.selectedTags, newTag].slice(0, 20);
+       return { ...prev, selectedTags: updatedSelectedTags };
+    });
+
+    // Clear input
+    setTagSearchQuery('');
+    setDebouncedTagSearchQuery('');
   };
+
+
+  // Removed unused handleTagToggle function
+
+  // Check if a tag is selected (Now handled by Autocomplete's value prop)
+  // const isTagSelected = (tag: Tag) => { ... };
+
+  // Filter selected tags for the current category to pass to Autocomplete value prop
+  const currentCategorySelectedTags = useMemo(() => {
+    return formValues.selectedTags.filter(tag => tag.type === selectedTagCategory);
+  }, [formValues.selectedTags, selectedTagCategory]);
+
 
   // Remove unused filteredTags variable as filtering is now done via API query
   // const filteredTags = useMemo(() => { ... });
@@ -471,8 +581,8 @@ const OnboardingContent: React.FC = () => {
           <Avatar src={formValues.profilePicture} alt={formValues.displayName || 'User'} sx={{ width: '100%', height: '100%' }} />
         ) : (
           <Avatar sx={{ width: 56, height: 56, bgcolor: 'transparent', color: 'text.secondary' }}>
-            {/* Use an icon or initials as fallback */}
-            <AccountCircleIcon sx={{ fontSize: 60, color: 'text.secondary' }} />
+            {/* Use Phosphor UserCircle */}
+            <UserCircle size={60} color={theme.palette.text.secondary} />
           </Avatar>
         )}
       </AvatarPlaceholder>
@@ -517,23 +627,26 @@ const OnboardingContent: React.FC = () => {
         {t('onboarding.selectTagsHelp')}
       </AccessibleTypography>
       <AccessibleTypography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-        {t('onboarding.selectCategoryAndSearch')} {/* Add this translation key */}
+        {t('onboarding.selectCategoryAndAddTags')} {/* Updated translation key */}
       </AccessibleTypography>
 
-      {/* Combined Search Bar */}
-      <StyledSearchContainer elevation={2}>
+      {/* Combined Input Container */}
+      <StyledInputContainer>
         <Select
-          variant="standard" // Use standard variant for less visual clutter inside Paper
+          variant="standard" // Use standard variant inside the container
           disableUnderline // Remove underline
           value={selectedTagCategory}
           onChange={handleCategoryChange}
           sx={{
             minWidth: 150, // Adjust width as needed
+            mr: 1, // Margin between select and autocomplete
             fontWeight: 500,
             fontSize: '0.9rem',
-            pl: 1, // Padding left
             '& .MuiSelect-select': {
               paddingRight: '24px !important', // Ensure space for icon
+              paddingLeft: '0px', // Adjust padding
+              paddingTop: '12px', // Align text vertically
+              paddingBottom: '12px',
             },
           }}
           MenuProps={{ // Style dropdown menu
@@ -551,94 +664,148 @@ const OnboardingContent: React.FC = () => {
             </MenuItem>
           ))}
         </Select>
-        <TextField
+
+        {/* Separator */}
+        <Box sx={{ borderLeft: `1px solid ${theme.palette.divider}`, height: '30px', alignSelf: 'center' }} />
+
+        {/* Autocomplete Input - Adjust generic types */}
+        <Autocomplete<Tag | { inputValue: string; title: string }, true, false, true>
+          multiple
+          freeSolo // Allow custom input
           fullWidth
-          variant="standard" // Use standard variant
-          placeholder={t('common.searchTagsPlaceholder')}
-          value={tagSearchQuery}
-          onChange={handleTagSearchChange}
-          InputProps={{
-            disableUnderline: true, // Remove underline
-            startAdornment: (
-              <InputAdornment position="start" sx={{ ml: 1 }}>
-                <SearchIcon color="action" />
-              </InputAdornment>
-            ),
+          value={currentCategorySelectedTags} // Still Tag[]
+          onChange={handleTagsChange}
+          inputValue={tagSearchQuery}
+          onInputChange={handleTagInputChange}
+          options={allTags[selectedTagCategory] || []} // Still Tag[]
+          loading={tagFetchStatus[selectedTagCategory] === 'loading'}
+          getOptionLabel={(option) => {
+            // Handle string input from freeSolo
+            if (typeof option === 'string') {
+              return option;
+            }
+            // Handle the "Add..." suggestion object
+            if (option && 'inputValue' in option) {
+              return option.title;
+            }
+            // Handle Tag object
+            return option?.value || '';
           }}
-          aria-label={t('common.searchTagsPlaceholder')}
-          sx={{
-            '& .MuiInputBase-input': { // Style input text
-              padding: theme.spacing(1, 1, 1, 0),
-              fontSize: '0.95rem',
-            },
+          isOptionEqualToValue={(option, val) => {
+             // Need robust comparison for Tag objects
+             if (typeof option === 'object' && 'value' in option && typeof val === 'object' && 'value' in val) {
+               return option.value === val.value && option.type === val.type;
+             }
+             return false; // Don't consider strings or "Add..." objects equal to Tags
           }}
+          filterOptions={(options, params) => {
+            const filtered = filter(options, params);
+            const { inputValue } = params;
+            // Suggest the creation of a new value if input is not empty and not already selected/suggested
+            // Use a more explicit type guard within .some()
+            const isExistingSuggestion = options.some((option) => {
+              // Check if it's a Tag object before accessing 'value'
+              if (typeof option === 'object' && option && 'value' in option && 'type' in option) {
+                return option.value === inputValue;
+              }
+              return false;
+            });
+            const isAlreadySelected = currentCategorySelectedTags.some(tag => tag.value === inputValue);
+
+            if (inputValue !== '' && !isExistingSuggestion && !isAlreadySelected) {
+              // Push the special object type for the "Add" suggestion
+              filtered.push({
+                inputValue: inputValue,
+                title: `Add "${inputValue}"`,
+              });
+            }
+            return filtered;
+          }}
+          renderOption={(props, option) => {
+            // Handle rendering the "Add..." suggestion object
+            if (typeof option === 'object' && 'title' in option) {
+              return <li {...props}>{option.title}</li>;
+            }
+            // Handle rendering Tag objects
+            if (typeof option === 'object' && 'value' in option) {
+               return <li {...props}>{option.value}</li>;
+            }
+            // Fallback for unexpected types (shouldn't happen)
+            return <li {...props}></li>;
+          }}
+          renderTags={() => null} // Don't render chips inside the input field itself
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              variant="standard" // Use standard variant inside container
+              placeholder={selectedTagCategory ? t('onboarding.searchOrAddTagPlaceholder') : t('onboarding.selectCategoryFirst')} // Dynamic placeholder
+              disabled={!selectedTagCategory} // Disable if no category selected
+              InputProps={{
+                ...params.InputProps,
+                disableUnderline: true, // Remove underline for standard variant
+                startAdornment: (
+                  <>
+                    <InputAdornment position="start" sx={{ pl: 1 }}>
+                      {/* Use Phosphor MagnifyingGlass */}
+                      <MagnifyingGlass size={20} color={theme.palette.action.active} />
+                    </InputAdornment>
+                    {params.InputProps.startAdornment}
+                  </>
+                ),
+                endAdornment: (
+                  <>
+                    {tagFetchStatus[selectedTagCategory] === 'loading' ? <CircularProgress color="inherit" size={20} sx={{ mr: 1 }} /> : null}
+                    {params.InputProps.endAdornment}
+                  </>
+                ),
+              }}
+              sx={{ // Adjust padding for standard variant
+                '& .MuiInputBase-root': {
+                  paddingTop: '2px',
+                  paddingBottom: '2px',
+                },
+                 '& .MuiInputBase-input': {
+                   padding: theme.spacing(1.5, 1, 1.5, 0), // Adjust padding
+                   fontSize: '0.95rem',
+                 },
+              }}
+            />
+          )}
+          // Remove sx prop from Autocomplete itself
         />
-      </StyledSearchContainer>
+         {/* Add Button */}
+         <IconButton
+            onClick={handleAddTagClick}
+            disabled={!tagSearchQuery.trim() || !selectedTagCategory || formValues.selectedTags.length >= 20}
+            size="small"
+            sx={{ ml: 0.5 }} // Margin left for spacing
+            aria-label={t('common.addTag')} // Add translation key
+          >
+            <Plus size={20} weight="bold" />
+          </IconButton>
+      </StyledInputContainer>
 
-      {/* Tag Display Area - Keep existing style */}
-      <Box sx={{ minHeight: 150, p: 2, border: `1px solid ${theme.palette.divider}`, borderRadius: theme.shape.borderRadius * 2, bgcolor: theme.palette.mode === 'light' ? theme.palette.grey[50] : theme.palette.grey[800] }}>
-        {tagFetchStatus[selectedTagCategory] === 'loading' && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-            <CircularProgress size={30} />
-          </Box>
-        )}
-        {tagFetchStatus[selectedTagCategory] === 'error' && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
-            <Alert severity="error" sx={{ width: '100%', borderRadius: theme.shape.borderRadius }}>
-              {tagFetchError[selectedTagCategory] || t('onboarding.error.loadingTagsGeneric')}
-            </Alert>
-          </Box>
-        )}
-        {tagFetchStatus[selectedTagCategory] === 'loaded' && (
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5 }}>
-            {/* Use allTags[selectedTagCategory] directly, as filtering is now done via API query */}
-            {(allTags[selectedTagCategory] || []).length > 0 ? (
-              (allTags[selectedTagCategory] || []).map((tag) => (
-                <StyledChip
-                  key={`${tag.type}-${tag.value}`}
-                  label={tag.value}
-                  onClick={() => handleTagToggle(tag)}
-                  color="primary"
-                  variant={isTagSelected(tag) ? "filled" : "outlined"}
-                  clickable
-                />
-              ))
-            ) : (
-              <AccessibleTypography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', width: '100%', textAlign: 'center', py: 3 }}>
-                {tagSearchQuery ? t('onboarding.noTagsMatch') : t('onboarding.noTagsAvailable')} {/* Add onboarding.noTagsMatch */}
-              </AccessibleTypography>
-            )}
-          </Box>
-        )}
-         {/* Handle idle state specifically when a category IS selected but no query yet */}
-         {tagFetchStatus[selectedTagCategory] === 'idle' && selectedTagCategory && (
-           <AccessibleTypography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', width: '100%', textAlign: 'center', py: 3 }}>
-                {t('onboarding.startTypingToSearch')} {/* Add this translation key */}
-              </AccessibleTypography>
-        )}
-        {/* Handle idle state when NO category is selected */}
-        {tagFetchStatus[selectedTagCategory] === 'idle' && !selectedTagCategory && (
-           <AccessibleTypography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic', width: '100%', textAlign: 'center', py: 3 }}>
-                {t('onboarding.selectCategoryPrompt')}
-              </AccessibleTypography>
-        )}
-      </Box>
 
-       {/* Display Selected Tags - Keep existing style */}
+       {/* Display ALL Selected Tags */}
        {formValues.selectedTags.length > 0 && (
         <Box sx={{ mt: 4 }}>
           <AccessibleTypography variant="h6" component="h3" sx={{ mb: 2, fontWeight: 500 }}>
             {t('onboarding.selectedTags')}
           </AccessibleTypography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, p: 1.5, border: `1px dashed ${theme.palette.divider}`, borderRadius: theme.shape.borderRadius }}>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, p: 1.5, border: `1px dashed ${theme.palette.divider}`, borderRadius: theme.shape.borderRadius * 1.5 }}>
             {formValues.selectedTags.map((tag) => (
               <StyledChip
-                key={`selected-${tag.type}-${tag.value}`}
-                label={tag.value}
-                title={t(tagCategories.find(c => c.type === tag.type)?.label || tag.type)} // Restore title prop
-                onDelete={() => handleTagToggle(tag)} // Restore onDelete prop
-                color="secondary"
-                size="small"
+                key={`selected-${tag.type}-${tag.value}`} // Ensure unique key
+                label={`${tag.value} (${t(tagCategories.find(c => c.type === tag.type)?.label || tag.type)})`} // Show value and category type
+                onDelete={() => {
+                  // Remove tag from the main list
+                  setFormValues(prev => ({
+                    ...prev,
+                    selectedTags: prev.selectedTags.filter(t => !(t.type === tag.type && t.value === tag.value))
+                  }));
+                }}
+                color="secondary" // Use secondary color for selected tags
+                size="medium" // Use medium size for better readability
               />
             ))}
           </Box>
@@ -716,7 +883,8 @@ const OnboardingContent: React.FC = () => {
       <Container maxWidth="md" sx={{ px: { xs: 2, sm: 3 } }}>
         <StyledPaper elevation={3}>
           <IconButton onClick={handleCancel} sx={{ position: 'absolute', top: 16, right: 16, bgcolor: 'action.hover', '&:hover': { bgcolor: 'action.selected' } }} aria-label={t('common.close')}>
-            <CloseIcon />
+            {/* Use Phosphor X */}
+            <X size={20} />
           </IconButton>
 
           {/* Use Custom Stepper */}

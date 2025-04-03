@@ -60,10 +60,10 @@ export const createUser = async (apiClient: AxiosInstance, userData: UserProfile
  */
 export interface FetchTagsParams {
     type?: string;
-    value?: string; // Keep value for potential exact match filtering if needed later
-    q?: string; // Add query parameter for search
+    value?: string; // Parameter for search query
     page?: number;
     limit?: number;
+    fuzzyThreshold?: number; // Parameter for fuzzy search threshold
 }
 
 export const fetchTags = async (apiClient: AxiosInstance, params: FetchTagsParams = {}): Promise<Tag[]> => {
@@ -71,10 +71,10 @@ export const fetchTags = async (apiClient: AxiosInstance, params: FetchTagsParam
         // Construct query parameters, applying defaults
         const queryParams: Record<string, string | number> = {};
         if (params.type !== undefined) queryParams.type = params.type;
-        if (params.value !== undefined) queryParams.value = params.value; // Keep value param
-        if (params.q !== undefined) queryParams.q = params.q; // Add q param
+        if (params.value !== undefined) queryParams.value = params.value; // Use value for search
         queryParams.page = params.page || 1; // Default page 1
         queryParams.limit = params.limit || 10; // Default limit 10
+        queryParams.fuzzyThreshold = params.fuzzyThreshold || 70; // Default fuzzy threshold 70
 
         const config: AxiosRequestConfig = { params: queryParams };
 

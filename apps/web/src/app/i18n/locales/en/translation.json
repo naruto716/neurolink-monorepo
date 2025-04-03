@@ -73,7 +73,9 @@
     "bioHelp": "A brief introduction (max 500 characters).",
     "charCount": "{{count}}/{{max}} characters",
     "selectTagsHelp": "Select Tags to Connect",
-    "selectCategoryAndSearch": "Select a category, search for tags, and click to add them.",
+    "selectCategoryAndAddTags": "Select a category, then search or type to add tags.",
+    "searchOrAddTagPlaceholder": "Search or type to add a tag...",
+    "selectCategoryFirst": "Select a category first",
     "programOfStudy": "Program of Study",
     "yearLevel": "Year Level",
     "neurodivergenceStatus": "Neurodiversity",
@@ -98,7 +100,9 @@
       "noIdToken": "Authentication failed. Please sign in again.",
       "invalidToken": "Authentication session is invalid. Please sign in again.",
       "noEmail": "Could not verify your email. Please sign in again.",
-      "submitFailed": "There was an issue creating your profile. Please try again."
+      "submitFailed": "There was an issue creating your profile. Please try again.",
+      "tagLimitReached": "You can select a maximum of {{max}} tags.",
+      "tagAlreadySelected": "Tag '{{tag}}' is already selected for this category."
     },
     "success": {
       "profileCreated": "Welcome to Neurolink! Your profile is ready."
@@ -120,6 +124,7 @@
     "loading": "Loading...",
     "error": "Error",
     "selectCategory": "Select Category",
-    "searchTagsPlaceholder": "Search tags..."
+    "searchTagsPlaceholder": "Search tags...",
+    "addTag": "Add tag"
   }
 }
