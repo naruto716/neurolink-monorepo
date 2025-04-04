@@ -2,12 +2,13 @@ import { createBrowserRouter, RouteObject } from 'react-router-dom';
 import AboutPage from '../../pages/about/AboutPage';
 import AuthPage from '../../pages/auth/AuthPage';
 import HomePage from '../../pages/home/HomePage';
-import ProfilePage from '../../pages/profile/ProfilePage';
+// Removed ProfilePage import
 import App from '../layout/App';
 // Removed non-existent imports
-// import SettingsPage from '../../pages/settings/SettingsPage'; 
+// import SettingsPage from '../../pages/settings/SettingsPage';
 // import AccessibilityPage from '../../pages/accessibility/AccessibilityPage';
 import PeoplePage from '../../pages/people/PeoplePage';
+import UserProfilePage from '../../pages/people/UserProfilePage'; // Added UserProfilePage import
 // import NotFoundPage from '../../pages/notFound/NotFoundPage'; // Removed non-existent import
 import { RequireAuth } from './requireAuth';
 import OnboardingPage from '../../pages/onboarding/OnboardingPage';
@@ -28,8 +29,9 @@ const routes: RouteObject[] = [
             element: <Layout />,
             children: [
               { index: true, element: <HomePage /> }, // Default route after login
-              { path: 'profile', element: <ProfilePage /> },
+              // Removed profile route
               { path: 'people', element: <PeoplePage /> },
+              { path: 'people/:username', element: <UserProfilePage /> }, // Corrected route param to :username
               // Add other authenticated routes that need Layout here
             ]
           },

@@ -131,7 +131,8 @@ const UserCard: React.FC<{ user: ListedUser }> = ({ user }) => {
     // Removed duplicate declarations below
 
     return (
-        <Link to={`/people/${user.id}`} style={{ textDecoration: 'none', display: 'flex', width: '100%' }}>
+        // Link to the profile page using username
+        <Link to={`/people/${user.username}`} style={{ textDecoration: 'none', display: 'flex', width: '100%' }}>
             <Card sx={{ display: 'flex', flexDirection: 'column', width: '100%', height: '100%' }}> {/* Ensure card takes full height */}
                 <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}> {/* Ensure content grows */}
                     {/* Top section with Avatar and Name */}
@@ -559,7 +560,7 @@ const PeoplePage = () => {
              MenuProps={{ // Match Onboarding style for menu paper
                 PaperProps: {
                   sx: {
-                    borderRadius: theme.shape.borderRadius * 2,
+                    borderRadius: theme.shape.borderRadius * 1.5,
                     mt: 0.5,
                     backgroundColor: `${theme.palette.background.paper}E6`, // 0.9 transparency
                     backdropFilter: 'blur(8px)',

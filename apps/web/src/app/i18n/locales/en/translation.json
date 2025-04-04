@@ -143,6 +143,16 @@
     "messageButton": "Message",
     "viewProfileButton": "View Profile"
   },
+  "userProfile": {
+    "aboutHeader": "About",
+    "tagsHeader": "Details & Interests",
+    "error": {
+      "missingId": "User ID is missing.",
+      "missingUsername": "Username is missing.",
+      "genericLoad": "Failed to load user profile.",
+      "notFound": "User not found."
+    }
+  },
   "common": {
     "back": "Back",
     "next": "Next",

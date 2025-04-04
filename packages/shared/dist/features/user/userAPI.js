@@ -1,3 +1,4 @@
+import * as qs from 'qs'; // Import qs library
 const API_ENDPOINT_USER = '/users/me';
 const API_ENDPOINT_USERS = '/users'; // Base endpoint for users
 const API_ENDPOINT_TAGS = '/tags'; // Corrected endpoint path (base URL handles /api/v1)
@@ -42,6 +43,28 @@ export const createUser = async (apiClient, userData) => {
         }
         // For network errors or other API failures
         throw new Error('Failed to create user profile');
+    }
+};
+/**
+ * Fetch a user profile by username
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user to fetch.
+ * @returns Promise with user data
+ */
+export const fetchUserByUsername = async (apiClient, username) => {
+    try {
+        const response = await apiClient.get(`${API_ENDPOINT_USERS}/${username}`); // Uses the base /users endpoint
+        console.log(`User data fetched successfully for username: ${username}`, response.data);
+        return response.data;
+    }
+    catch (error) {
+        console.error(`Error fetching user by username ${username}:`, error.response?.data || error.message);
+        // Handle 404 specifically
+        if (error.response && error.response.status === 404) {
+            throw new Error(`User not found: ${username}`);
+        }
+        // For network errors or other API failures
+        throw new Error(error.response?.data?.message || `Failed to fetch user: ${username}`);
     }
 };
 export const fetchTags = async (apiClient, params = {}) => {
@@ -112,19 +135,23 @@ export const fetchUsers = async (apiClient, params = {}) => {
             queryParams.minAge = params.minAge;
         if (params.maxAge !== undefined)
             queryParams.maxAge = params.maxAge;
-        if (params.tagTypes !== undefined)
+        // Keep tagTypes and tagValues as arrays in the queryParams object
+        if (params.tagTypes !== undefined && params.tagTypes.length > 0)
             queryParams.tagTypes = params.tagTypes;
-        if (params.tagValues !== undefined)
+        if (params.tagValues !== undefined && params.tagValues.length > 0)
             queryParams.tagValues = params.tagValues;
+        // Removed incorrect 'tags' parameter handling
         queryParams.page = params.page || 1; // Default page 1
         queryParams.limit = params.limit || 10; // Default limit 10
         const config = {
             params: queryParams,
-            // Axios typically handles array serialization correctly for query params
-            // If backend expects specific format (e.g., comma-separated), adjust here or use paramsSerializer
+            // Use qs to serialize arrays with repeated keys
+            paramsSerializer: params => {
+                return qs.stringify(params, { arrayFormat: 'repeat' });
+            }
         };
         const response = await apiClient.get(API_ENDPOINT_USERS, config);
-        console.log("Users fetched successfully:", response.data);
+        console.log("Users fetched successfully with params:", queryParams, "Response:", response.data);
         return response.data;
     }
     catch (error) {

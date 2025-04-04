@@ -14,6 +14,13 @@ export declare const fetchCurrentUser: (apiClient: AxiosInstance) => Promise<Use
  */
 export declare const createUser: (apiClient: AxiosInstance, userData: UserProfileInput) => Promise<User>;
 /**
+ * Fetch a user profile by username
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user to fetch.
+ * @returns Promise with user data
+ */
+export declare const fetchUserByUsername: (apiClient: AxiosInstance, username: string) => Promise<User>;
+/**
  * Fetch all available tags for user profiles
  * @param apiClient The Axios instance to use.
  * Fetch available tags, optionally filtered and paginated.
@@ -36,6 +43,7 @@ export interface FetchUsersParams {
     maxAge?: number;
     tagTypes?: string[];
     tagValues?: string[];
+    tags?: Tag[];
     page?: number;
     limit?: number;
 }

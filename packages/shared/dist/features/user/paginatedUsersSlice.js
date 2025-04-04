@@ -7,7 +7,7 @@ const initialState = {
     totalPages: 0,
     totalCount: 0,
     pageSize: 10,
-    currentFilters: {},
+    currentFilters: {}, // Initial filters are empty
     status: 'idle',
     error: null,
 };
@@ -31,10 +31,11 @@ export const paginatedUsersSlice = createSlice({
             state.currentPage = 1;
             state.totalPages = 0;
             state.totalCount = 0;
-            state.currentFilters = {};
+            state.currentFilters = {}; // Reset filters
             state.status = 'idle';
             state.error = null;
         },
+        // Ensure payload matches the structure expected by FetchUsersParams (excluding page/limit)
         setUsersFilters: (state, action) => {
             state.currentFilters = action.payload;
             state.currentPage = 1;
@@ -46,12 +47,14 @@ export const paginatedUsersSlice = createSlice({
             .addCase(fetchPaginatedUsers.pending, (state, action) => {
             state.status = 'loading';
             state.error = null;
+            // Store the filters used for this request, matching FetchUsersParams structure
             state.currentFilters = {
                 q: action.meta.arg.q,
                 minAge: action.meta.arg.minAge,
                 maxAge: action.meta.arg.maxAge,
                 tagTypes: action.meta.arg.tagTypes,
                 tagValues: action.meta.arg.tagValues,
+                // Removed incorrect 'tags' property
             };
             state.pageSize = action.meta.arg.limit || 10;
         })

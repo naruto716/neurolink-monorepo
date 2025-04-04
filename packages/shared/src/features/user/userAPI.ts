@@ -51,6 +51,30 @@ export const createUser = async (apiClient: AxiosInstance, userData: UserProfile
     }
 };
 
+
+/**
+ * Fetch a user profile by username
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user to fetch.
+ * @returns Promise with user data
+ */
+export const fetchUserByUsername = async (apiClient: AxiosInstance, username: string): Promise<User> => {
+    try {
+        const response = await apiClient.get<User>(`${API_ENDPOINT_USERS}/${username}`); // Uses the base /users endpoint
+        console.log(`User data fetched successfully for username: ${username}`, response.data);
+        return response.data;
+    } catch (error: any) {
+        console.error(`Error fetching user by username ${username}:`, error.response?.data || error.message);
+        // Handle 404 specifically
+        if (error.response && error.response.status === 404) {
+            throw new Error(`User not found: ${username}`);
+        }
+        // For network errors or other API failures
+        throw new Error(error.response?.data?.message || `Failed to fetch user: ${username}`);
+    }
+};
+
+
 /**
  * Fetch all available tags for user profiles
  * @param apiClient The Axios instance to use.
