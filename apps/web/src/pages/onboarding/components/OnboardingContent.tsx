@@ -47,7 +47,7 @@ import { selectIdToken } from '@neurolink/shared/src/features/tokens/tokensSlice
 import { Tag, UserPreferences, UserProfileInput } from '@neurolink/shared/src/features/user/types';
 // Import FetchTagsParams and uploadProfilePicture from the correct path
 import { createUser, fetchTags, FetchTagsParams, uploadProfilePicture } from '@neurolink/shared/src/features/user/userAPI';
-import { setOnboardingStatus } from '@neurolink/shared/src/features/user/userSlice';
+import { fetchUser } from '@neurolink/shared/src/features/user/userSlice'; // Import fetchUser (removed setOnboardingStatus)
 import { jwtDecode } from 'jwt-decode';
 import { debounce } from 'lodash'; // Added for debouncing search
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'; // Added useRef
@@ -690,7 +690,8 @@ const OnboardingContent: React.FC = () => {
       const createdUser = await createUser(apiClient, profileData);
       console.log('User created successfully:', createdUser);
       toast.success(t('onboarding.success.profileCreated'));
-      dispatch(setOnboardingStatus(true)); // Mark onboarding as done
+      // Dispatch fetchUser to refresh the user state instead of just setting the flag
+      dispatch(fetchUser({ apiClient }));
 
       // Start completion transition instead of navigating immediately
       setIsCompleting(true);
