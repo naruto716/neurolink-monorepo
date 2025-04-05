@@ -179,7 +179,15 @@
     "postErrorGeneric": "Failed to create post. Please try again.",
     "postPlaceholder": "What's on your mind?",
     "postButton": "Post",
-    "addEmoji": "Add emoji" 
+    "addEmoji": "Add emoji",
+    "uploadErrorInvalidType": "Invalid file type. Please select an image or video.",
+    "uploadErrorGeneric": "Media upload failed. Please try again.",
+    "postErrorMediaNotUploaded": "Some media failed to upload. Please remove them before posting.",
+    "postErrorMediaUploading": "Please wait for media uploads to complete.",
+    "mediaPreviewAlt": "Media preview",
+    "removeMedia": "Remove media",
+    "addMedia": "Add image or video",
+    "uploadLimitError": "You can only upload up to 5 files."
   },
   "common": {
     "back": "Back",
