@@ -19,3 +19,22 @@ export interface PaginatedPostsResponse {
   totalPosts: number;
   posts: Post[];
 }
+
+// Represents a single Comment based on GET /api/v1/Posts/{postId}/comments response
+export interface Comment {
+  commentId: number;
+  postId: number;
+  authorId: number;
+  content: string;
+  createdAt: string; // ISO 8601 date string
+  updatedAt: string | null; // ISO 8601 date string or null
+}
+
+// Represents the paginated response structure for comments
+export interface PaginatedCommentsResponse {
+  postId: number;
+  page: number;
+  limit: number;
+  totalComments: number;
+  comments: Comment[];
+}

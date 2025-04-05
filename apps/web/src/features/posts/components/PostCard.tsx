@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 // Removed Paper
-import { Card, CardContent, Box, alpha, useTheme, Typography, Stack, Avatar, IconButton, Button } from '@mui/material'; 
-import { Post } from '@neurolink/shared';
+import { Card, CardContent, Box, alpha, useTheme, Typography, Stack, Avatar, IconButton, Button, Divider, TextField, CircularProgress, Pagination } from '@mui/material'; 
+import { Post, Comment, fetchComments, PaginatedCommentsResponse } from '@neurolink/shared';
 import { AccessibleTypography } from '../../../app/components/AccessibleTypography';
 import { formatDistanceToNow } from 'date-fns';
 // Import icons used in HomePage's PostCard - Removed ShareNetwork and BookmarkSimple
-import { ChatDots, Heart, DotsThree } from '@phosphor-icons/react'; 
+import { ChatDots, Heart, DotsThree, PaperPlaneTilt } from '@phosphor-icons/react'; 
 import { useTranslation } from 'react-i18next';
 
 // React Slick imports
@@ -19,6 +19,9 @@ import ReactPlayer from 'react-player/lazy'; // Use lazy load for efficiency
 
 // Import Intersection Observer hook
 import { useInView } from 'react-intersection-observer';
+
+// Import the actual API client
+import apiClient from '../../../app/api/apiClient';
 
 interface PostCardProps {
   post: Post;
@@ -35,17 +38,52 @@ const getMediaType = (type: string): 'image' | 'video' | 'audio' | 'unknown' => 
   return 'unknown';
 };
 
+// Simple component to display a single comment
+interface CommentItemProps {
+  comment: Comment;
+}
+const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
+  // TODO: Fetch author details (name, avatar) based on comment.authorId if needed
+  // For now, just display authorId and content
+  const timeAgo = formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true });
+
+  return (
+    <Stack direction="row" spacing={1.5} sx={{ py: 1.5 }}>
+      <Avatar sx={{ width: 32, height: 32 }} /> {/* Placeholder Avatar */}
+      <Box sx={{ flexGrow: 1 }}>
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
+          <AccessibleTypography variant="body2" sx={{ fontWeight: 600 }}>
+            Author {comment.authorId} {/* Placeholder Author Name */}
+          </AccessibleTypography>
+          <Typography variant="caption" color="text.secondary">
+            {timeAgo}
+          </Typography>
+        </Stack>
+        <AccessibleTypography variant="body2" sx={{ mt: 0.5 }}>
+          {comment.content}
+        </AccessibleTypography>
+      </Box>
+    </Stack>
+  );
+};
+
 const PostCard: React.FC<PostCardProps> = ({ post, authorDisplayName, authorProfilePicture }) => {
   const theme = useTheme();
   const { t } = useTranslation();
   // State to track current slide
   const [currentSlide, setCurrentSlide] = useState(0);
-
-  // Intersection Observer hook
   const { ref, inView } = useInView({
     threshold: 0.5, // Trigger when 50% of the card is visible
     triggerOnce: false, // Observe continuously
   });
+
+  // Comment State
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [commentsData, setCommentsData] = useState<PaginatedCommentsResponse | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
+  const [commentError, setCommentError] = useState<string | null>(null);
+  const [commentInput, setCommentInput] = useState('');
 
   // Filter out unknown media types or handle them as needed
   const validMedia = post.mediaUrls?.filter(media => getMediaType(media.type) !== 'unknown') || [];
@@ -82,6 +120,59 @@ const PostCard: React.FC<PostCardProps> = ({ post, authorDisplayName, authorProf
     nextArrow: <button type="button" className="slick-next">›</button>,
     beforeChange: (_current: number, next: number) => setCurrentSlide(next)
   };
+
+  // --- Comment Logic ---
+  const COMMENTS_PER_PAGE = 5;
+
+  const loadComments = async (page: number = 1) => {
+    // Use apiClient directly
+    if (!apiClient) { // Keep a basic guard, though apiClient should exist
+      console.error("API client is not available.");
+      setCommentError(t('post.commentsError', 'Failed to load comments.'));
+      return;
+    }
+    setIsLoadingComments(true);
+    setCommentError(null);
+    try {
+      const data = await fetchComments(apiClient, post.id, page, COMMENTS_PER_PAGE);
+      setCommentsData(data);
+      setCurrentPage(page);
+    } catch (err) {
+      console.error("Failed to load comments:", err);
+      setCommentError(t('post.commentsError', 'Failed to load comments.'));
+      setCommentsData(null);
+    } finally {
+      setIsLoadingComments(false);
+    }
+  };
+
+  const toggleComments = () => {
+    const opening = !commentsOpen;
+    setCommentsOpen(opening);
+    if (opening && !commentsData) { // Load comments only when opening for the first time
+      loadComments(1);
+    }
+  };
+  
+  const handleCommentInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setCommentInput(event.target.value);
+  };
+
+  const handleSendComment = () => {
+    // Use apiClient directly
+    if (!commentInput.trim() || !apiClient) { 
+      if(!apiClient) console.error("API client is not available, cannot send comment.");
+      return;
+    }
+    console.log("Sending comment:", commentInput);
+    // TODO: Implement actual API call using createComment(apiClient, ...) 
+    alert('Comment sending not implemented yet.');
+  };
+
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, page: number) => {
+    loadComments(page);
+  };
+  // --- End Comment Logic ---
 
   return (
     // Attach ref to the Card for Intersection Observer
@@ -262,24 +353,98 @@ const PostCard: React.FC<PostCardProps> = ({ post, authorDisplayName, authorProf
         )}
 
         {/* Post Actions/Stats - Using Buttons like HomePage - Moved back inside CardContent */}
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
+        <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 1 }}>
            <Stack direction="row" spacing={1}>
             <Button size="small" startIcon={<Heart size={18} />} sx={{ color: 'text.secondary', '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.08), color: 'error.main' } }}>
               {post.likesCount}
             </Button>
-            <Button size="small" startIcon={<ChatDots size={18} />} sx={{ color: 'text.secondary', '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) } }}>
+            {/* Updated Comments Button */}
+            <Button 
+              size="small" 
+              startIcon={<ChatDots size={18} />} 
+              sx={{ color: 'text.secondary', '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) } }}
+              onClick={toggleComments} // Toggle comments section
+            >
               {post.commentsCount}
             </Button>
-            {/* Add Share button if needed */}
-            {/* <Button size="small" startIcon={<ShareNetwork size={18} />} sx={{ color: 'text.secondary', '&:hover': { bgcolor: alpha(theme.palette.info.main, 0.08) } }}>
-              Share
-            </Button> */}
           </Stack>
-          {/* Removed the Bookmark IconButton */}
-          {/* <IconButton size="small" sx={{ color: 'text.secondary' }}>
-            <BookmarkSimple size={18} />
-          </IconButton> */}
         </Stack>
+
+        {/* ----- Comment Section ----- */} 
+        {commentsOpen && (
+          <Box sx={{ mt: 2, pt: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
+            {/* New Comment Input */}
+            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
+              <Avatar sx={{ width: 32, height: 32 }} /> {/* Current User Avatar Placeholder */}
+              <TextField
+                fullWidth
+                variant="outlined"
+                size="small"
+                placeholder={t('post.addCommentPlaceholder', 'Add a comment...')}
+                value={commentInput}
+                onChange={handleCommentInputChange}
+                InputProps={{
+                  sx: { borderRadius: '20px' }, // Rounded corners
+                  endAdornment: (
+                    <IconButton 
+                      size="small" 
+                      onClick={handleSendComment} 
+                      disabled={!commentInput.trim()} // Disable if input is empty
+                      edge="end"
+                    >
+                      <PaperPlaneTilt size={20} weight="fill" />
+                    </IconButton>
+                  )
+                }}
+              />
+            </Stack>
+
+            {/* Loading State */}
+            {isLoadingComments && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+                <CircularProgress size={24} />
+              </Box>
+            )}
+
+            {/* Error State */}
+            {commentError && (
+              <Typography color="error" variant="body2" sx={{ textAlign: 'center', my: 2 }}>
+                {commentError}
+              </Typography>
+            )}
+
+            {/* Comment List */}
+            {!isLoadingComments && !commentError && commentsData && commentsData.comments.length > 0 && (
+              <Stack spacing={1} divider={<Divider flexItem />}>
+                {commentsData.comments.map((comment: Comment) => (
+                  <CommentItem key={comment.commentId} comment={comment} />
+                ))}
+              </Stack>
+            )}
+            
+            {/* No Comments Message */}
+            {!isLoadingComments && !commentError && commentsData && commentsData.comments.length === 0 && (
+               <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', my: 2 }}>
+                 {t('post.noComments', 'No comments yet.')}
+               </Typography>
+            )}
+
+            {/* Pagination */}
+            {!isLoadingComments && !commentError && commentsData && commentsData.totalComments > COMMENTS_PER_PAGE && (
+              <Stack alignItems="center" sx={{ mt: 2 }}>
+                <Pagination 
+                  count={Math.ceil(commentsData.totalComments / COMMENTS_PER_PAGE)}
+                  page={currentPage}
+                  onChange={handlePageChange}
+                  size="small"
+                  siblingCount={0} // Show fewer page numbers
+                  boundaryCount={1} // Show first/last page numbers
+                />
+              </Stack>
+            )}
+          </Box>
+        )}
+        {/* ----- End Comment Section ----- */}
       </CardContent>
       {/* Removed CardActions wrapper */}
     </Card>

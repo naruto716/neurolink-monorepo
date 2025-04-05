@@ -26,3 +26,33 @@ export const fetchUserPosts = async (apiClient, username, page = 1, limit = 24) 
         throw new Error('Failed to fetch posts');
     }
 };
+/**
+ * Fetches comments for a specific post with pagination.
+ * Corresponds to GET /api/v1/Posts/{postId}/comments
+ */
+export const fetchComments = async (api, // Pass the configured axios instance
+postId, page = 1, limit = 5 // Default limit to 5 as requested
+) => {
+    try {
+        const response = await api.get(`/posts/${postId}/comments`, {
+            params: { page, limit },
+        });
+        return response.data;
+    }
+    catch (error) {
+        console.error(`Error fetching comments for post ${postId}:`, error);
+        // Rethrow or handle error appropriately for the UI
+        throw error;
+    }
+};
+export const createComment = async (api, postId, payload) => {
+    try {
+        // Assuming the endpoint returns the created comment
+        const response = await api.post(`/posts/${postId}/comments`, payload);
+        return response.data;
+    }
+    catch (error) {
+        console.error(`Error creating comment for post ${postId}:`, error);
+        throw error;
+    }
+};

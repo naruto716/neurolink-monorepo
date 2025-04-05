@@ -19,3 +19,18 @@ export interface PaginatedPostsResponse {
     totalPosts: number;
     posts: Post[];
 }
+export interface Comment {
+    commentId: number;
+    postId: number;
+    authorId: number;
+    content: string;
+    createdAt: string;
+    updatedAt: string | null;
+}
+export interface PaginatedCommentsResponse {
+    postId: number;
+    page: number;
+    limit: number;
+    totalComments: number;
+    comments: Comment[];
+}
