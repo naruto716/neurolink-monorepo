@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouteObject } from 'react-router-dom';
 import AboutPage from '../../pages/about/AboutPage';
 import AuthPage from '../../pages/auth/AuthPage';
-import HomePage from '../../pages/home/HomePage';
+import SocialPage from '../../pages/social/SocialPage';
 // Removed ProfilePage import
 import App from '../layout/App';
 // Removed non-existent imports
@@ -28,7 +28,7 @@ const routes: RouteObject[] = [
           {
             element: <Layout />,
             children: [
-              { index: true, element: <HomePage /> }, // Default route after login
+              { index: true, element: <SocialPage /> }, // Default route after login
               // Removed profile route
               { path: 'people', element: <PeoplePage /> },
               { path: 'people/:username', element: <UserProfilePage /> }, // Corrected route param to :username

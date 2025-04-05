@@ -19,6 +19,7 @@ import {
   createFilterOptions, // Added useTheme
   styled, // Added Select, MenuItem, SelectChangeEvent, InputAdornment, IconButton
   useTheme, // Added useTheme
+  Skeleton // Added Skeleton
 } from '@mui/material';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -562,8 +563,19 @@ const PeoplePage = () => {
                 if (!selected) {
                   return <Typography color="text.secondary" sx={{ fontSize: '0.95rem' }}>{t('people.selectCategoryPlaceholder', 'Select Category...')}</Typography>;
                 }
-                // Use the translated label
-                return <Typography sx={{ fontSize: '0.95rem' }}>{t(tagCategories.find(c => c.type === selected)?.label || selected)}</Typography>;
+                // Apply truncation styles to the Typography displaying the selected value
+                return (
+                  <Typography sx={{
+                     fontSize: '0.95rem',
+                     whiteSpace: 'nowrap',
+                     overflow: 'hidden',
+                     textOverflow: 'ellipsis',
+                     // Ensure it doesn't push other elements (might need adjustment based on layout)
+                     maxWidth: 'calc(100% - 8px)' // Prevent overflow slightly
+                  }}>
+                    {t(tagCategories.find(c => c.type === selected)?.label || selected)}
+                  </Typography>
+                );
             }}
              MenuProps={{ // Match Onboarding style for menu paper
                 PaperProps: {
@@ -663,50 +675,68 @@ const PeoplePage = () => {
          {/* Removed FilterRow wrapper */}
 
         {/* Display Fetched Tags (Scrollable) - Now directly under CombinedInputContainer */}
-        {selectedTagCategory && (tagFetchStatus === 'loaded' || tagFetchStatus === 'loading') && fetchedTags.length > 0 && (
-          <TagsDisplayContainer sx={{ mt: 1 }}> {/* Add some margin top */}
-             {/* Left Scroll Arrow */}
-             <ScrollArrowButton
-                onClick={() => handleTagScroll('left')}
-                size="small"
-                sx={{ left: 0 }}
-                aria-label={t('common.scrollLeft', 'Scroll left')}
-             >
-                <CaretLeft size={20} />
-             </ScrollArrowButton>
+        {selectedTagCategory && (
+          <TagsDisplayContainer sx={{ mt: 1 }}>
+            {/* Left Scroll Arrow */}
+            <ScrollArrowButton
+               onClick={() => handleTagScroll('left')}
+               size="small"
+               sx={{ left: 0 }}
+               aria-label={t('common.scrollLeft', 'Scroll left')}
+            >
+               <CaretLeft size={20} />
+            </ScrollArrowButton>
 
-             {/* Fade overlays - only shown conditionally */}
-             {showLeftFade && (
-               <Box
-                 sx={{
-                   position: 'absolute',
-                   top: 0,
-                   bottom: 0,
-                   left: `${theme.spacing(5)}`,
-                   width: theme.spacing(4), // Smaller width
-                   zIndex: 1,
-                   pointerEvents: 'none',
-                   background: `linear-gradient(to right, ${theme.palette.background.paper} 20%, transparent 100%)`,
-                 }}
-               />
-             )}
-             {showRightFade && (
-               <Box
-                 sx={{
-                   position: 'absolute',
-                   top: 0,
-                   bottom: 0,
-                   right: `${theme.spacing(5)}`,
-                   width: theme.spacing(4), // Smaller width
-                   zIndex: 1,
-                   pointerEvents: 'none',
-                   background: `linear-gradient(to left, ${theme.palette.background.paper} 20%, transparent 100%)`,
-                 }}
-               />
-             )}
+            {/* Fade overlays - only shown conditionally */}
+            {showLeftFade && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  bottom: 0,
+                  left: `${theme.spacing(5)}`,
+                  width: theme.spacing(4), // Smaller width
+                  zIndex: 1,
+                  pointerEvents: 'none',
+                  background: `linear-gradient(to right, ${theme.palette.background.paper} 20%, transparent 100%)`,
+                }}
+              />
+            )}
+            {showRightFade && (
+              <Box
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  bottom: 0,
+                  right: `${theme.spacing(5)}`,
+                  width: theme.spacing(4), // Smaller width
+                  zIndex: 1,
+                  pointerEvents: 'none',
+                  background: `linear-gradient(to left, ${theme.palette.background.paper} 20%, transparent 100%)`,
+                }}
+              />
+            )}
 
-             <TagsScrollArea ref={tagsContainerRef}>
-                {fetchedTags.map((tag) => {
+            {/* --- SKELETON LOADING STATE --- */}
+            {tagFetchStatus === 'loading' && (
+              <TagsScrollArea ref={tagsContainerRef}> 
+                {[...Array(15)].map((_, index) => ( // Render 7 skeletons
+                  <Skeleton 
+                    key={index} 
+                    variant="rounded" 
+                    width={80} // Approximate chip width
+                    height={24} // Approximate small chip height
+                    sx={{ borderRadius: '16px' }} // Match chip border radius if needed
+                  />
+                ))}
+              </TagsScrollArea>
+            )}
+            {/* --- END SKELETON LOADING STATE --- */} 
+
+            {/* --- LOADED STATE --- */}
+            {tagFetchStatus === 'loaded' && fetchedTags.length > 0 && (
+              <TagsScrollArea ref={tagsContainerRef}>
+                 {fetchedTags.map((tag) => {
                     const isSelected = selectedFilterTags.some(t => t.type === tag.type && t.value === tag.value);
                     return (
                         <Chip
@@ -714,25 +744,24 @@ const PeoplePage = () => {
                             label={tag.value}
                             clickable
                             onClick={() => handleFilterTagClick(tag)}
-                            // Use theme's default filled style, apply primary color only when selected
                             color={isSelected ? "primary" : "default"}
-                            // variant removed to default to filled style defined in theme
-                            size="small" // Use small size consistent with theme examples
-                            // Remove sx prop to rely purely on theme overrides
+                            size="small" 
                          />
                     );
                 })}
-             </TagsScrollArea>
+              </TagsScrollArea>
+            )}
+            {/* --- END LOADED STATE --- */}
 
-             {/* Right Scroll Arrow */}
-             <ScrollArrowButton
-                onClick={() => handleTagScroll('right')}
-                size="small"
-                sx={{ right: 0 }}
-                aria-label={t('common.scrollRight', 'Scroll right')}
-             >
-                <CaretRight size={20} />
-             </ScrollArrowButton>
+            {/* Right Scroll Arrow */}
+            <ScrollArrowButton
+               onClick={() => handleTagScroll('right')}
+               size="small"
+               sx={{ right: 0 }}
+               aria-label={t('common.scrollRight', 'Scroll right')}
+            >
+               <CaretRight size={20} />
+            </ScrollArrowButton>
           </TagsDisplayContainer>
         )}
         {tagFetchStatus === 'error' && (

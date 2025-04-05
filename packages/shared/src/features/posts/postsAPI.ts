@@ -6,6 +6,22 @@ const API_ENDPOINT_USERS = '/users'; // Base endpoint for users
 // Default limit for posts per page
 const DEFAULT_POSTS_LIMIT = 10; // Let's set a default, e.g., 10
 
+// --- Feed Types ---
+export interface FetchFeedPostsPayload {
+  usernames: string[];
+  pageNumber?: number; // Match API schema (pageNumber, pageSize)
+  pageSize?: number;
+}
+
+export interface PaginatedFeedResponse {
+  pageNumber: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  items: Post[]; // Posts are nested under 'items'
+}
+// --- End Feed Types ---
+
 /**
  * Fetches posts for a specific user with pagination.
  * Corresponds to GET /users/{username}/posts
@@ -91,5 +107,28 @@ export const togglePostLike = async (
   } catch (error) {
     console.error(`Error toggling like for post ${postId}:`, error);
     throw error; // Rethrow to be handled by the calling function
+  }
+};
+
+/**
+ * Fetches posts for a list of usernames (feed).
+ * Corresponds to POST /api/v1/posts/by-usernames
+ */
+export const fetchFeedPosts = async (
+  api: AxiosInstance,
+  payload: FetchFeedPostsPayload
+): Promise<PaginatedFeedResponse> => {
+  try {
+    // Ensure defaults if not provided
+    const dataToSend = {
+      usernames: payload.usernames,
+      pageNumber: payload.pageNumber ?? 1,
+      pageSize: payload.pageSize ?? 10, // Default page size, adjust if needed
+    };
+    const response = await api.post<PaginatedFeedResponse>('/posts/by-usernames', dataToSend);
+    return response.data;
+  } catch (error) {
+    console.error(`Error fetching feed posts:`, error);
+    throw error;
   }
 };

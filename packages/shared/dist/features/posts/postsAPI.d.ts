@@ -1,5 +1,17 @@
 import { AxiosInstance } from 'axios';
-import { PaginatedPostsResponse, Comment, PaginatedCommentsResponse } from './types';
+import { PaginatedPostsResponse, Post, Comment, PaginatedCommentsResponse } from './types';
+export interface FetchFeedPostsPayload {
+    usernames: string[];
+    pageNumber?: number;
+    pageSize?: number;
+}
+export interface PaginatedFeedResponse {
+    pageNumber: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+    items: Post[];
+}
 /**
  * Fetches posts for a specific user with pagination.
  * Corresponds to GET /users/{username}/posts
@@ -24,3 +36,8 @@ export interface ToggleLikeResponse {
  * Corresponds to POST /api/v1/Posts/{postId}/likes/toggle
  */
 export declare const togglePostLike: (api: AxiosInstance, postId: number) => Promise<ToggleLikeResponse>;
+/**
+ * Fetches posts for a list of usernames (feed).
+ * Corresponds to POST /api/v1/posts/by-usernames
+ */
+export declare const fetchFeedPosts: (api: AxiosInstance, payload: FetchFeedPostsPayload) => Promise<PaginatedFeedResponse>;

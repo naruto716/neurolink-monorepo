@@ -6,14 +6,16 @@ import {
   Button,
   Card,
   CardContent,
-  CircularProgress,
   Divider,
   Grid,
   IconButton,
   Paper,
   Stack,
   Typography,
-  useTheme
+  useTheme,
+  Tooltip,
+  Link,
+  Skeleton
 } from '@mui/material';
 import {
   BookmarkSimple,
@@ -21,9 +23,10 @@ import {
   DotsThree,
   Heart,
   ShareNetwork,
-  UserPlus
+  ArrowSquareOut
 } from '@phosphor-icons/react';
 import React, { useEffect } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import { AccessibleTypography } from '../../app/components/AccessibleTypography';
 import { NAVBAR_HEIGHT } from '../../app/layout/navbar/Navbar';
 // Import RootState along with the hooks
@@ -37,6 +40,7 @@ import {
   selectPaginatedUsersStatus as selectSharedPaginatedUsersStatus
 } from '@neurolink/shared/src/features/user/paginatedUsersSlice';
 import apiClient from '../../app/api/apiClient';
+import { useTranslation } from 'react-i18next';
 
 // Placeholder data
 const PLACEHOLDER_IMAGE = "https://via.placeholder.com/600x400";
@@ -121,23 +125,64 @@ const PostCard: React.FC<{ post: typeof posts[0] }> = ({ post }) => {
 };
 
 const SuggestionCard: React.FC<{ user: User }> = ({ user }) => {
+  const { t } = useTranslation();
+  const profileUrl = `/people/${user.username}`;
+
   return (
     <Stack direction="row" spacing={2} sx={{ mb: 2.5, alignItems: 'center' }}>
-      <Avatar src={user.profilePicture || PLACEHOLDER_AVATAR} sx={{ width: 48, height: 48 }} />
-      <Box sx={{ flexGrow: 1 }}>
-        <AccessibleTypography variant="subtitle2" sx={{ fontWeight: 600 }}>
-          {user.displayName}
-        </AccessibleTypography>
-        {/* Removed user.title display */}
+      <RouterLink to={profileUrl} style={{ textDecoration: 'none' }}>
+        <Avatar src={user.profilePicture || undefined} sx={{ width: 48, height: 48 }} />
+      </RouterLink>
+      <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+        <Link 
+          component={RouterLink} 
+          to={profileUrl}
+          color="inherit"
+          underline="none"
+          sx={{ 
+             display: 'block', 
+          }}
+        >
+          <AccessibleTypography 
+            variant="subtitle2" 
+            sx={{ 
+              fontWeight: 600, 
+              whiteSpace: 'nowrap', 
+              overflow: 'hidden', 
+              textOverflow: 'ellipsis' 
+            }}
+          >
+            {user.displayName}
+          </AccessibleTypography>
+        </Link>
+        {user.bio && (
+          <Typography 
+            variant="caption" 
+            color="text.secondary" 
+            sx={{
+              display: '-webkit-box', 
+              WebkitBoxOrient: 'vertical',
+              WebkitLineClamp: 2,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              mt: 0.5
+            }}
+          >
+            {user.bio}
+          </Typography>
+        )}
       </Box>
-      <Button
-        size="small"
-        variant="outlined"
-        startIcon={<UserPlus size={16} />}
-        sx={{ alignSelf: 'center', flexShrink: 0 }}
-      >
-        Connect
-      </Button>
+      <Tooltip title={t('people.viewProfileButton', 'View Profile')}>
+        <IconButton 
+          component={RouterLink} 
+          to={profileUrl} 
+          size="small" 
+          sx={{ alignSelf: 'center', flexShrink: 0 }} 
+          aria-label={t('people.viewProfileButton', 'View Profile')}
+        >
+          <ArrowSquareOut size={20} />
+        </IconButton>
+      </Tooltip>
     </Stack>
   );
 };
@@ -148,7 +193,7 @@ const selectPaginatedUsersStatus = (state: RootState) => selectSharedPaginatedUs
 const selectPaginatedUsersError = (state: RootState) => selectSharedPaginatedUsersError(state);
 
 // --- Main HomePage Component ---
-const HomePage = () => {
+const SocialPage = () => {
   const dispatch = useAppDispatch();
   // Use the local wrapper selectors
   const suggestedUsers = useAppSelector(selectPaginatedUsers); 
@@ -188,9 +233,17 @@ const HomePage = () => {
           </Typography>
           
           {status === 'loading' && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
-              <CircularProgress size={30} />
-            </Box>
+            <Stack spacing={2.5} sx={{ p: 1 }}>
+              {[...Array(4)].map((_, index) => (
+                 <Stack key={index} direction="row" spacing={2} alignItems="center"> 
+                   <Skeleton variant="circular" width={48} height={48} />
+                   <Box sx={{ flexGrow: 1 }}>
+                     <Skeleton variant="text" width="70%" sx={{ fontSize: '1rem' }} />
+                     <Skeleton variant="text" width="40%" sx={{ fontSize: '0.75rem' }} />
+                   </Box>
+                 </Stack>
+              ))}
+            </Stack>
           )}
           {status === 'failed' && (
             <Alert severity="error" sx={{ mb: 2 }}>{error || 'Failed to load suggestions.'}</Alert>
@@ -212,7 +265,11 @@ const HomePage = () => {
                 )}
               </Stack>
               <Box sx={{ mt: 3, textAlign: 'center' }}>
-                 <Button variant="text" /* onClick={() => {}} // Add navigation later */ >
+                 <Button 
+                   variant="text" 
+                   component={RouterLink} 
+                   to="/people" 
+                 >
                    Find More People
                  </Button>
               </Box>
@@ -225,4 +282,4 @@ const HomePage = () => {
   );
 };
 
-export default HomePage;
+export default SocialPage;
