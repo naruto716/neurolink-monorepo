@@ -16,6 +16,7 @@ import {
   selectFeedPostsCurrentPage, // Added selector for current page
   selectFeedPostsTotalPages, // Added selector for total pages
   Post, // Need Post type for state
+  selectCurrentUser, // Import current user selector
 } from '@neurolink/shared';
 // Import the selectors for suggested users from the correct slice path
 import {
@@ -44,6 +45,8 @@ const FeedPosts: React.FC = () => {
   // Suggestions
   const suggestedUsers = useAppSelector(selectPaginatedUsers);
   const suggestionsStatus = useAppSelector(selectPaginatedUsersStatus);
+  // Current User
+  const currentUser = useAppSelector(selectCurrentUser);
   // Feed Posts (from Redux, represents the *last fetched page*)
   const latestFeedPostsPage = useAppSelector(selectFeedPosts);
   const feedStatus = useAppSelector(selectFeedPostsStatus);
@@ -53,19 +56,26 @@ const FeedPosts: React.FC = () => {
   const feedTotalPages = useAppSelector(selectFeedPostsTotalPages);
   // --- End Redux State ---
 
-  // Extract usernames from suggested users
-  const suggestedUsernames = useMemo(() => {
-    if (suggestionsStatus === 'succeeded' && suggestedUsers.length > 0) {
-      return suggestedUsers.map((user) => user.username);
+  // Combine suggested usernames with the current user's username
+  const usernamesToFetch = useMemo(() => {
+    const names = new Set<string>();
+    // Add current user's username if available
+    if (currentUser?.username) {
+      names.add(currentUser.username);
     }
-    return [];
-  }, [suggestedUsers, suggestionsStatus]);
+    // Add suggested usernames if loaded
+    if (suggestionsStatus === 'succeeded' && suggestedUsers.length > 0) {
+      suggestedUsers.forEach((user) => names.add(user.username));
+    }
+    return Array.from(names);
+  }, [suggestedUsers, suggestionsStatus, currentUser?.username]); // Depend on current user's username
 
   // --- Fetching Logic ---
   const triggerPostFetch = useCallback((page: number, isNewUsernameSet: boolean = false) => {
-    if (suggestedUsernames.length === 0) return; // Don't fetch if no usernames
+    // Use the combined list
+    if (usernamesToFetch.length === 0) return;
 
-    console.log(`Triggering post fetch - Page: ${page}, NewUsernames: ${isNewUsernameSet}, Usernames: ${suggestedUsernames.join(',')}`);
+    console.log(`Triggering post fetch - Page: ${page}, NewUsernames: ${isNewUsernameSet}, Usernames: ${usernamesToFetch.join(',')}`);
 
     if (isNewUsernameSet) {
       isInitialUsernameFetch.current = true; // Mark as initial fetch for these usernames
@@ -77,28 +87,39 @@ const FeedPosts: React.FC = () => {
     dispatch(
       fetchFeedPostsThunk({
         apiClient,
-        usernames: suggestedUsernames,
+        usernames: usernamesToFetch, // Pass the combined list
         pageNumber: page,
         pageSize: 10, // Keep page size consistent
       })
     );
-  }, [dispatch, suggestedUsernames, apiClient]); // Dependencies for the fetch function itself
+  }, [dispatch, usernamesToFetch, apiClient]); // Update dependency
 
-  // Effect to fetch page 1 when suggested usernames change
+  // Effect to fetch page 1 when the list of usernames to fetch changes
   useEffect(() => {
     // Only fetch if usernames are available and different from the last set used for fetching
-    const usernamesChanged = JSON.stringify(suggestedUsernames) !== JSON.stringify(currentFeedUsernames);
+    // Compare the calculated usernamesToFetch with the usernames stored in the Redux state from the last successful fetch
+    const usernamesActuallyFetched = currentFeedUsernames || []; // Use empty array if undefined
+    // Create copies before sorting to avoid mutating state/props
+    const stringifiedUsernamesToFetch = JSON.stringify([...usernamesToFetch].sort());
+    const stringifiedUsernamesActuallyFetched = JSON.stringify([...usernamesActuallyFetched].sort());
 
-    if (suggestedUsernames.length > 0 && (usernamesChanged || feedStatus === 'idle')) {
-        console.log("Usernames changed or initial load, fetching page 1.");
+    const usernamesChanged = stringifiedUsernamesToFetch !== stringifiedUsernamesActuallyFetched;
+
+    // Fetch if we have usernames AND (the list changed OR it's the initial idle state)
+    if (usernamesToFetch.length > 0 && (usernamesChanged || feedStatus === 'idle')) {
+        console.log("Usernames to fetch changed or initial load, fetching page 1.");
         setAllFeedPosts([]); // Clear existing posts when usernames change
         isLoadingMorePosts.current = false; // Reset loading more flag
         triggerPostFetch(1, true); // Fetch page 1, mark as new username set
-    } else if (suggestedUsernames.length === 0 && suggestionsStatus === 'succeeded') {
-        console.log("No suggested usernames to fetch posts for.");
-        setAllFeedPosts([]); // Clear posts if suggestions become empty
+    } else if (usernamesToFetch.length === 0 && suggestionsStatus === 'succeeded') {
+        // This case might need refinement - if suggestions load but are empty,
+        // we still might want to show the current user's posts if they exist.
+        // However, the current logic clears posts if usernamesToFetch is empty.
+        console.log("No usernames (including current user) to fetch posts for.");
+        setAllFeedPosts([]); // Clear posts if the final list is empty
     }
-  }, [suggestedUsernames, triggerPostFetch, currentFeedUsernames, feedStatus, suggestionsStatus]); // Rerun when usernames change
+    // Dependency includes the calculated list and the trigger function
+  }, [usernamesToFetch, triggerPostFetch, currentFeedUsernames, feedStatus, suggestionsStatus]);
 
   // Effect to update local state when Redux state changes (new page loaded)
   useEffect(() => {
@@ -175,10 +196,12 @@ const FeedPosts: React.FC = () => {
 
 
   // Empty States
-  if (suggestionsStatus === 'succeeded' && suggestedUsernames.length === 0) {
+  // Refined empty state: Check if suggestions loaded AND the final list (including current user) is empty
+  if (suggestionsStatus === 'succeeded' && usernamesToFetch.length === 0) {
       return (
           <Typography variant="body1" color="text.secondary" align="center" sx={{ p: 3 }}>
-              {t('social.noSuggestionsForFeed', 'No user suggestions available to build feed.')}
+              {/* Maybe a different message if only current user has no posts? */}
+              {t('social.noUsersForFeed', 'No users available to build feed.')}
           </Typography>
       );
   }

@@ -46,6 +46,13 @@ export const feedPostsSlice = createSlice({
         setFeedUsernames: (state, action) => {
             state.currentUsernameFilters = action.payload;
             state.status = 'idle'; // Reset status when filters change
+        },
+        // Reducer to signal a refresh is needed (e.g., after a new post)
+        requestFeedRefresh: (state) => {
+            state.status = 'idle'; // Set status to idle to trigger refetch in component
+            // Optionally reset pagination, though the component's effect should handle fetching page 1
+            // state.currentPage = 1;
+            // state.posts = []; // Don't clear posts here, let the component manage its display state
         }
     },
     extraReducers: (builder) => {
@@ -74,7 +81,7 @@ export const feedPostsSlice = createSlice({
     }
 });
 // Export actions and reducer
-export const { clearFeedPosts, setFeedUsernames } = feedPostsSlice.actions;
+export const { clearFeedPosts, setFeedUsernames, requestFeedRefresh } = feedPostsSlice.actions;
 // Selectors - Explicitly use SharedRootState
 export const selectFeedPosts = (state) => state.feedPosts?.posts || [];
 export const selectFeedPostsStatus = (state) => state.feedPosts?.status || 'idle';

@@ -171,7 +171,15 @@
     "noSuggestionsForFeed": "No user suggestions available to build feed.",
     "noPostsEncouragement": "No posts yet. Be the first to share something!",
     "refreshSuggestions": "Refresh Suggestions",
-    "endOfFeed": "You've reached the end of the feed."
+    "endOfFeed": "You've reached the end of the feed.",
+    "noUsersForFeed": "No users available to build feed.",
+    "postErrorEmpty": "Post content cannot be empty.",
+    "postErrorNotLoggedIn": "You must be logged in to post.",
+    "postErrorUnexpected": "An unexpected error occurred while posting.",
+    "postErrorGeneric": "Failed to create post. Please try again.",
+    "postPlaceholder": "What's on your mind?",
+    "postButton": "Post",
+    "addEmoji": "Add emoji" 
   },
   "common": {
     "back": "Back",

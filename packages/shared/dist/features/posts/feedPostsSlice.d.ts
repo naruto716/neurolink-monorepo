@@ -28,8 +28,9 @@ export declare const fetchFeedPostsThunk: import("@reduxjs/toolkit").AsyncThunk<
 export declare const feedPostsSlice: import("@reduxjs/toolkit").Slice<FeedPostsState, {
     clearFeedPosts: (state: import("immer").WritableDraft<FeedPostsState>) => void;
     setFeedUsernames: (state: import("immer").WritableDraft<FeedPostsState>, action: PayloadAction<string[]>) => void;
+    requestFeedRefresh: (state: import("immer").WritableDraft<FeedPostsState>) => void;
 }, "feedPosts", "feedPosts", import("@reduxjs/toolkit").SliceSelectors<FeedPostsState>>;
-export declare const clearFeedPosts: import("@reduxjs/toolkit").ActionCreatorWithoutPayload<"feedPosts/clearFeedPosts">, setFeedUsernames: import("@reduxjs/toolkit").ActionCreatorWithPayload<string[], "feedPosts/setFeedUsernames">;
+export declare const clearFeedPosts: import("@reduxjs/toolkit").ActionCreatorWithoutPayload<"feedPosts/clearFeedPosts">, setFeedUsernames: import("@reduxjs/toolkit").ActionCreatorWithPayload<string[], "feedPosts/setFeedUsernames">, requestFeedRefresh: import("@reduxjs/toolkit").ActionCreatorWithoutPayload<"feedPosts/requestFeedRefresh">;
 export declare const selectFeedPosts: (state: SharedRootState) => Post[];
 export declare const selectFeedPostsStatus: (state: SharedRootState) => FeedPostsState["status"];
 export declare const selectFeedPostsError: (state: SharedRootState) => string | null;

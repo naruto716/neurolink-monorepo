@@ -45,6 +45,7 @@ import {
 import apiClient from '../../app/api/apiClient';
 import { useTranslation } from 'react-i18next';
 import FeedPosts from '../../features/posts/components/FeedPosts'; // Import the new FeedPosts component
+import CreatePostInput from '../../features/posts/components/CreatePostInput'; // Import the new CreatePostInput component
 
 // Placeholder data and inline PostCard removed
 
@@ -171,12 +172,9 @@ const SocialPage = () => {
 
       {/* --- Center Feed Column --- */}
       <Grid item xs={12} md={8} lg={7}>
-        <Paper sx={theme => ({ p: 2, mb: 3, display: 'flex', alignItems: 'center', gap: 2, borderRadius: '12px', border: `1px solid ${theme.palette.divider}`, boxShadow: theme.palette.mode === 'light' ? '0 1px 2px rgba(0,0,0,0.05)' : '0 1px 2px rgba(0,0,0,0.2)' })}>
-           {/* TODO: Replace with current user's avatar */}
-           <Avatar />
-           <Typography color="text.secondary" sx={{ flexGrow: 1 }}>What's on your mind?</Typography>
-           <Button variant="contained">Post</Button>
-        </Paper>
+        {/* --- Create Post Input --- */}
+        <CreatePostInput />
+
 
         {/* Replace placeholder mapping with FeedPosts component */}
         <FeedPosts />
