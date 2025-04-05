@@ -23,7 +23,8 @@ import {
   DotsThree,
   Heart,
   ShareNetwork,
-  ArrowSquareOut
+  ArrowSquareOut,
+  CaretRight
 } from '@phosphor-icons/react';
 import React, { useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
@@ -32,12 +33,13 @@ import { NAVBAR_HEIGHT } from '../../app/layout/navbar/Navbar';
 // Import RootState along with the hooks
 import { RootState, useAppDispatch, useAppSelector } from '../../app/store/initStore';
 // Import shared selectors with aliases
-import { User } from '@neurolink/shared';
+import { User, fetchPaginatedUsers } from '@neurolink/shared';
 import {
-  fetchPaginatedUsers,
   selectPaginatedUsers as selectSharedPaginatedUsers,
   selectPaginatedUsersError as selectSharedPaginatedUsersError,
-  selectPaginatedUsersStatus as selectSharedPaginatedUsersStatus
+  selectPaginatedUsersStatus as selectSharedPaginatedUsersStatus,
+  selectUsersCurrentPage,
+  selectUsersTotalPages
 } from '@neurolink/shared/src/features/user/paginatedUsersSlice';
 import apiClient from '../../app/api/apiClient';
 import { useTranslation } from 'react-i18next';
@@ -187,25 +189,49 @@ const SuggestionCard: React.FC<{ user: User }> = ({ user }) => {
   );
 };
 
-// --- Wrapper Selectors for HomePage ---
+// --- Wrapper Selectors ---
 const selectPaginatedUsers = (state: RootState) => selectSharedPaginatedUsers(state);
 const selectPaginatedUsersStatus = (state: RootState) => selectSharedPaginatedUsersStatus(state);
 const selectPaginatedUsersError = (state: RootState) => selectSharedPaginatedUsersError(state);
+const selectCurrentSuggestionPage = (state: RootState) => selectUsersCurrentPage(state);
+const selectTotalSuggestionPages = (state: RootState) => selectUsersTotalPages(state);
 
 // --- Main HomePage Component ---
 const SocialPage = () => {
+  const { t } = useTranslation();
   const dispatch = useAppDispatch();
-  // Use the local wrapper selectors
-  const suggestedUsers = useAppSelector(selectPaginatedUsers); 
-  const status = useAppSelector(selectPaginatedUsersStatus);
-  const error = useAppSelector(selectPaginatedUsersError);
+  
+  // --- Use Redux State for Suggestions ---
+  const SUGGESTIONS_PAGE_SIZE = 10;
+  const suggestedUsers = useAppSelector(selectPaginatedUsers);
+  const suggestionsStatus = useAppSelector(selectPaginatedUsersStatus);
+  const suggestionsError = useAppSelector(selectPaginatedUsersError);
+  const suggestionsCurrentPage = useAppSelector(selectCurrentSuggestionPage);
+  const suggestionsTotalPages = useAppSelector(selectTotalSuggestionPages);
+  // --- End Redux State ---
 
-  // Fetch suggested users on component mount
+  // Fetch initial suggestions on component mount
   useEffect(() => {
-    if (status === 'idle') {
-      dispatch(fetchPaginatedUsers({ apiClient, limit: 5, page: 1 })); 
+    if (suggestionsStatus === 'idle') {
+      dispatch(fetchPaginatedUsers({ 
+        apiClient, 
+        limit: SUGGESTIONS_PAGE_SIZE,
+        page: 1 
+      }));
     }
-  }, [status, dispatch]);
+  }, [suggestionsStatus, dispatch]);
+
+  // Handle clicking the 'More' button
+  const handleMoreSuggestions = () => {
+    const nextPage = suggestionsCurrentPage >= suggestionsTotalPages 
+      ? 1 
+      : suggestionsCurrentPage + 1;
+    dispatch(fetchPaginatedUsers({ 
+      apiClient, 
+      limit: SUGGESTIONS_PAGE_SIZE, 
+      page: nextPage 
+    }));
+  };
 
   return (
     <Grid container spacing={3} sx={{ maxWidth: '1200px', mx: 'auto', px: { xs: 1, sm: 2, md: 3 } }}>
@@ -229,12 +255,13 @@ const SocialPage = () => {
       <Grid item md={4} lg={5} sx={{ display: { xs: 'none', md: 'block' } }}>
         <Paper sx={theme => ({ p: 2.5, position: 'sticky', top: NAVBAR_HEIGHT + 24, borderRadius: '12px', border: `1px solid ${theme.palette.divider}`, boxShadow: theme.palette.mode === 'light' ? '0 1px 2px rgba(0,0,0,0.05)' : '0 1px 2px rgba(0,0,0,0.2)' })}>
           <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-            People You Might Like
+            {t('social.suggestionsTitle', 'People You Might Like')}
           </Typography>
           
-          {status === 'loading' && (
+          {/* Loading State */}
+          {suggestionsStatus === 'loading' && (
             <Stack spacing={2.5} sx={{ p: 1 }}>
-              {[...Array(4)].map((_, index) => (
+              {[...Array(4)].map((_, index) => ( 
                  <Stack key={index} direction="row" spacing={2} alignItems="center"> 
                    <Skeleton variant="circular" width={48} height={48} />
                    <Box sx={{ flexGrow: 1 }}>
@@ -245,10 +272,12 @@ const SocialPage = () => {
               ))}
             </Stack>
           )}
-          {status === 'failed' && (
-            <Alert severity="error" sx={{ mb: 2 }}>{error || 'Failed to load suggestions.'}</Alert>
+          {/* Failed State */}
+          {suggestionsStatus === 'failed' && (
+            <Alert severity="error" sx={{ mb: 2 }}>{suggestionsError}</Alert>
           )}
-          {status === 'succeeded' && (
+          {/* Succeeded State - Corrected condition */}
+          {suggestionsStatus === 'succeeded' && (
             <>
               <Stack spacing={0}>
                 {suggestedUsers.length > 0 ? (
@@ -260,19 +289,24 @@ const SocialPage = () => {
                   ))
                 ) : (
                   <Typography variant="body2" color="text.secondary" align="center">
-                    No suggestions available right now.
+                    {t('social.noSuggestions', 'No suggestions available right now.')}
                   </Typography>
                 )}
               </Stack>
-              <Box sx={{ mt: 3, textAlign: 'center' }}>
-                 <Button 
-                   variant="text" 
-                   component={RouterLink} 
-                   to="/people" 
-                 >
-                   Find More People
-                 </Button>
-              </Box>
+              {/* Updated More Button - only show if there are pages to navigate */}
+              {suggestionsTotalPages > 0 && (
+                <Box sx={{ mt: 3, textAlign: 'center' }}>
+                  <Button 
+                    variant="text" 
+                    onClick={handleMoreSuggestions}
+                    // @ts-expect-error - Linter incorrectly flags this valid comparison
+                    disabled={suggestionsStatus === 'loading'} 
+                    endIcon={<CaretRight size={16}/>}
+                  >
+                    {t('common.more', 'More')}
+                  </Button>
+                </Box>
+              )}
             </>
           )}
         </Paper>
