@@ -150,8 +150,18 @@
       "missingId": "User ID is missing.",
       "missingUsername": "Username is missing.",
       "genericLoad": "Failed to load user profile.",
-      "notFound": "User not found."
-    }
+      "notFound": "User not found.",
+      "postsLoad": "Failed to load posts."
+    },
+    "addFriend": "Add Friend",
+    "message": "Message",
+    "posts": "posts",
+    "friends": "friends",
+    "tabsLabel": "Profile content tabs",
+    "tabPosts": "POSTS",
+    "tabTags": "TAGS",
+    "noPosts": "No posts yet.",
+    "noTags": "No tags added yet."
   },
   "common": {
     "back": "Back",
@@ -165,6 +175,13 @@
     "addTag": "Add tag",
     "cancel": "Cancel",
     "scrollLeft": "Scroll left",
-    "scrollRight": "Scroll right"
+    "scrollRight": "Scroll right",
+    "appName": "Neurolink"
+  },
+  "post": {
+    "imageAlt": "Post image",
+    "imageAltWithNumber": "Post image {{index}}",
+    "videoUnsupported": "Your browser does not support the video tag.",
+    "audioUnsupported": "Your browser does not support the audio tag."
   }
 }

@@ -13,8 +13,10 @@ export type { PaginatedUsersState } from './features/user/paginatedUsersSlice';
 
 // Export Feature specific types and API functions
 // Make sure to export ALL necessary types from types.ts
-export type { Tag, UserPreferences, User, UserProfileInput, ListedUser, PaginatedUsersResponse } from './features/user/types'; 
+export type { Tag, UserPreferences, User, UserProfileInput, ListedUser, PaginatedUsersResponse } from './features/user/types';
+export * from './features/posts/types'; // Re-export all types from posts/types.ts
 export * from './features/user/userAPI';
+export * from './features/posts/postsAPI'; // Export Post API functions
 export * from './features/tokens/tokensSlice'; // Export token actions/selectors if needed directly
 export * from './features/user/userSlice'; // Export user actions/selectors if needed directly
 export * from './features/user/paginatedUsersSlice'; // Export paginated user actions/selectors

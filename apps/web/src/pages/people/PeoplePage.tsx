@@ -1,34 +1,47 @@
-import { useEffect, useState, useRef, useCallback, useMemo } from 'react'; // Added useMemo
-import React from 'react';
 import {
-  Box, Container, Grid, CircularProgress, Alert, TextField, Button, Avatar, Chip, Stack, Typography, Card, CardContent, // Removed Paper
-  Select, MenuItem, SelectChangeEvent, InputAdornment, IconButton, // Added Select, MenuItem, SelectChangeEvent, InputAdornment, IconButton
+  Alert,
+  Autocomplete,
+  Avatar,
+  Box,
+  Button,
+  Card, CardContent,
+  Chip,
+  CircularProgress,
+  Container, Grid,
+  IconButton,
+  InputAdornment,
+  MenuItem, // Removed Paper
+  Select,
+  SelectChangeEvent,
+  Stack,
+  TextField,
+  Typography,
+  createFilterOptions, // Added useTheme
+  styled, // Added Select, MenuItem, SelectChangeEvent, InputAdornment, IconButton
   useTheme, // Added useTheme
-  styled, // Added styled
 } from '@mui/material';
-import { Autocomplete, createFilterOptions } from '@mui/material'; // Added Autocomplete, createFilterOptions
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAppDispatch, useAppSelector } from '../../app/store/initStore';
 import { Link } from 'react-router-dom';
+import { useAppDispatch, useAppSelector } from '../../app/store/initStore';
 // Added icons
-import { UserPlus, ChatText, User, MagnifyingGlass, CaretLeft, CaretRight } from '@phosphor-icons/react'; // Removed X
-import apiClient from '../../app/api/apiClient';
 import {
+  clearPaginatedUsers,
   fetchPaginatedUsers,
   selectPaginatedUsers,
-  selectPaginatedUsersStatus,
   selectPaginatedUsersError,
+  selectPaginatedUsersStatus,
   selectUsersCurrentPage,
   selectUsersTotalPages,
-  setUsersFilters,
-  clearPaginatedUsers
+  setUsersFilters
 } from '@neurolink/shared/src/features/user/paginatedUsersSlice';
+import { CaretLeft, CaretRight, ChatText, MagnifyingGlass, User, UserPlus } from '@phosphor-icons/react'; // Removed X
+import apiClient from '../../app/api/apiClient';
 // Added Tag, FetchTagsParams, fetchTags
-import { ListedUser, Tag, FetchTagsParams, fetchTags } from '@neurolink/shared';
-import { AccessibleTypography } from '../../app/components/AccessibleTypography';
-import Breadcrumb from '../../app/components/Breadcrumb';
+import { FetchTagsParams, ListedUser, Tag, fetchTags } from '@neurolink/shared';
 import { debounce } from 'lodash'; // Added debounce
 import { toast } from 'react-toastify'; // Added toast
+import { AccessibleTypography } from '../../app/components/AccessibleTypography';
 
 // --- Define Tag Categories (copied/adapted from Onboarding) ---
 const tagCategories = [
@@ -236,7 +249,7 @@ const PeoplePage = () => {
 
   // --- Local State ---
   // Tag Filtering State
-  const [selectedTagCategory, setSelectedTagCategory] = useState<string>(''); // Initially no category
+  const [selectedTagCategory, setSelectedTagCategory] = useState<string>('neurodivergence'); // Default to neurodivergence
   const [tagSearchQuery, setTagSearchQuery] = useState<string>('');
   const [debouncedTagSearchQuery, setDebouncedTagSearchQuery] = useState<string>('');
   const [fetchedTags, setFetchedTags] = useState<Tag[]>([]);
@@ -511,17 +524,11 @@ const PeoplePage = () => {
     };
   }, [fetchedTags]); // Re-run when tags change
 
-  // Breadcrumb items
-  const breadcrumbItems = [
-    { label: t('nav.home'), path: '/' },
-    { label: t('people.title', 'People'), path: '/people' }
-  ];
-
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Box sx={{ mb: 3 }}>
+      {/* <Box sx={{ mb: 3 }}>
         <Breadcrumb customItems={breadcrumbItems} />
-      </Box>
+      </Box> */}
 
       <AccessibleTypography variant="h4" component="h1" gutterBottom>
         {t('people.header', 'Find People')}
