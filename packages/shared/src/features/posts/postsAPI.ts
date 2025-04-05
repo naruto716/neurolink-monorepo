@@ -3,38 +3,27 @@ import { PaginatedPostsResponse, Post, Comment, PaginatedCommentsResponse } from
 
 const API_ENDPOINT_USERS = '/users'; // Base endpoint for users
 
+// Default limit for posts per page
+const DEFAULT_POSTS_LIMIT = 10; // Let's set a default, e.g., 10
+
 /**
- * Fetch posts for a specific user with pagination.
- * @param apiClient The Axios instance to use.
- * @param username The username of the user whose posts to fetch.
- * @param page The page number to fetch (default: 1).
- * @param limit The number of posts per page (default: 24).
- * @returns Promise with paginated post data.
+ * Fetches posts for a specific user with pagination.
+ * Corresponds to GET /users/{username}/posts
  */
 export const fetchUserPosts = async (
-  apiClient: AxiosInstance,
+  api: AxiosInstance,
   username: string,
   page: number = 1,
-  limit: number = 24
+  limit: number = DEFAULT_POSTS_LIMIT
 ): Promise<PaginatedPostsResponse> => {
   try {
-    const config: AxiosRequestConfig = {
+    const response = await api.get<PaginatedPostsResponse>(`/users/${username}/posts`, {
       params: { page, limit },
-    };
-    const response = await apiClient.get<PaginatedPostsResponse>(
-      `${API_ENDPOINT_USERS}/${username}/posts`,
-      config
-    );
-    console.log(`Posts fetched successfully for ${username}:`, response.data);
+    });
     return response.data;
-  } catch (error: any) {
-    console.error(`Error fetching posts for ${username}:`, error.response?.data || error.message);
-    // Provide a more specific error message if available
-    if (error.response?.data?.message) {
-      throw new Error(`Failed to fetch posts: ${error.response.data.message}`);
-    }
-    // For network errors or other API failures
-    throw new Error('Failed to fetch posts');
+  } catch (error) {
+    console.error(`Error fetching posts for user ${username}:`, error);
+    throw error;
   }
 };
 
@@ -78,5 +67,29 @@ export const createComment = async (
   } catch (error) {
     console.error(`Error creating comment for post ${postId}:`, error);
     throw error;
+  }
+};
+
+// Define the expected response type for the like toggle endpoint
+export interface ToggleLikeResponse {
+  isLiked: boolean;
+  likesCount: number;
+}
+
+/**
+ * Toggles the like status for a specific post.
+ * Corresponds to POST /api/v1/Posts/{postId}/likes/toggle
+ */
+export const togglePostLike = async (
+  api: AxiosInstance,
+  postId: number
+): Promise<ToggleLikeResponse> => {
+  try {
+    // Correct the endpoint path to lowercase 'posts'
+    const response = await api.post<ToggleLikeResponse>(`/posts/${postId}/likes/toggle`);
+    return response.data;
+  } catch (error) {
+    console.error(`Error toggling like for post ${postId}:`, error);
+    throw error; // Rethrow to be handled by the calling function
   }
 };

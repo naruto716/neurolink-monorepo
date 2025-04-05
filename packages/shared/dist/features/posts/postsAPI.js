@@ -1,29 +1,20 @@
 const API_ENDPOINT_USERS = '/users'; // Base endpoint for users
+// Default limit for posts per page
+const DEFAULT_POSTS_LIMIT = 10; // Let's set a default, e.g., 10
 /**
- * Fetch posts for a specific user with pagination.
- * @param apiClient The Axios instance to use.
- * @param username The username of the user whose posts to fetch.
- * @param page The page number to fetch (default: 1).
- * @param limit The number of posts per page (default: 24).
- * @returns Promise with paginated post data.
+ * Fetches posts for a specific user with pagination.
+ * Corresponds to GET /users/{username}/posts
  */
-export const fetchUserPosts = async (apiClient, username, page = 1, limit = 24) => {
+export const fetchUserPosts = async (api, username, page = 1, limit = DEFAULT_POSTS_LIMIT) => {
     try {
-        const config = {
+        const response = await api.get(`/users/${username}/posts`, {
             params: { page, limit },
-        };
-        const response = await apiClient.get(`${API_ENDPOINT_USERS}/${username}/posts`, config);
-        console.log(`Posts fetched successfully for ${username}:`, response.data);
+        });
         return response.data;
     }
     catch (error) {
-        console.error(`Error fetching posts for ${username}:`, error.response?.data || error.message);
-        // Provide a more specific error message if available
-        if (error.response?.data?.message) {
-            throw new Error(`Failed to fetch posts: ${error.response.data.message}`);
-        }
-        // For network errors or other API failures
-        throw new Error('Failed to fetch posts');
+        console.error(`Error fetching posts for user ${username}:`, error);
+        throw error;
     }
 };
 /**
@@ -54,5 +45,20 @@ export const createComment = async (api, postId, payload) => {
     catch (error) {
         console.error(`Error creating comment for post ${postId}:`, error);
         throw error;
+    }
+};
+/**
+ * Toggles the like status for a specific post.
+ * Corresponds to POST /api/v1/Posts/{postId}/likes/toggle
+ */
+export const togglePostLike = async (api, postId) => {
+    try {
+        // Correct the endpoint path to lowercase 'posts'
+        const response = await api.post(`/posts/${postId}/likes/toggle`);
+        return response.data;
+    }
+    catch (error) {
+        console.error(`Error toggling like for post ${postId}:`, error);
+        throw error; // Rethrow to be handled by the calling function
     }
 };

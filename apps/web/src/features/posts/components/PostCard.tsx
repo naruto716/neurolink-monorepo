@@ -1,33 +1,39 @@
 import React, { useState } from 'react';
-// Removed Paper
-import { Card, CardContent, Box, alpha, useTheme, Typography, Stack, Avatar, IconButton, Button, Divider, TextField, CircularProgress, Pagination } from '@mui/material'; 
-import { Post, Comment, fetchComments, PaginatedCommentsResponse } from '@neurolink/shared';
+import { 
+  Card, 
+  CardContent, 
+  Box, 
+  alpha, 
+  useTheme, 
+  Typography, 
+  Stack, 
+  Avatar, 
+  IconButton, 
+  Button, 
+  Divider, 
+  TextField, 
+  CircularProgress, 
+  Pagination, 
+  Link, 
+  Skeleton 
+} from '@mui/material'; 
+import { Post, Comment, fetchComments, PaginatedCommentsResponse, togglePostLike, createComment } from '@neurolink/shared';
 import { AccessibleTypography } from '../../../app/components/AccessibleTypography';
 import { formatDistanceToNow } from 'date-fns';
-// Import icons used in HomePage's PostCard - Removed ShareNetwork and BookmarkSimple
-import { ChatDots, Heart, DotsThree, PaperPlaneTilt } from '@phosphor-icons/react'; 
+import { ChatDots, Heart, DotsThree, PaperPlaneTilt } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
-
-// React Slick imports
 import Slider from 'react-slick';
-// Import css files
 import 'slick-carousel/slick/slick.css';
 import 'slick-carousel/slick/slick-theme.css';
-
-// Import ReactPlayer
-import ReactPlayer from 'react-player/lazy'; // Use lazy load for efficiency
-
-// Import Intersection Observer hook
+import ReactPlayer from 'react-player/lazy';
 import { useInView } from 'react-intersection-observer';
-
-// Import the actual API client
 import apiClient from '../../../app/api/apiClient';
+import { Link as RouterLink } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import { selectCurrentUser } from '@neurolink/shared';
 
 interface PostCardProps {
   post: Post;
-  // Add props for author info, needed for displaying posts outside their own profile
-  authorDisplayName: string;
-  authorProfilePicture?: string;
 }
 
 // Helper function to determine media type
@@ -43,18 +49,30 @@ interface CommentItemProps {
   comment: Comment;
 }
 const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
-  // TODO: Fetch author details (name, avatar) based on comment.authorId if needed
-  // For now, just display authorId and content
   const timeAgo = formatDistanceToNow(new Date(comment.createdAt), { addSuffix: true });
+  const profileUrl = `/people/${comment.authorName}`;
 
   return (
     <Stack direction="row" spacing={1.5} sx={{ py: 1.5 }}>
-      <Avatar sx={{ width: 32, height: 32 }} /> {/* Placeholder Avatar */}
+      {/* Wrap Avatar in RouterLink */}
+      <RouterLink to={profileUrl} style={{ textDecoration: 'none' }}>
+        <Avatar src={comment.authorPfpUrl || undefined} sx={{ width: 32, height: 32 }} /> 
+      </RouterLink>
       <Box sx={{ flexGrow: 1 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <AccessibleTypography variant="body2" sx={{ fontWeight: 600 }}>
-            Author {comment.authorId} {/* Placeholder Author Name */}
-          </AccessibleTypography>
+          {/* Link to profile using react-router-dom */}
+          <Link 
+            component={RouterLink}
+            to={profileUrl}
+            underline="hover" 
+            sx={{ 
+              fontWeight: 600
+            }}
+          >
+            <AccessibleTypography variant="body2">
+              {comment.authorDisplayName}
+            </AccessibleTypography>
+          </Link>
           <Typography variant="caption" color="text.secondary">
             {timeAgo}
           </Typography>
@@ -67,7 +85,7 @@ const CommentItem: React.FC<CommentItemProps> = ({ comment }) => {
   );
 };
 
-const PostCard: React.FC<PostCardProps> = ({ post, authorDisplayName, authorProfilePicture }) => {
+const PostCard: React.FC<PostCardProps> = ({ post }) => {
   const theme = useTheme();
   const { t } = useTranslation();
   // State to track current slide
@@ -84,6 +102,17 @@ const PostCard: React.FC<PostCardProps> = ({ post, authorDisplayName, authorProf
   const [isLoadingComments, setIsLoadingComments] = useState(false);
   const [commentError, setCommentError] = useState<string | null>(null);
   const [commentInput, setCommentInput] = useState('');
+  const [isSendingComment, setIsSendingComment] = useState(false); // State for sending status
+  // Add state for displayed comment count
+  const [displayCommentsCount, setDisplayCommentsCount] = useState(post.commentsCount);
+
+  // Get current user from Redux store
+  const currentUser = useSelector(selectCurrentUser);
+
+  // --- Like State --- 
+  const [isLiked, setIsLiked] = useState(post.isLikedByCurrentUser ?? false);
+  const [likeCount, setLikeCount] = useState(post.likesCount);
+  const [isLiking, setIsLiking] = useState(false); // Prevent double clicks
 
   // Filter out unknown media types or handle them as needed
   const validMedia = post.mediaUrls?.filter(media => getMediaType(media.type) !== 'unknown') || [];
@@ -158,15 +187,28 @@ const PostCard: React.FC<PostCardProps> = ({ post, authorDisplayName, authorProf
     setCommentInput(event.target.value);
   };
 
-  const handleSendComment = () => {
-    // Use apiClient directly
-    if (!commentInput.trim() || !apiClient) { 
-      if(!apiClient) console.error("API client is not available, cannot send comment.");
+  const handleSendComment = async () => {
+    const trimmedInput = commentInput.trim();
+    if (!trimmedInput || !apiClient || isSendingComment) { 
       return;
     }
-    console.log("Sending comment:", commentInput);
-    // TODO: Implement actual API call using createComment(apiClient, ...) 
-    alert('Comment sending not implemented yet.');
+    
+    setIsSendingComment(true);
+    try {
+      await createComment(apiClient, post.id, { content: trimmedInput });
+      
+      // Success: Clear input, reload comments, and increment local count
+      setCommentInput('');
+      setDisplayCommentsCount(prevCount => prevCount + 1); // Increment local count
+      loadComments(currentPage); 
+
+    } catch (error) {
+      console.error("Failed to send comment:", error);
+      // TODO: Show error toast/message to user
+      alert('Failed to send comment. Please try again.'); // Simple placeholder alert
+    } finally {
+      setIsSendingComment(false);
+    }
   };
 
   const handlePageChange = (_event: React.ChangeEvent<unknown>, page: number) => {
@@ -174,19 +216,57 @@ const PostCard: React.FC<PostCardProps> = ({ post, authorDisplayName, authorProf
   };
   // --- End Comment Logic ---
 
+  // --- Like Logic ---
+  const handleLikeToggle = async () => {
+    if (isLiking || !apiClient) return; 
+
+    const originalLiked = isLiked;
+    const originalCount = likeCount;
+
+    // Optimistic update
+    setIsLiked(!originalLiked);
+    setLikeCount(originalLiked ? originalCount - 1 : originalCount + 1);
+    setIsLiking(true);
+
+    try {
+      // Call the actual API endpoint
+      const response = await togglePostLike(apiClient, post.id); 
+      
+      // Sync state with API response (optional but good practice)
+      setIsLiked(response.isLiked);
+      setLikeCount(response.likesCount);
+
+    } catch (error) {
+      console.error("Failed to toggle like:", error);
+      // Revert optimistic update on error
+      setIsLiked(originalLiked);
+      setLikeCount(originalCount);
+      // TODO: Show error toast/message to user
+      alert('Failed to update like status.'); // Simple placeholder alert
+    } finally {
+      setIsLiking(false);
+    }
+  };
+  // --- End Like Logic ---
+
+  const profileUrl = `/people/${post.authorUsername}`;
+
   return (
     // Attach ref to the Card for Intersection Observer
     <Card ref={ref} sx={{ mb: 2, minHeight: 'auto' }}> {/* Use Card and margin bottom, set minHeight to auto */}
       <CardContent sx={{ p: { xs: 2, sm: 2.5 } }}> {/* Use CardContent and padding */}
         {/* Author Info */}
         <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 1.5 }}>
-          <Avatar src={authorProfilePicture || undefined} sx={{ width: 44, height: 44 }} />
+          <RouterLink to={profileUrl} style={{ textDecoration: 'none' }}>
+            <Avatar src={post.authorPfpUrl || undefined} sx={{ width: 44, height: 44 }} />
+          </RouterLink>
           <Box sx={{ flexGrow: 1 }}>
-            <AccessibleTypography variant="subtitle2" sx={{ fontWeight: 600 }}>
-              {authorDisplayName}
-            </AccessibleTypography>
+            <Link component={RouterLink} to={profileUrl} underline="hover" sx={{ fontWeight: 600 }}>
+              <AccessibleTypography variant="subtitle2" sx={{ fontWeight: 'inherit' }}>
+                {post.authorDisplayName} 
+              </AccessibleTypography>
+            </Link>
             <Typography variant="caption" color="text.secondary">
-              {/* TODO: Add user handle if available */}
               {timeAgo}
             </Typography>
           </Box>
@@ -283,7 +363,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, authorDisplayName, authorProf
                   return (
                     <img 
                       src={media.url} // Access media.url
-                      alt={t('post.imageAlt', 'Post image')} 
+                alt={t('post.imageAlt', 'Post image')} 
                       style={{ width: '100%', display: 'block', objectFit: 'cover', borderRadius: '8px' }} 
                     />
                   );
@@ -317,11 +397,11 @@ const PostCard: React.FC<PostCardProps> = ({ post, authorDisplayName, authorProf
                 {validMedia.map((media, index) => { // Iterate over validMedia, media is { url: string; type: string }
                   const mediaType = getMediaType(media.type); // Access media.type
                   return (
-                    <div key={index}>
+                  <div key={index}>
                       {mediaType === 'image' && (
-                        <img 
+                    <img 
                           src={media.url} // Access media.url
-                          alt={t('post.imageAltWithNumber', `Post image ${index + 1}`)} 
+                      alt={t('post.imageAltWithNumber', `Post image ${index + 1}`)} 
                           style={{ width: '100%', display: 'block', objectFit: 'cover', borderRadius: '8px' }} 
                         />
                       )}
@@ -344,7 +424,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, authorDisplayName, authorProf
                             {t('post.audioUnsupported', 'Your browser does not support the audio tag.')}
                          </audio>
                        )}
-                    </div>
+                  </div>
                   );
                 })}
               </Slider>
@@ -355,55 +435,81 @@ const PostCard: React.FC<PostCardProps> = ({ post, authorDisplayName, authorProf
         {/* Post Actions/Stats - Using Buttons like HomePage - Moved back inside CardContent */}
         <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mt: 1 }}>
            <Stack direction="row" spacing={1}>
-            <Button size="small" startIcon={<Heart size={18} />} sx={{ color: 'text.secondary', '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.08), color: 'error.main' } }}>
-              {post.likesCount}
+            {/* Updated Like Button */}
+            <Button 
+              size="small" 
+              startIcon={<Heart size={18} weight={isLiked ? "fill" : "regular"} />} // Use fill variant when liked
+              sx={{
+                 color: isLiked ? theme.palette.error.main : theme.palette.text.secondary, // Red color when liked
+                 '&:hover': {
+                    bgcolor: alpha(theme.palette.error.main, 0.08), // Lighter red background on hover
+                    color: isLiked ? theme.palette.error.dark : theme.palette.error.main // Adjust hover color slightly
+                 }
+              }}
+              onClick={handleLikeToggle}
+              disabled={isLiking} // Disable button while API call is in progress
+            >
+              {likeCount} {/* Display optimistic count */}
             </Button>
             {/* Updated Comments Button */}
             <Button 
               size="small" 
-              startIcon={<ChatDots size={18} />} 
+              // Conditionally set icon weight based on commentsOpen state
+              startIcon={<ChatDots size={18} weight={commentsOpen ? "fill" : "regular"} />} 
               sx={{ color: 'text.secondary', '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) } }}
-              onClick={toggleComments} // Toggle comments section
+              onClick={toggleComments}
             >
-              {post.commentsCount}
+              {displayCommentsCount} {/* Use local display count */}
             </Button>
           </Stack>
         </Stack>
 
         {/* ----- Comment Section ----- */} 
-        {commentsOpen && (
+        {commentsOpen ? (
           <Box sx={{ mt: 2, pt: 2, borderTop: `1px solid ${theme.palette.divider}` }}>
             {/* New Comment Input */}
             <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
-              <Avatar sx={{ width: 32, height: 32 }} /> {/* Current User Avatar Placeholder */}
+              <Avatar src={currentUser?.profilePicture || undefined} sx={{ width: 32, height: 32 }} /> 
               <TextField
                 fullWidth
+                multiline
+                minRows={1}
+                maxRows={4}
                 variant="outlined"
                 size="small"
                 placeholder={t('post.addCommentPlaceholder', 'Add a comment...')}
                 value={commentInput}
                 onChange={handleCommentInputChange}
+                disabled={isSendingComment} 
                 InputProps={{
-                  sx: { borderRadius: '20px' }, // Rounded corners
+                  sx: { borderRadius: '20px' },
                   endAdornment: (
                     <IconButton 
                       size="small" 
                       onClick={handleSendComment} 
-                      disabled={!commentInput.trim()} // Disable if input is empty
+                      disabled={!commentInput.trim() || isSendingComment} 
                       edge="end"
                     >
-                      <PaperPlaneTilt size={20} weight="fill" />
+                      {isSendingComment ? <CircularProgress size={20} /> : <PaperPlaneTilt size={20} weight="fill" />}
                     </IconButton>
                   )
                 }}
               />
             </Stack>
 
-            {/* Loading State */}
+            {/* Loading State - Use Skeletons */}
             {isLoadingComments && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
-                <CircularProgress size={24} />
-              </Box>
+              <Stack spacing={1.5} sx={{ py: 1.5 }}>
+                {[...Array(3)].map((_, index) => ( // Render 3 skeletons
+                  <Stack key={index} direction="row" spacing={1.5} sx={{ py: 1.5 }}>
+                    <Skeleton variant="circular" width={32} height={32} />
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Skeleton variant="text" width="60%" sx={{ fontSize: '0.875rem' }} />
+                      <Skeleton variant="text" width="90%" sx={{ fontSize: '0.875rem' }} />
+                    </Box>
+                  </Stack>
+                ))}
+              </Stack>
             )}
 
             {/* Error State */}
@@ -443,7 +549,7 @@ const PostCard: React.FC<PostCardProps> = ({ post, authorDisplayName, authorProf
               </Stack>
             )}
           </Box>
-        )}
+        ) : null}
         {/* ----- End Comment Section ----- */}
       </CardContent>
       {/* Removed CardActions wrapper */}

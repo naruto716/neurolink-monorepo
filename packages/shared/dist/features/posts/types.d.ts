@@ -1,6 +1,9 @@
 export interface Post {
     id: number;
     authorId: number;
+    authorUsername: string;
+    authorDisplayName: string;
+    authorPfpUrl?: string;
     content: string;
     mediaUrls: {
         url: string;
@@ -11,6 +14,7 @@ export interface Post {
     updatedAt: string | null;
     likesCount: number;
     commentsCount: number;
+    isLikedByCurrentUser?: boolean;
 }
 export interface PaginatedPostsResponse {
     userId?: number;
@@ -23,6 +27,9 @@ export interface Comment {
     commentId: number;
     postId: number;
     authorId: number;
+    authorName: string;
+    authorDisplayName: string;
+    authorPfpUrl?: string;
     content: string;
     createdAt: string;
     updatedAt: string | null;

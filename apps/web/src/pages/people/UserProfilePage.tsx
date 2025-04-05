@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import {
   Box,
@@ -18,7 +18,7 @@ import {
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import apiClient from '../../app/api/apiClient';
-// Revert to standard shared import, remove unused PaginatedPostsResponse
+// Remove unused PaginatedPostsResponse import
 import { User, Tag, fetchUserByUsername, Post, fetchUserPosts } from '@neurolink/shared';
 import { AccessibleTypography } from '../../app/components/AccessibleTypography';
 import { toast } from 'react-toastify';
@@ -72,10 +72,19 @@ const UserProfilePage = () => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true); // For user profile loading
   const [error, setError] = useState<string | null>(null); // For user profile error
-  const [posts, setPosts] = useState<Post[]>([]); // State for posts
-  const [postsLoading, setPostsLoading] = useState(false); // State for posts loading
-  const [postsError, setPostsError] = useState<string | null>(null); // State for posts error
-  const [totalPosts, setTotalPosts] = useState<number>(0); // State for total post count
+  
+  // --- Posts State --- 
+  const [posts, setPosts] = useState<Post[]>([]); 
+  const [postsLoading, setPostsLoading] = useState(false); 
+  const [postsError, setPostsError] = useState<string | null>(null); 
+  const [totalPosts, setTotalPosts] = useState<number>(0); // Reinstate totalPosts
+  const [currentPostsPage, setCurrentPostsPage] = useState(0); 
+  const [totalPostsPages, setTotalPostsPages] = useState(0);
+  const isLoadingMorePosts = useRef(false);
+  const postsObserver = useRef<IntersectionObserver | null>(null);
+  const isNewPostFetch = useRef(true);
+  // --- End Posts State ---
+
   const [activeTab, setActiveTab] = useState(0);
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
@@ -108,36 +117,89 @@ const UserProfilePage = () => {
   }, [username, t]);
 
   // Fetch User Posts
+  const POSTS_PER_PAGE = 5; // Set posts per page to 5
+
+  const triggerPostFetch = useCallback(async (page: number, isNew: boolean = false) => {
+    if (!username || isLoadingMorePosts.current) return;
+
+    if (isNew) {
+        isNewPostFetch.current = true;
+        setPostsLoading(true);
+        setPosts([]); 
+        setCurrentPostsPage(0); 
+        setTotalPostsPages(0);
+        setTotalPosts(0); // Reset total posts on new fetch
+    } else {
+        isLoadingMorePosts.current = true;
+        setPostsLoading(false); 
+    }
+    setPostsError(null);
+
+    try {
+      const response = await fetchUserPosts(apiClient, username, page, POSTS_PER_PAGE);
+      
+      // --- Updated setPosts logic ---
+      setPosts(prev => {
+        if (isNewPostFetch.current) {
+           // If it's a new fetch, completely replace the posts
+           return response.posts;
+        } else {
+           // If loading more, filter out duplicates before appending
+           const existingIds = new Set(prev.map(p => p.id));
+           const newUniquePosts = response.posts.filter(p => !existingIds.has(p.id));
+           return [...prev, ...newUniquePosts];
+        }
+      });
+      // --- End Updated setPosts logic ---
+
+      setCurrentPostsPage(response.page);
+      setTotalPosts(response.totalPosts); // Update total posts count
+      setTotalPostsPages(Math.ceil(response.totalPosts / (response.limit || POSTS_PER_PAGE))); 
+      isNewPostFetch.current = false; // Reset flag after state update is queued
+    } catch (err) {
+      console.error(`Failed to fetch posts page ${page} for ${username}:`, err);
+      const message = err instanceof Error ? err.message : t('userProfile.error.postsLoad', 'Failed to load posts.');
+      setPostsError(message);
+    } finally {
+      setPostsLoading(false); 
+      isLoadingMorePosts.current = false;
+    }
+  }, [username, t]);
+
+  // Initial posts fetch and refetch on username change
   useEffect(() => {
-    const loadPosts = async () => {
-      if (!username) return; // Don't fetch if username is missing
+    if (username) {
+      triggerPostFetch(1, true); // Fetch page 1 as a new fetch
+    }
+    // Cleanup function to clear posts if username changes? Optional.
+    return () => {
+        setPosts([]);
+        setCurrentPostsPage(0);
+        setTotalPostsPages(0);
+    }
+  }, [username, triggerPostFetch]);
 
-      setPostsLoading(true);
-      setPostsError(null);
-      try {
-        // Use shared API function - Define type for response locally if needed
-        const response = await fetchUserPosts(apiClient, username); // fetchUserPosts is now imported correctly
-        setPosts(response.posts);
-        setTotalPosts(response.totalPosts);
-      } catch (err) {
-        console.error(`Failed to fetch posts for ${username}:`, err);
-        const message = err instanceof Error ? err.message : t('userProfile.error.postsLoad', 'Failed to load posts.');
-        setPostsError(message);
-        // toast.error(message); // Optional: Show toast for post loading errors
-      } finally {
-        setPostsLoading(false);
+  // Intersection Observer for Posts
+  const lastPostElementRef = useCallback((node: HTMLElement | null) => {
+    if (postsLoading || isLoadingMorePosts.current) return;
+    if (postsObserver.current) postsObserver.current.disconnect();
+
+    postsObserver.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && currentPostsPage < totalPostsPages) {
+        console.log('Post Infinite scroll triggered');
+        triggerPostFetch(currentPostsPage + 1); // Fetch next page
       }
-    };
+    }, { threshold: 0.8 }); // Trigger when 80% visible
 
-    loadPosts();
-  }, [username, t]); // Re-fetch if username changes
+    if (node) postsObserver.current.observe(node);
+  }, [postsLoading, isLoadingMorePosts, currentPostsPage, totalPostsPages, triggerPostFetch]);
 
-  // Group Tags
-  const groupedTags = user?.tags?.reduce((acc, tag) => {
+  // Group Tags - Fix reduce and types
+  const groupedTags = user?.tags?.reduce((acc: { [key: string]: Tag[] }, tag: Tag) => {
     const type = tag.type || 'other';
     if (!acc[type]) acc[type] = [];
     acc[type].push(tag);
-    return acc;
+    return acc; // Return accumulator
   }, {} as { [key: string]: Tag[] });
 
   // --- Render Logic ---
@@ -196,7 +258,7 @@ const UserProfilePage = () => {
             </Stack>
             <Stack direction="row" spacing={4}>
               <Box textAlign="center">
-                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{totalPosts}</Typography> {/* Use state variable */}
+                <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>{totalPosts}</Typography>
                 <Typography variant="body2" color="text.secondary">{t('userProfile.posts', 'posts')}</Typography>
               </Box>
               <Box textAlign="center">
@@ -221,34 +283,53 @@ const UserProfilePage = () => {
 
         {/* Tab Content */}
         <TabPanel value={activeTab} index={0}>
-          {/* Posts Grid */}
-          {postsLoading && (
+          {/* Posts Loading (Initial) */}
+          {postsLoading && posts.length === 0 && (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 3 }}>
               <CircularProgress size={30} />
             </Box>
           )}
-          {postsError && !postsLoading && (
+          {/* Posts Error (Initial/Major) */}
+          {postsError && posts.length === 0 && !postsLoading && (
             <Alert severity="error" sx={{ mt: 2 }}>{postsError}</Alert>
           )}
-        {!postsLoading && !postsError && (
-          <Stack spacing={2}> {/* Use Stack for vertical list */}
-            {posts.map((post) => (
-              // Pass author info from the user state
-              <PostCard 
-                key={post.id} 
-                post={post} 
-                authorDisplayName={user.displayName} 
-                authorProfilePicture={user.profilePicture} 
-              /> 
-            ))}
-            {posts.length === 0 && (
-              <Box sx={{ textAlign: 'center', py: 5 }}> {/* Center the no posts message */}
+          {/* Posts List */}
+          {!postsLoading && posts.length > 0 && (
+            <Stack spacing={2}> 
+              {posts.map((post, index) => {
+                // Attach observer N elements from the end
+                const attachObserver = posts.length >= 3 
+                  ? index === posts.length - 3 
+                  : index === 0;
+                return (
+                  <Box key={post.id} ref={attachObserver ? lastPostElementRef : undefined}>
+                     <PostCard post={post} /> 
+                  </Box>
+                )
+              })}
+            </Stack>
+          )}
+          {/* No Posts Message */}
+          {!postsLoading && !postsError && posts.length === 0 && (
+              <Box sx={{ textAlign: 'center', py: 5 }}>
                 <AccessibleTypography color="text.secondary">{t('userProfile.noPosts', 'No posts yet.')}</AccessibleTypography>
               </Box>
-            )}
-          </Stack>
-        )}
-      </TabPanel>
+          )}
+          {/* Loading More Indicator */}
+          {isLoadingMorePosts.current && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 3, mt: 1 }}>
+              <CircularProgress size={24} />
+            </Box>
+          )}
+           {/* End of Results Indicator */}
+          {!isLoadingMorePosts.current && currentPostsPage === totalPostsPages && posts.length > 0 && (
+            <Box sx={{ textAlign: 'center', p: 3, mt: 1 }}>
+              <Typography color="text.secondary">
+                {t('people.endOfResults', "You've reached the end of the results")} 
+              </Typography>
+            </Box>
+          )}
+        </TabPanel>
 
         <TabPanel value={activeTab} index={1}>
           {/* Tags Section */}

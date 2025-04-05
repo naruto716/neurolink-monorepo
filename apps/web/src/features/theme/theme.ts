@@ -281,6 +281,43 @@ const getThemeOptions = (mode: PaletteMode): ThemeOptions => ({
         },
       },
     },
+    // Add MuiLink override
+    MuiLink: {
+      styleOverrides: {
+        root: ({
+          // Remove underline on hover by default
+          textDecoration: 'none',
+          // Apply hover styles
+          '&:hover': {
+             textDecoration: 'none', 
+             color: '#95A4FC', // Apply custom hover color to the Link itself
+             transition: 'color 0.2s ease-in-out',
+             // ALSO apply color to direct Typography children on hover
+             '& > .MuiTypography-root': { 
+                color: '#95A4FC', 
+                transition: 'color 0.2s ease-in-out', // Ensure transition applies here too
+             }
+          },
+          // Restore underline if component has underline prop set to always or hover
+          '&[class*="MuiLink-underlineHover"]:hover': {
+            // If underline="hover", we still want our custom color, not MUI default blue
+            // textDecoration: 'underline', // Restore underline if specifically requested by prop
+            // textDecorationColor: '#95A4FC', // Optional: match underline color to text
+          },
+          '&[class*="MuiLink-underlineAlways"]': {
+            textDecoration: 'underline',
+            textDecorationColor: 'inherit',
+             '&:hover': { 
+                 color: '#95A4FC',
+                 textDecorationColor: '#95A4FC',
+                 '& > .MuiTypography-root': { // Ensure hover color applies here too
+                    color: '#95A4FC',
+                 }
+             }
+          }
+        })
+      }
+    }
   },
 });
 
