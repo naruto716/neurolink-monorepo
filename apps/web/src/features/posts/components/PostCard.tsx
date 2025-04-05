@@ -263,7 +263,7 @@ const PostCard: React.FC<PostCardProps> = ({ post }) => {
           <Box sx={{ flexGrow: 1 }}>
             <Link component={RouterLink} to={profileUrl} underline="hover" sx={{ fontWeight: 600 }}>
               <AccessibleTypography variant="subtitle2" sx={{ fontWeight: 'inherit' }}>
-                {post.authorDisplayName} 
+                {post.authorDisplayName}
               </AccessibleTypography>
             </Link>
             <Typography variant="caption" color="text.secondary">

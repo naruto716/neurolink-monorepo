@@ -163,6 +163,16 @@
     "noPosts": "No posts yet.",
     "noTags": "No tags added yet."
   },
+  "social": {
+    "suggestionsTitle": "People You Might Like",
+    "noSuggestions": "No suggestions available right now.",
+    "suggestionsError": "Could not load user suggestions.",
+    "feedError": "Error loading posts:",
+    "noSuggestionsForFeed": "No user suggestions available to build feed.",
+    "noPostsEncouragement": "No posts yet. Be the first to share something!",
+    "refreshSuggestions": "Refresh Suggestions",
+    "endOfFeed": "You've reached the end of the feed."
+  },
   "common": {
     "back": "Back",
     "next": "Next",

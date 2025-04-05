@@ -3,11 +3,13 @@ import tokensReducer from '../../features/tokens/tokensSlice';
 import userReducer from '../../features/user/userSlice';
 // Import the renamed slice and its state type correctly
 import paginatedUsersReducer from '../../features/user/paginatedUsersSlice';
+import feedPostsReducer from '../../features/posts/feedPostsSlice'; // Import the new feed posts slice
 // Export individual reducers for apps to combine
 export const sharedReducers = {
     tokens: tokensReducer,
     user: userReducer,
     paginatedUsers: paginatedUsersReducer,
+    feedPosts: feedPostsReducer, // Add the feed posts reducer
 };
 // Combine reducers *only* for defining the SharedRootState type and example store
 const rootReducer = combineReducers(sharedReducers);

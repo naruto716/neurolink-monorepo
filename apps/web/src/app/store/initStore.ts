@@ -1,16 +1,15 @@
-import { configureStore, combineReducers } from '@reduxjs/toolkit';
+import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 // Import individual shared reducers and their state types
-import { 
-    TokensState, 
-    UserState, 
-    PaginatedUsersState, // Renamed from SuggestedUsersState
-    tokensReducer, 
-    userReducer, 
-    paginatedUsersReducer // Renamed from suggestedUsersReducer
-} from '@neurolink/shared'; 
-import themeReducer, { ThemeState } from '../../features/theme/themeSlice'; 
-import accessibilityReducer, { AccessibilityState } from '../../features/accessibility/accessibilitySlice'; 
+import {
+  feedPostsReducer // Import the new feed posts reducer
+  ,
+  paginatedUsersReducer, // Renamed from SuggestedUsersState
+  tokensReducer,
+  userReducer
+} from '@neurolink/shared';
+import accessibilityReducer from '../../features/accessibility/accessibilitySlice';
+import themeReducer from '../../features/theme/themeSlice';
 
 // Combine web-specific reducers with the shared reducers explicitly
 const webRootReducer = combineReducers({
@@ -18,6 +17,7 @@ const webRootReducer = combineReducers({
   tokens: tokensReducer,
   user: userReducer,
   paginatedUsers: paginatedUsersReducer, // Use the correct name
+  feedPosts: feedPostsReducer, // Add the feed posts reducer
   // Web-specific reducers
   theme: themeReducer,
   accessibility: accessibilityReducer,

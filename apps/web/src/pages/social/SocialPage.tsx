@@ -1,30 +1,31 @@
 import {
   Alert,
-  alpha,
+  // alpha, // Unused
   Avatar,
   Box,
   Button,
-  Card,
-  CardContent,
+  // Card, // Unused
+  // CardContent, // Unused
   Divider,
   Grid,
   IconButton,
   Paper,
   Stack,
   Typography,
-  useTheme,
+  // useTheme, // No longer needed here
   Tooltip,
   Link,
   Skeleton
 } from '@mui/material';
 import {
-  BookmarkSimple,
-  ChatDots,
-  DotsThree,
-  Heart,
-  ShareNetwork,
+  // BookmarkSimple, // Moved to PostCard component
+  // ChatDots, // Moved to PostCard component
+  // DotsThree, // Moved to PostCard component
+  // Heart, // Moved to PostCard component
+  // ShareNetwork, // Moved to PostCard component
   ArrowSquareOut,
-  CaretRight
+  CaretRight,
+  ArrowClockwise // Import icon for refresh button
 } from '@phosphor-icons/react';
 import React, { useEffect } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
@@ -33,7 +34,7 @@ import { NAVBAR_HEIGHT } from '../../app/layout/navbar/Navbar';
 // Import RootState along with the hooks
 import { RootState, useAppDispatch, useAppSelector } from '../../app/store/initStore';
 // Import shared selectors with aliases
-import { User, fetchPaginatedUsers } from '@neurolink/shared';
+import { User, fetchPaginatedUsers, selectFeedPostsCurrentPage, selectFeedPostsStatus, selectFeedPostsTotalPages } from '@neurolink/shared'; // Added feed selectors
 import {
   selectPaginatedUsers as selectSharedPaginatedUsers,
   selectPaginatedUsersError as selectSharedPaginatedUsersError,
@@ -43,88 +44,9 @@ import {
 } from '@neurolink/shared/src/features/user/paginatedUsersSlice';
 import apiClient from '../../app/api/apiClient';
 import { useTranslation } from 'react-i18next';
+import FeedPosts from '../../features/posts/components/FeedPosts'; // Import the new FeedPosts component
 
-// Placeholder data
-const PLACEHOLDER_IMAGE = "https://via.placeholder.com/600x400";
-const PLACEHOLDER_AVATAR = "https://via.placeholder.com/150";
-
-// Sample post data
-const posts = [
-  // ... (post data remains the same)
-  {
-    id: 1,
-    username: 'Dr. Sarah Chen',
-    userHandle: '@sarah_neuro',
-    avatar: PLACEHOLDER_AVATAR,
-    date: '2h ago',
-    content: 'Excited about our latest findings on memory consolidation during sleep! 🧠 Preliminary results suggest specific neural pathways are more active than previously thought. #neuroscience #memory #research',
-    image: PLACEHOLDER_IMAGE,
-    likes: 142,
-    comments: 18,
-    shares: 5,
-  },
-  {
-    id: 2,
-    username: 'Cognitive Insights Lab',
-    userHandle: '@coginsights',
-    avatar: PLACEHOLDER_AVATAR,
-    date: 'Yesterday',
-    content: 'We\'re recruiting participants for a study on attention mechanisms in neurodivergent adults. DM us if interested! #research #neurodiversity #attention #study',
-    likes: 88,
-    comments: 25,
-    shares: 12,
-  },
-];
-
-// --- Components ---
-
-const PostCard: React.FC<{ post: typeof posts[0] }> = ({ post }) => {
-  const theme = useTheme();
-  return (
-    <Card sx={{ mb: 3 }}>
-      <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
-        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
-          <Avatar src={post.avatar} sx={{ width: 48, height: 48 }} />
-          <Box sx={{ flexGrow: 1 }}>
-            <AccessibleTypography variant="subtitle1" sx={{ fontWeight: 600 }}>
-              {post.username}
-            </AccessibleTypography>
-            <Typography variant="caption" color="text.secondary">
-              {post.userHandle} · {post.date}
-            </Typography>
-          </Box>
-          <IconButton size="small">
-            <DotsThree size={20} weight="bold" />
-          </IconButton>
-        </Stack>
-        <AccessibleTypography variant="body1" sx={{ mb: 2, whiteSpace: 'pre-wrap' }}>
-          {post.content}
-        </AccessibleTypography>
-        {post.image && (
-          <Box sx={{ borderRadius: '8px', overflow: 'hidden', mb: 2, border: `1px solid ${theme.palette.divider}` }}>
-            <img src={post.image} alt={`Post by ${post.username}`} style={{ width: '100%', display: 'block', height: 'auto' }} />
-          </Box>
-        )}
-        <Stack direction="row" justifyContent="space-between" alignItems="center">
-          <Stack direction="row" spacing={1}>
-            <Button size="small" startIcon={<Heart size={18} />} sx={{ color: 'text.secondary', '&:hover': { bgcolor: alpha(theme.palette.error.main, 0.08), color: 'error.main' } }}>
-              {post.likes}
-            </Button>
-            <Button size="small" startIcon={<ChatDots size={18} />} sx={{ color: 'text.secondary', '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08) } }}>
-              {post.comments}
-            </Button>
-            <Button size="small" startIcon={<ShareNetwork size={18} />} sx={{ color: 'text.secondary', '&:hover': { bgcolor: alpha(theme.palette.info.main, 0.08) } }}>
-              {post.shares}
-            </Button>
-          </Stack>
-          <IconButton size="small" sx={{ color: 'text.secondary' }}>
-            <BookmarkSimple size={18} />
-          </IconButton>
-        </Stack>
-      </CardContent>
-    </Card>
-  );
-};
+// Placeholder data and inline PostCard removed
 
 const SuggestionCard: React.FC<{ user: User }> = ({ user }) => {
   const { t } = useTranslation();
@@ -210,6 +132,12 @@ const SocialPage = () => {
   const suggestionsTotalPages = useAppSelector(selectTotalSuggestionPages);
   // --- End Redux State ---
 
+  // --- Feed State for End of Feed Message ---
+  const feedStatus = useAppSelector(selectFeedPostsStatus);
+  const feedCurrentPage = useAppSelector(selectFeedPostsCurrentPage);
+  const feedTotalPages = useAppSelector(selectFeedPostsTotalPages);
+  // --- End Feed State ---
+
   // Fetch initial suggestions on component mount
   useEffect(() => {
     if (suggestionsStatus === 'idle') {
@@ -223,7 +151,12 @@ const SocialPage = () => {
 
   // Handle clicking the 'More' button
   const handleMoreSuggestions = () => {
-    const nextPage = suggestionsCurrentPage >= suggestionsTotalPages 
+    // Scroll to top when fetching new suggestions, using requestAnimationFrame for reliability
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    });
+
+    const nextPage = suggestionsCurrentPage >= suggestionsTotalPages
       ? 1 
       : suggestionsCurrentPage + 1;
     dispatch(fetchPaginatedUsers({ 
@@ -239,29 +172,67 @@ const SocialPage = () => {
       {/* --- Center Feed Column --- */}
       <Grid item xs={12} md={8} lg={7}>
         <Paper sx={theme => ({ p: 2, mb: 3, display: 'flex', alignItems: 'center', gap: 2, borderRadius: '12px', border: `1px solid ${theme.palette.divider}`, boxShadow: theme.palette.mode === 'light' ? '0 1px 2px rgba(0,0,0,0.05)' : '0 1px 2px rgba(0,0,0,0.2)' })}>
-           <Avatar src={PLACEHOLDER_AVATAR} />
+           {/* TODO: Replace with current user's avatar */}
+           <Avatar />
            <Typography color="text.secondary" sx={{ flexGrow: 1 }}>What's on your mind?</Typography>
            <Button variant="contained">Post</Button>
         </Paper>
 
-        <Box>
-          {posts.map(post => (
-            <PostCard key={post.id} post={post} />
-          ))}
-        </Box>
+        {/* Replace placeholder mapping with FeedPosts component */}
+        <FeedPosts />
+
+        {/* Add "More Suggestions" button below the feed */}
+        {suggestionsTotalPages > 0 && (
+          <Box sx={{ mt: 3, textAlign: 'center' }}>
+            <Button
+              variant="text"
+              onClick={handleMoreSuggestions}
+              disabled={suggestionsStatus === 'loading'}
+              endIcon={<CaretRight size={16}/>}
+            >
+              {t('common.more', 'More')} {t('social.suggestionsTitle', 'People You Might Like')}
+            </Button>
+          </Box>
+        )}
+
+        {/* End of Feed Indicator */}
+        {feedStatus === 'succeeded' && feedCurrentPage === feedTotalPages && feedTotalPages > 0 && (
+          <Box sx={{ textAlign: 'center', mt: 1, mb: 2 }}> {/* Adjusted margin */}
+            <Typography color="text.secondary" variant="caption">
+              {t('social.endOfFeed', "You've reached the end of the feed.")}
+            </Typography>
+          </Box>
+        )}
       </Grid>
 
       {/* --- Right Sidebar Column (People You Might Like) --- */}
       <Grid item md={4} lg={5} sx={{ display: { xs: 'none', md: 'block' } }}>
         <Paper sx={theme => ({ p: 2.5, position: 'sticky', top: NAVBAR_HEIGHT + 24, borderRadius: '12px', border: `1px solid ${theme.palette.divider}`, boxShadow: theme.palette.mode === 'light' ? '0 1px 2px rgba(0,0,0,0.05)' : '0 1px 2px rgba(0,0,0,0.2)' })}>
-          <Typography variant="h6" sx={{ mb: 2, fontWeight: 600 }}>
-            {t('social.suggestionsTitle', 'People You Might Like')}
-          </Typography>
+          {/* Title and Refresh Button */}
+          <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              {t('social.suggestionsTitle', 'People You Might Like')}
+            </Typography>
+            {suggestionsTotalPages > 0 && (
+              <Tooltip title={t('social.refreshSuggestions', 'Refresh Suggestions')}>
+                <span> {/* Span needed for tooltip when button is disabled */}
+                  <IconButton
+                    size="small"
+                    onClick={handleMoreSuggestions}
+                    disabled={suggestionsStatus === 'loading'}
+                    aria-label={t('social.refreshSuggestions', 'Refresh Suggestions')}
+                  >
+                    <ArrowClockwise size={20} />
+                  </IconButton>
+                </span>
+              </Tooltip>
+            )}
+          </Stack>
           
           {/* Loading State */}
           {suggestionsStatus === 'loading' && (
             <Stack spacing={2.5} sx={{ p: 1 }}>
-              {[...Array(4)].map((_, index) => ( 
+              {[...Array(10)].map((_, index) => ( 
                  <Stack key={index} direction="row" spacing={2} alignItems="center"> 
                    <Skeleton variant="circular" width={48} height={48} />
                    <Box sx={{ flexGrow: 1 }}>
