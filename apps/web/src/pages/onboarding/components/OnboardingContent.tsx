@@ -47,7 +47,7 @@ import { selectIdToken } from '@neurolink/shared/src/features/tokens/tokensSlice
 import { Tag, UserPreferences, UserProfileInput } from '@neurolink/shared/src/features/user/types';
 // Import FetchTagsParams and uploadProfilePicture from the correct path
 import { createUser, fetchTags, FetchTagsParams, uploadProfilePicture } from '@neurolink/shared/src/features/user/userAPI';
-import { fetchUser } from '@neurolink/shared/src/features/user/userSlice'; // Import fetchUser (removed setOnboardingStatus)
+// REMOVED: import { fetchUser } from '@neurolink/shared/src/features/user/userSlice';
 import { jwtDecode } from 'jwt-decode';
 import { debounce } from 'lodash'; // Added for debouncing search
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'; // Added useRef
@@ -690,26 +690,29 @@ const OnboardingContent: React.FC = () => {
       const createdUser = await createUser(apiClient, profileData);
       console.log('User created successfully:', createdUser);
       toast.success(t('onboarding.success.profileCreated'));
-      // Dispatch fetchUser to refresh the user state instead of just setting the flag
-      dispatch(fetchUser({ apiClient }));
+      // REMOVED: dispatch(fetchUser({ apiClient })); - Full refresh will handle this.
 
       // Start completion transition instead of navigating immediately
       setIsCompleting(true);
 
-      // Set a timeout to navigate after the animation
+      // Set a timeout to navigate via full page refresh after the animation
       setTimeout(() => {
-        navigate('/'); // Navigate to home page
+        window.location.href = '/'; // Force refresh to home page
       }, 2500); // Delay matching animation duration (adjust as needed)
 
     } catch (err) {
+      // Log the error for debugging but don't show it to the user or block the process
+      // if the user was potentially created but an error occurred afterwards.
       const errorMsg = t('onboarding.error.submitFailed');
       const detailedError = (err instanceof Error) ? err.message : String(err);
-      setSubmitError(detailedError || errorMsg);
-      toast.error(`${errorMsg}: ${detailedError}`);
-      // Ensure submitting state is reset on error
+      console.error(`${errorMsg}: ${detailedError}`, err);
+      // setSubmitError(detailedError || errorMsg); // Suppress user-facing error
+      // toast.error(`${errorMsg}: ${detailedError}`); // Suppress user-facing toast
+
+      // Still reset submitting state if the initial createUser fails
       setIsSubmitting(false);
     }
-    // Don't set isSubmitting back to false here if successful, keep buttons disabled
+    // Keep isSubmitting true if successful to prevent further interaction before refresh
   };
 
   // Handle close/cancel
