@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useParams } from 'react-router-dom'; // Removed useNavigate
+import { useParams, Link as RouterLink } from 'react-router-dom'; // Import Link
 import {
   Box,
   Container,
@@ -37,7 +37,7 @@ import { AccessibleTypography } from '../../app/components/AccessibleTypography'
 import { toast } from 'react-toastify';
 import PostCard from '../../features/posts/components/PostCard'; // Import the new PostCard component
 import CreatePostInput from '../../features/posts/components/CreatePostInput'; // <-- Import CreatePostInput
-import { ChatText, LockSimple, UserCircleMinus, UserPlus, UserMinus } from '@phosphor-icons/react';
+import { ChatText, LockSimple, UserCircleMinus, UserPlus, UserMinus, PencilSimple } from '@phosphor-icons/react'; // Added PencilSimple
 import FriendList from '../../features/friends/components/FriendList'; // Import FriendList
 import { useAppSelector } from '../../app/store/initStore'; // Removed useAppDispatch if no longer needed (verify)
 
@@ -577,9 +577,21 @@ const UserProfilePage = () => {
                  <Stack direction="row" spacing={1} alignItems="center">
                    {renderConnectionButton()}
                    <Button variant="text" size="small" startIcon={<ChatText size={16} weight="regular" />}>
-                     {t('people.messageButton', 'Message')}
-                   </Button>
-                 </Stack>
+                    {t('people.messageButton', 'Message')}
+                  </Button>
+                </Stack>
+              )}
+              {/* Add Edit Profile button for self */}
+              {connectionStatus === 'self' && (
+                 <Button
+                    component={RouterLink}
+                    to="/profile/edit"
+                    variant="outlined"
+                    size="small"
+                    startIcon={<PencilSimple size={16} />}
+                 >
+                    {t('editProfile.editButton', 'Edit Profile')} {/* Add translation */}
+                 </Button>
               )}
             </Stack>
             <Stack direction="row" spacing={4}>

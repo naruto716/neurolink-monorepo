@@ -236,6 +236,43 @@
     "scrollRight": "Scroll right",
     "appName": "Neurolink"
   },
+  "editProfile": {
+    "title": "Edit Your Profile",
+    "displayNameLabel": "Display Name",
+    "ageLabel": "Age (Optional)",
+    "bioLabel": "Bio (Optional)",
+    "visibilityLabel": "Profile Visibility",
+    "visibilityPublic": "Public (Visible to everyone)",
+    "visibilityFriends": "Friends Only",
+    "visibilityPrivate": "Private (Visible only to you)",
+    "preferencesLabel": "Preferences (Advanced)",
+    "preferencesHelp": "Advanced settings (coming soon).",
+    "tagsLabel": "Your Tags",
+    "searchOrAddTagPlaceholder": "Search or add a tag...",
+    "saveButton": "Save Changes",
+    "uploadFile": "Upload File",
+    "useCamera": "Use Camera",
+    "usePhoto": "Use This Photo",
+    "retake": "Retake",
+    "capture": "Capture",
+    "captureAlt": "Captured profile picture preview",
+    "editButton": "Edit Profile",
+    "success": {
+      "profileUpdated": "Profile updated successfully.",
+      "pictureUploaded": "Profile picture updated successfully."
+    },
+    "error": {
+      "loadingTags": "Error loading tags for {{category}}.",
+      "tagLimitReached": "You can select a maximum of {{max}} tags.",
+      "tagAlreadySelected": "Tag '{{tag}}' is already selected.",
+      "invalidFileType": "Invalid file type. Please upload an image.",
+      "uploadFailedGeneric": "Failed to upload profile picture. Please try again.",
+      "captureFailed": "Failed to capture image from camera.",
+      "requiredDisplayName": "Display Name is required.",
+      "updateFailedGeneric": "Failed to update profile. Please try again.",
+      "updateFailed": "Failed to update profile"
+    }
+  },
   "breadcrumbs": {
     "home": "Home",
     "userProfile": "{{username}}'s Profile",

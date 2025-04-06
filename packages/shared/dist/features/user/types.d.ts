@@ -30,6 +30,15 @@ export interface UserProfileInput {
     tags?: Tag[];
     preferences?: UserPreferences;
 }
+export interface UserUpdate {
+    displayName?: string;
+    visibility?: string;
+    profilePicture?: string;
+    age?: number;
+    bio?: string;
+    tags?: Tag[];
+    preferences?: string;
+}
 export interface ListedUser {
     id: number;
     username: string;

@@ -35,7 +35,19 @@ export interface UserProfileInput {
   age?: number;
   bio?: string;
   tags?: Tag[];
-  preferences?: UserPreferences; 
+  preferences?: UserPreferences;
+}
+
+// Represents the input structure for *updating* a user (PATCH /users/me)
+// Based on the provided PATCH request body example
+export interface UserUpdate {
+  displayName?: string;
+  visibility?: string; // Note: This is part of UserPreferences in the User type, but flat in the API example. Adjust based on actual API behavior.
+  profilePicture?: string;
+  age?: number;
+  bio?: string;
+  tags?: Tag[];
+  preferences?: string; // API example shows string, User type has object. Clarify API expectation.
 }
 
 // Represents a user object as returned *in the list* from GET /users
