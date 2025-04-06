@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
-import { Box, Link } from '@mui/material'; // Removed Typography
+import { Box, Link } from '@mui/material';
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { AccessibleTypography } from './AccessibleTypography'; // Added AccessibleTypography
+import { AccessibleTypography } from './AccessibleTypography';
+import { useAppSelector } from '../store/initStore'; // Import useAppSelector
+import { selectCurrentUser } from '@neurolink/shared/src/features/user/userSlice'; // Import selector
 
 interface BreadcrumbProps {
   // Optional custom items to override automatic breadcrumb creation
@@ -21,6 +23,7 @@ interface BreadcrumbRoute {
 const Breadcrumb: React.FC<BreadcrumbProps> = ({ customItems }) => {
   const location = useLocation();
   const { t } = useTranslation();
+  const currentUser = useAppSelector(selectCurrentUser); // Get current user
 
   const routeNameMap: Record<string, string> = useMemo(() => {
     return {
@@ -38,16 +41,28 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ customItems }) => {
   
   // Creates breadcrumb route objects from the current location path
   const routes = useMemo(() => {
+    // Handle custom items first
     if (customItems) {
       return customItems.map((item, index) => ({
         path: item.path,
         label: item.label,
-        isLast: index === customItems.length - 1
+        isLast: index === customItems.length - 1,
       }));
     }
 
+    // Special case for /profile/edit
+    if (location.pathname === '/profile/edit') {
+      const profilePath = currentUser?.username ? `/people/${currentUser.username}` : '/people'; // Fallback if no username
+      return [
+        { path: '/', label: routeNameMap['/'], isLast: false },
+        { path: profilePath, label: routeNameMap['/profile'], isLast: false }, // Link to user's profile
+        { path: '/profile/edit', label: routeNameMap['/profile/edit'], isLast: true },
+      ];
+    }
+
+    // --- Default logic for other paths ---
     const pathSegments = location.pathname.split('/').filter(Boolean);
-    
+
     // If we're at the root, show just Home
     if (pathSegments.length === 0) {
       return [{ path: '/', label: routeNameMap['/'], isLast: true }];
@@ -55,29 +70,29 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ customItems }) => {
 
     // Build the breadcrumb items
     const breadcrumbRoutes: BreadcrumbRoute[] = [
-      { path: '/', label: routeNameMap['/'], isLast: false }
+      { path: '/', label: routeNameMap['/'], isLast: false },
     ];
 
     let currentPath = '';
-    
+
     pathSegments.forEach((segment, index) => {
       currentPath += `/${segment}`;
       const isLast = index === pathSegments.length - 1;
-      
-      const label = routeNameMap[currentPath] || 
-        // Capitalize the first letter and replace dashes and underscores with spaces
-        segment.charAt(0).toUpperCase() + 
-        segment.slice(1).replace(/[-_]/g, ' ');
-      
+
+      // TODO: Handle dynamic segments like /people/:username better if needed
+      // For now, rely on routeNameMap or capitalization
+      const label = routeNameMap[currentPath] ||
+        segment.charAt(0).toUpperCase() + segment.slice(1).replace(/[-_]/g, ' ');
+
       breadcrumbRoutes.push({
         path: currentPath,
         label,
-        isLast
+        isLast,
       });
     });
 
     return breadcrumbRoutes;
-  }, [location.pathname, customItems, routeNameMap]);
+  }, [location.pathname, customItems, routeNameMap, currentUser]); // Add currentUser dependency
 
   // Always show breadcrumbs, even on the home page
   return (
