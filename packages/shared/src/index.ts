@@ -15,7 +15,7 @@ export type { FeedPostsState } from './features/posts/feedPostsSlice'; // Export
 
 // Export Feature specific types and API functions
 // Make sure to export ALL necessary types from types.ts
-export type { Tag, UserPreferences, User, UserProfileInput, ListedUser, PaginatedUsersResponse } from './features/user/types';
+export type { Tag, UserPreferences, User, UserProfileInput, ListedUser, PaginatedUsersResponse, Connection, PaginatedConnectionsResponse } from './features/user/types';
 export * from './features/posts/types'; // Re-export all types from posts/types.ts
 export * from './features/user/userAPI';
 export * from './features/posts/postsAPI'; // Export Post API functions

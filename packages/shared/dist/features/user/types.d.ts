@@ -53,3 +53,18 @@ export interface UserState {
     error: string | null;
     isOnboarded: boolean;
 }
+export interface Connection {
+    friendId: number;
+    username: string;
+    displayName: string;
+    profilePicture?: string;
+    connectedSince?: string;
+    status: 'pending' | 'accepted' | 'blocked';
+}
+export interface PaginatedConnectionsResponse {
+    userId: number;
+    page: number;
+    limit: number;
+    totalConnections: number;
+    connections: Connection[];
+}

@@ -23,7 +23,7 @@ import {
 } from '@mui/material';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from '../../app/store/initStore';
 // Added icons
 import {
@@ -38,8 +38,8 @@ import {
 } from '@neurolink/shared/src/features/user/paginatedUsersSlice';
 import { CaretLeft, CaretRight, ChatText, MagnifyingGlass, User, UserPlus } from '@phosphor-icons/react'; // Removed X
 import apiClient from '../../app/api/apiClient';
-// Added Tag, FetchTagsParams, fetchTags
-import { FetchTagsParams, ListedUser, Tag, fetchTags } from '@neurolink/shared';
+// Added Tag, FetchTagsParams, fetchTags, sendFriendRequest
+import { FetchTagsParams, ListedUser, Tag, fetchTags, sendFriendRequest } from '@neurolink/shared';
 import { debounce } from 'lodash'; // Added debounce
 import { toast } from 'react-toastify'; // Added toast
 import { AccessibleTypography } from '../../app/components/AccessibleTypography';
@@ -127,8 +127,10 @@ const CombinedInputContainer = styled(Box)(({ theme }) => ({
 
 // Enhanced UserCard component
 const UserCard: React.FC<{ user: ListedUser }> = ({ user }) => {
-    const { t } = useTranslation(); // Call useTranslation inside UserCard
-    const MAX_TAGS_DISPLAYED = 5; // Limit the number of tags shown
+    const { t } = useTranslation();
+    const navigate = useNavigate(); // Add navigate hook
+    const [isConnecting, setIsConnecting] = useState(false); // State for connect button loading
+    const MAX_TAGS_DISPLAYED = 5;
 
     // Filter and limit tags (prioritize skills/interests, then others)
     const prioritizedTags = [
@@ -136,14 +138,39 @@ const UserCard: React.FC<{ user: ListedUser }> = ({ user }) => {
         ...(user.tags?.filter(tag => !['skill', 'interest', 'programOfStudy'].includes(tag.type)) || []),
     ].slice(0, MAX_TAGS_DISPLAYED);
 
-    // Prevent navigation when clicking action buttons
-    const handleButtonClick = (e: React.MouseEvent, action: string) => {
+    const handleConnectClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
         e.preventDefault();
-        console.log(`${action} clicked for`, user.displayName);
+        if (isConnecting) return;
+
+        setIsConnecting(true);
+        try {
+            await sendFriendRequest(apiClient, user.username);
+            toast.success(t('people.toast.requestSent', 'Friend request sent to {displayName}!', { displayName: user.displayName }));
+            // Optionally disable button further or change its state/icon after success
+        } catch (err) {
+            const message = err instanceof Error ? err.message : t('people.error.sendRequestFailed', 'Failed to send friend request.');
+            toast.error(message);
+            console.error("Error sending friend request from PeoplePage:", err);
+        } finally {
+            setIsConnecting(false);
+        }
     };
 
-    // Removed duplicate declarations below
+    const handleViewProfileClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        navigate(`/people/${user.username}`);
+    };
+
+    // Prevent navigation when clicking message button (example)
+    const handleMessageClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        e.preventDefault();
+        console.log(`Message clicked for`, user.displayName);
+        // TODO: Implement message functionality (e.g., open chat modal)
+        toast.info('Message functionality not implemented yet.');
+    };
 
     return (
         // Link to the profile page using username
@@ -200,33 +227,37 @@ const UserCard: React.FC<{ user: ListedUser }> = ({ user }) => {
                     {/* Action Buttons Row */}
                     <Stack
                         direction="row"
-                        spacing={2}
+                        spacing={1} // Reduced spacing
                         justifyContent="flex-end"
-                        sx={{ mt: 'auto' }} // Push buttons to the bottom
+                        sx={{ mt: 'auto' }} 
                     >
                         <Button
                             variant="text"
                             size="small"
-                            onClick={(e) => handleButtonClick(e, 'Connect')}
+                            onClick={handleConnectClick} // Use specific handler
+                            disabled={isConnecting} // Disable when sending request
                             startIcon={<UserPlus size={16} weight="regular" />}
+                            sx={{ flexShrink: 0 }} // Prevent shrinking
                         >
-                            {t('people.connectButton')} {/* i18n */}
+                            {isConnecting ? t('common.sending', 'Sending...') : t('people.connectButton')} {/* Show loading text */}
                         </Button>
                         <Button
                             variant="text"
                             size="small"
-                            onClick={(e) => handleButtonClick(e, 'Message')}
+                            onClick={handleMessageClick} // Use specific handler
                             startIcon={<ChatText size={16} weight="regular" />}
+                            sx={{ flexShrink: 0 }}
                         >
-                            {t('people.messageButton')} {/* i18n */}
+                            {t('people.messageButton')}
                         </Button>
                         <Button
                             variant="contained"
                             size="small"
-                            onClick={(e) => handleButtonClick(e, 'View Profile')}
+                            onClick={handleViewProfileClick} // Use specific handler
                             startIcon={<User size={16} weight="regular" />}
+                            sx={{ flexShrink: 0 }}
                         >
-                            {t('people.viewProfileButton')} {/* i18n */}
+                            {t('people.viewProfileButton')}
                         </Button>
                     </Stack>
                 </CardContent>

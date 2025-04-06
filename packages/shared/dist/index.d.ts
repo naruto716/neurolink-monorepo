@@ -9,7 +9,7 @@ export type { TokensState } from './features/tokens/tokensSlice';
 export type { UserState } from './features/user/types';
 export type { PaginatedUsersState } from './features/user/paginatedUsersSlice';
 export type { FeedPostsState } from './features/posts/feedPostsSlice';
-export type { Tag, UserPreferences, User, UserProfileInput, ListedUser, PaginatedUsersResponse } from './features/user/types';
+export type { Tag, UserPreferences, User, UserProfileInput, ListedUser, PaginatedUsersResponse, Connection, PaginatedConnectionsResponse } from './features/user/types';
 export * from './features/posts/types';
 export * from './features/user/userAPI';
 export * from './features/posts/postsAPI';

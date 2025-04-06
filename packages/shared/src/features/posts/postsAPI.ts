@@ -1,7 +1,5 @@
-import { AxiosInstance, AxiosRequestConfig } from 'axios';
+import { AxiosInstance } from 'axios';
 import { PaginatedPostsResponse, Post, Comment, PaginatedCommentsResponse } from './types';
-
-const API_ENDPOINT_USERS = '/users'; // Base endpoint for users
 
 // Default limit for posts per page
 const DEFAULT_POSTS_LIMIT = 10; // Let's set a default, e.g., 10

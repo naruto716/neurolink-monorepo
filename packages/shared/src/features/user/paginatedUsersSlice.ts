@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { AxiosInstance } from 'axios';
 // Use the correct ListedUser type and import Tag
-import { ListedUser, PaginatedUsersResponse, Tag } from './types';
+import { ListedUser, PaginatedUsersResponse } from './types';
 import { fetchUsers, FetchUsersParams } from './userAPI';
 import { SharedRootState } from '../../app/store/store';
 

@@ -6,6 +6,7 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
+  Skeleton,
   styled,
   Typography,
   useMediaQuery,
@@ -21,6 +22,9 @@ import {
 } from '@phosphor-icons/react';
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { alpha } from '@mui/material/styles';
+import { useAppSelector } from '../../store/initStore'; // Correct path based on search
+import { selectCurrentUser } from '@neurolink/shared'; // Import selector
 
 interface LeftSidebarProps {
   open: boolean;
@@ -45,6 +49,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ open, onClose }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const currentUser = useAppSelector(selectCurrentUser); // Get current user
   
   const navItems = [
     { key: 'social', label: 'Social', path: '/', icon: <House weight="regular" size={20} /> },
@@ -106,29 +111,59 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ open, onClose }) => {
         keepMounted: true,
       }}
     >
-      {/* User Profile Header - with exact specified styles */}
-      <Box sx={{ 
-        display: 'flex',
-        padding: '8px',
-        alignItems: 'center',
-        alignContent: 'center',
-        gap: '8px',
-        alignSelf: 'stretch',
-        flexWrap: 'wrap',
-        mb: 2
-      }}>
-        <Avatar 
-          src="/assets/default-avatar.png"
-          alt="User Profile" 
-          sx={{ 
-            width: 32, 
-            height: 32,
-            bgcolor: theme.palette.primary.main
+      {/* User Profile Header (Clickable Box) */}
+      <Box
+          component="button" // Make it a button element for semantics
+          // Navigate to the user's specific profile page
+          onClick={() => {
+              if (currentUser) { // Ensure currentUser exists before navigating
+                 handleNavigate(`/people/${currentUser.username}`);
+              }
+          }} 
+          disabled={!currentUser} // Disable button if currentUser is null
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            width: '100%', // Ensure it takes full width for click area
+            padding: '8px', // Same padding as nav items
+            borderRadius: '12px', // Same border radius
+            mb: 2, // Keep existing margin bottom
+            gap: '8px', // Restore gap for spacing between avatar and text
+            border: 'none', // Remove button default border
+            background: 'none', // Remove button default background
+            cursor: currentUser ? 'pointer' : 'default', // Change cursor based on currentUser
+            textAlign: 'left', // Align text to the left
+            '&:hover': {
+               bgcolor: currentUser // Only apply hover if clickable
+                 ? (theme.palette.mode === 'dark' 
+                   ? alpha(theme.palette.common.white, 0.05)
+                   : alpha(theme.palette.common.black, 0.04))
+                 : 'transparent', 
+            },
           }}
-        />
-        <NavText color={theme.palette.mode === 'dark' ? 'white' : '#1C1C1C'}>
-          Ubayd Neuyen
-        </NavText>
+        >
+           {/* Avatar/Skeleton */}
+            {currentUser ? (
+            <Avatar 
+                src={currentUser.profilePicture || undefined}
+                alt={currentUser.displayName} 
+                sx={{ 
+                    width: 32, 
+                    height: 32,
+                    bgcolor: theme.palette.primary.main // Fallback color
+                }}
+            />
+            ) : (
+            <Skeleton variant="circular" width={32} height={32} />
+            )}
+            {/* Name/Skeleton */}
+            {currentUser ? (
+            <NavText noWrap color={theme.palette.text.primary} sx={{ ml: 1 }}> { /* Use ml for spacing instead of gap */}
+                {currentUser.displayName}
+            </NavText>
+            ) : (
+            <Skeleton variant="text" width={100} height={20} sx={{ ml: 1 }}/>
+            )}
       </Box>
 
       {/* Navigation Tabs */}
@@ -146,18 +181,29 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ open, onClose }) => {
                 borderRadius: '12px',
                 mb: 0.5,
                 '&.Mui-selected': {
-                  bgcolor: 'rgba(28, 28, 28, 0.05)',
-                  color: theme.palette.mode === 'dark' ? 'white' : '#1C1C1C',
+                  bgcolor: theme.palette.mode === 'dark' 
+                    ? alpha(theme.palette.common.white, 0.08) // Dark mode selected bg
+                    : alpha(theme.palette.common.black, 0.05), // Light mode selected bg (keep as is or adjust)
+                  color: theme.palette.text.primary, // Use primary text color for selected
+                  fontWeight: 500, // Slightly bolder when selected
+                  '&:hover': {
+                     // Slightly darker/lighter version of selected bg on hover
+                     bgcolor: theme.palette.mode === 'dark' 
+                       ? alpha(theme.palette.common.white, 0.12)
+                       : alpha(theme.palette.common.black, 0.08), 
+                  }
                 },
                 '&:hover': {
-                  bgcolor: 'rgba(28, 28, 28, 0.05)',
+                  bgcolor: theme.palette.mode === 'dark' 
+                    ? alpha(theme.palette.common.white, 0.05) // Dark mode hover bg
+                    : alpha(theme.palette.common.black, 0.04), // Light mode hover bg (slightly lighter than selected)
                 },
               }}
             >
               <ListItemIcon
                 sx={{
                   minWidth: 36,
-                  color: theme.palette.mode === 'dark' ? 'white' : '#1C1C1C',
+                  color: isActive ? theme.palette.text.primary : theme.palette.text.secondary, // Adjust icon color based on active state
                 }}
               >
                 {item.icon}
@@ -167,11 +213,11 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ open, onClose }) => {
                 primaryTypographyProps={{
                   fontFamily: 'Inter, sans-serif',
                   fontSize: '14px',
-                  fontWeight: 400,
+                  fontWeight: isActive ? 500 : 400, // Bolder if active
                   lineHeight: '20px',
                   letterSpacing: '0px',
                   sx: { fontFeatureSettings: "'ss01' on, 'cv01' on" },
-                  color: theme.palette.mode === 'dark' ? 'white' : '#1C1C1C'
+                  color: isActive ? theme.palette.text.primary : theme.palette.text.secondary // Adjust text color based on active state
                 }}
               />
             </ListItemButton>

@@ -150,6 +150,7 @@ export const fetchUsers = async (apiClient, params = {}) => {
                 return qs.stringify(params, { arrayFormat: 'repeat' });
             }
         };
+        // Make the API call inside the try block
         const response = await apiClient.get(API_ENDPOINT_USERS, config);
         console.log("Users fetched successfully with params:", queryParams, "Response:", response.data);
         return response.data;
@@ -161,4 +162,207 @@ export const fetchUsers = async (apiClient, params = {}) => {
         }
         throw new Error('Failed to fetch users');
     }
+}; // End of fetchUsers function
+/**
+ * Fetch a list of friends for a specific user with pagination
+ * GET /users/{username}/friends
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user whose friends to fetch.
+ * @param params Query parameters for pagination (page, limit)
+ * @returns Promise with paginated user data (friends)
+ */
+export const fetchUserFriends = async (apiClient, username, params = {}) => {
+    try {
+        const queryParams = {};
+        queryParams.page = params.page || 1; // Default page 1
+        queryParams.limit = params.limit || 10; // Default limit 10
+        const config = { params: queryParams };
+        const response = await apiClient.get(`${API_ENDPOINT_USERS}/${username}/friends`, config);
+        console.log(`Friends fetched successfully for ${username} with params:`, queryParams, "Response:", response.data);
+        return response.data;
+    }
+    catch (error) {
+        console.error(`Error fetching friends for ${username}:`, error.response?.data || error.message);
+        if (error.response?.data?.message) {
+            throw new Error(`Failed to fetch friends for ${username}: ${error.response.data.message}`);
+        }
+        throw new Error(`Failed to fetch friends for ${username}`);
+    }
 };
+/**
+ * Fetch the friend count for a specific user
+ * GET /users/{username}/friends/count
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user whose friend count to fetch.
+ * @returns Promise with the friend count (number)
+ */
+export const fetchUserFriendCount = async (apiClient, username) => {
+    try {
+        // The API returns JSON: { count: number }
+        const response = await apiClient.get(`${API_ENDPOINT_USERS}/${username}/friends/count`);
+        // Removed extra parenthesis
+        console.log(`Friend count fetched successfully for ${username}:`, response.data.count);
+        return response.data.count; // Return the count property
+    }
+    catch (error) {
+        console.error(`Error fetching friend count for ${username}:`, error.response?.data || error.message);
+        if (error.response?.data?.message) {
+            throw new Error(`Failed to fetch friend count for ${username}: ${error.response.data.message}`);
+        }
+        // Check if the error is due to parsing failure during transformResponse
+        if (error.message === "Invalid friend count format received from API") {
+            throw error;
+        }
+        throw new Error(`Failed to fetch friend count for ${username}`);
+    }
+};
+/**
+ * Fetch incoming friend requests for a specific user with pagination
+ * GET /users/{username}/connections/received?status=pending
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user whose pending requests to fetch.
+ * @param params Query parameters for pagination (page, limit)
+ * @returns Promise with paginated connection data
+ */
+export const fetchPendingRequests = async (apiClient, username, params = {}) => {
+    try {
+        const queryParams = {
+            status: 'pending', // Always fetch pending requests
+        };
+        queryParams.page = params.page || 1; // Default page 1
+        queryParams.limit = params.limit || 10; // Default limit 10
+        const config = { params: queryParams };
+        const response = await apiClient.get(`${API_ENDPOINT_USERS}/${username}/connections/received`, config);
+        console.log(`Pending requests fetched successfully for ${username}:`, response.data);
+        return response.data;
+    }
+    catch (error) {
+        console.error(`Error fetching pending requests for ${username}:`, error.response?.data || error.message);
+        if (error.response?.data?.message) {
+            throw new Error(`Failed to fetch pending requests for ${username}: ${error.response.data.message}`);
+        }
+        throw new Error(`Failed to fetch pending requests for ${username}`);
+    }
+};
+/**
+ * Accept an incoming friend request
+ * PATCH /users/me/connections/{initiatorUsername}/accept
+ * @param apiClient The Axios instance to use.
+ * @param initiatorUsername The username of the user who sent the request.
+ * @returns Promise with the updated connection data.
+ */
+export const acceptFriendRequest = async (apiClient, initiatorUsername) => {
+    try {
+        // Use PATCH instead of POST
+        const response = await apiClient.patch(`/users/me/connections/${initiatorUsername}/accept`
+        // No request body is needed for this PATCH based on the docs
+        );
+        console.log(`Friend request from ${initiatorUsername} accepted successfully:`, response.data);
+        return response.data;
+    }
+    catch (error) {
+        console.error(`Error accepting friend request from ${initiatorUsername}:`, error.response?.data || error.message);
+        if (error.response?.data?.message) {
+            throw new Error(`Failed to accept friend request from ${initiatorUsername}: ${error.response.data.message}`);
+        }
+        throw new Error(`Failed to accept friend request from ${initiatorUsername}`);
+    }
+};
+/**
+ * Decline or cancel a friend request/connection
+ * DELETE /users/me/connections/{otherUsername}
+ * @param apiClient The Axios instance to use.
+ * @param otherUsername The username of the other user in the connection.
+ * @returns Promise<void>
+ */
+export const declineFriendRequest = async (apiClient, otherUsername) => {
+    try {
+        await apiClient.delete(`/users/me/connections/${otherUsername}`);
+        console.log(`Connection with ${otherUsername} removed successfully.`);
+    }
+    catch (error) {
+        console.error(`Error declining/cancelling connection with ${otherUsername}:`, error.response?.data || error.message);
+        if (error.response?.data?.message) {
+            throw new Error(`Failed to decline/cancel connection with ${otherUsername}: ${error.response.data.message}`);
+        }
+        throw new Error(`Failed to decline/cancel connection with ${otherUsername}`);
+    }
+};
+/**
+ * Send a friend request to another user.
+ * POST /users/me/connections/{friendUsername}
+ * @param apiClient The Axios instance to use.
+ * @param friendUsername The username of the user to send the request to.
+ * @returns Promise with the new connection data (likely status: 'pending').
+ */
+export const sendFriendRequest = async (apiClient, friendUsername) => {
+    try {
+        const response = await apiClient.post(`/users/me/connections/${friendUsername}`);
+        console.log(`Friend request sent to ${friendUsername} successfully:`, response.data);
+        return response.data;
+    }
+    catch (error) {
+        console.error(`Error sending friend request to ${friendUsername}:`, error.response?.data || error.message);
+        // Handle specific errors like already friends or request already sent if the API provides them
+        if (error.response?.data?.message) {
+            throw new Error(`${error.response.data.message}`); // Re-throw specific API message
+        }
+        throw new Error(`Failed to send friend request to ${friendUsername}`);
+    }
+};
+/**
+ * Check the friendship status between the current user and another user.
+ * GET /users/me/friends/{otherUsername}/status
+ * @param apiClient The Axios instance to use.
+ * @param otherUsername The username of the other user to check the status with.
+ * @returns Promise<{ isFriend: boolean }>
+ */
+export const fetchConnectionStatus = async (apiClient, otherUsername) => {
+    try {
+        const response = await apiClient.get(`/users/me/friends/${otherUsername}/status`);
+        console.log(`Connection status checked for ${otherUsername}:`, response.data);
+        return response.data;
+    }
+    catch (error) {
+        // Handle 404 as simply "not friends" without throwing an error
+        if (error.response && error.response.status === 404) {
+            console.log(`Connection status check for ${otherUsername}: Not found (implies not friends).`);
+            return { isFriend: false };
+        }
+        // Log other errors but maybe return a default state or rethrow
+        console.error(`Error checking connection status with ${otherUsername}:`, error.response?.data || error.message);
+        if (error.response?.data?.message) {
+            throw new Error(`${error.response.data.message}`);
+        }
+        throw new Error(`Failed to check connection status with ${otherUsername}`);
+    }
+};
+/**
+ * Fetch outgoing friend requests initiated by the user.
+ * GET /users/{username}/connections/initiated?status=pending
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user whose sent requests to fetch.
+ * @param params Query parameters for pagination (page, limit)
+ * @returns Promise with paginated connection data
+ */
+export const fetchSentRequests = async (apiClient, username, params = {}) => {
+    try {
+        const queryParams = {
+            status: 'pending', // Always fetch pending requests
+        };
+        queryParams.page = params.page || 1; // Default page 1
+        queryParams.limit = params.limit || 10; // Default limit 10
+        const config = { params: queryParams };
+        const response = await apiClient.get(`${API_ENDPOINT_USERS}/${username}/connections/initiated`, config);
+        console.log(`Sent requests fetched successfully for ${username}:`, response.data);
+        return response.data;
+    }
+    catch (error) {
+        console.error(`Error fetching sent requests for ${username}:`, error.response?.data || error.message);
+        if (error.response?.data?.message) {
+            throw new Error(`Failed to fetch sent requests for ${username}: ${error.response.data.message}`);
+        }
+        throw new Error(`Failed to fetch sent requests for ${username}`);
+    }
+};
+// End of file

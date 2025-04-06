@@ -1,5 +1,5 @@
 import { AxiosInstance } from 'axios';
-import { User, Tag, PaginatedUsersResponse, UserProfileInput } from './types';
+import { User, Tag, PaginatedUsersResponse, UserProfileInput, PaginatedConnectionsResponse, Connection } from './types';
 /**
  * Get the current user profile
  * @param apiClient The Axios instance to use.
@@ -54,3 +54,81 @@ export interface FetchUsersParams {
  * @returns Promise with paginated user data
  */
 export declare const fetchUsers: (apiClient: AxiosInstance, params?: FetchUsersParams) => Promise<PaginatedUsersResponse>;
+/**
+ * Fetch a list of friends for a specific user with pagination
+ * GET /users/{username}/friends
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user whose friends to fetch.
+ * @param params Query parameters for pagination (page, limit)
+ * @returns Promise with paginated user data (friends)
+ */
+export declare const fetchUserFriends: (apiClient: AxiosInstance, username: string, params?: {
+    page?: number;
+    limit?: number;
+}) => Promise<PaginatedUsersResponse>;
+/**
+ * Fetch the friend count for a specific user
+ * GET /users/{username}/friends/count
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user whose friend count to fetch.
+ * @returns Promise with the friend count (number)
+ */
+export declare const fetchUserFriendCount: (apiClient: AxiosInstance, username: string) => Promise<number>;
+/**
+ * Fetch incoming friend requests for a specific user with pagination
+ * GET /users/{username}/connections/received?status=pending
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user whose pending requests to fetch.
+ * @param params Query parameters for pagination (page, limit)
+ * @returns Promise with paginated connection data
+ */
+export declare const fetchPendingRequests: (apiClient: AxiosInstance, username: string, params?: {
+    page?: number;
+    limit?: number;
+}) => Promise<PaginatedConnectionsResponse>;
+/**
+ * Accept an incoming friend request
+ * PATCH /users/me/connections/{initiatorUsername}/accept
+ * @param apiClient The Axios instance to use.
+ * @param initiatorUsername The username of the user who sent the request.
+ * @returns Promise with the updated connection data.
+ */
+export declare const acceptFriendRequest: (apiClient: AxiosInstance, initiatorUsername: string) => Promise<Connection>;
+/**
+ * Decline or cancel a friend request/connection
+ * DELETE /users/me/connections/{otherUsername}
+ * @param apiClient The Axios instance to use.
+ * @param otherUsername The username of the other user in the connection.
+ * @returns Promise<void>
+ */
+export declare const declineFriendRequest: (apiClient: AxiosInstance, otherUsername: string) => Promise<void>;
+/**
+ * Send a friend request to another user.
+ * POST /users/me/connections/{friendUsername}
+ * @param apiClient The Axios instance to use.
+ * @param friendUsername The username of the user to send the request to.
+ * @returns Promise with the new connection data (likely status: 'pending').
+ */
+export declare const sendFriendRequest: (apiClient: AxiosInstance, friendUsername: string) => Promise<Connection>;
+/**
+ * Check the friendship status between the current user and another user.
+ * GET /users/me/friends/{otherUsername}/status
+ * @param apiClient The Axios instance to use.
+ * @param otherUsername The username of the other user to check the status with.
+ * @returns Promise<{ isFriend: boolean }>
+ */
+export declare const fetchConnectionStatus: (apiClient: AxiosInstance, otherUsername: string) => Promise<{
+    isFriend: boolean;
+}>;
+/**
+ * Fetch outgoing friend requests initiated by the user.
+ * GET /users/{username}/connections/initiated?status=pending
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user whose sent requests to fetch.
+ * @param params Query parameters for pagination (page, limit)
+ * @returns Promise with paginated connection data
+ */
+export declare const fetchSentRequests: (apiClient: AxiosInstance, username: string, params?: {
+    page?: number;
+    limit?: number;
+}) => Promise<PaginatedConnectionsResponse>;

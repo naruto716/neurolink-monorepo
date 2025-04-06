@@ -72,3 +72,22 @@ export interface UserState {
   error: string | null;
   isOnboarded: boolean; 
 }
+
+// Represents a connection/friendship status, often used in lists (e.g., pending requests)
+export interface Connection {
+  friendId: number;
+  username: string;
+  displayName: string;
+  profilePicture?: string; 
+  connectedSince?: string; // Date might be null or absent for pending
+  status: 'pending' | 'accepted' | 'blocked'; // Or other relevant statuses
+}
+
+// Represents the paginated response structure for connection-related endpoints
+export interface PaginatedConnectionsResponse {
+  userId: number; // The ID of the user whose connections are being listed
+  page: number;
+  limit: number;
+  totalConnections: number;
+  connections: Connection[];
+}

@@ -8,7 +8,8 @@ import App from '../layout/App';
 // import SettingsPage from '../../pages/settings/SettingsPage';
 // import AccessibilityPage from '../../pages/accessibility/AccessibilityPage';
 import PeoplePage from '../../pages/people/PeoplePage';
-import UserProfilePage from '../../pages/people/UserProfilePage'; // Added UserProfilePage import
+import UserProfilePage from '../../pages/people/UserProfilePage';
+// import FriendListPage from '../../pages/people/FriendListPage'; // Removed old page import
 // import NotFoundPage from '../../pages/notFound/NotFoundPage'; // Removed non-existent import
 import { RequireAuth } from './requireAuth';
 import OnboardingPage from '../../pages/onboarding/OnboardingPage';
@@ -31,7 +32,8 @@ const routes: RouteObject[] = [
               { index: true, element: <SocialPage /> }, // Default route after login
               // Removed profile route
               { path: 'people', element: <PeoplePage /> },
-              { path: 'people/:username', element: <UserProfilePage /> }, // Corrected route param to :username
+              { path: 'people/:username', element: <UserProfilePage /> }, // Keep existing user profile route
+              // { path: 'people/:username/friends', element: <FriendListPage /> }, // Removed old page route
               // Add other authenticated routes that need Layout here
             ]
           },

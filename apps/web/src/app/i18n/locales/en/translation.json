@@ -141,7 +141,10 @@
     "yearsOld": "{{age}} years old",
     "connectButton": "Connect",
     "messageButton": "Message",
-    "viewProfileButton": "View Profile"
+    "viewProfileButton": "View Profile",
+    "toast": {
+        "requestSent": "Friend request sent to {{displayName}}!"
+    }
   },
   "userProfile": {
     "aboutHeader": "About",
@@ -150,8 +153,12 @@
       "missingId": "User ID is missing.",
       "missingUsername": "Username is missing.",
       "genericLoad": "Failed to load user profile.",
-      "notFound": "User not found.",
-      "postsLoad": "Failed to load posts."
+      "notFound": "User not found or profile is private.",
+      "postsLoad": "Failed to load posts.",
+      "friendCountLoad": "Failed to load friend count.",
+      "private": "This profile is private or you do not have permission to view it.",
+      "sendRequestFailed": "Failed to send friend request.",
+      "unfriendFailed": "Failed to remove friend."
     },
     "addFriend": "Add Friend",
     "message": "Message",
@@ -161,7 +168,32 @@
     "tabPosts": "POSTS",
     "tabTags": "TAGS",
     "noPosts": "No posts yet.",
-    "noTags": "No tags added yet."
+    "noTags": "No tags added yet.",
+    "requestSent": "Request Sent",
+    "accept": "Accept",
+    "unfriend": "Unfriend",
+    "toast": {
+        "requestSent": "Friend request sent!",
+        "unfriended": "{{displayName}} removed from friends."
+    }
+  },
+  "friendsPage": {
+    "error": {
+      "missingUsername": "Username is missing.",
+      "genericLoad": "Failed to load friends."
+    },
+    "title": "Friends",
+    "noFriends": "No friends found."
+  },
+  "friends": {
+    "tabs": {
+      "friends": "Friends",
+      "pending": "Pending Requests",
+      "sent": "Sent Requests"
+    },
+    "pendingNotImplemented": "Pending requests view not implemented yet.",
+    "sentNotImplemented": "Sent requests view not implemented yet.",
+    "modalTitle": "Friends"
   },
   "social": {
     "suggestionsTitle": "People You Might Like",
@@ -203,6 +235,11 @@
     "scrollLeft": "Scroll left",
     "scrollRight": "Scroll right",
     "appName": "Neurolink"
+  },
+  "breadcrumbs": {
+    "home": "Home",
+    "userProfile": "{{username}}'s Profile",
+    "friends": "Friends"
   },
   "post": {
     "imageAlt": "Post image",

@@ -1,10 +1,10 @@
-import React, { useState, useRef, useEffect, ChangeEvent } from 'react'; 
-import { Avatar, Box, Button, Paper, TextField, CircularProgress, Alert, IconButton, Divider, Popover, useTheme, Typography, Grid, LinearProgress } from '@mui/material'; // Added Grid, moved LinearProgress
+import React, { useState, useRef, useEffect, ChangeEvent, ClipboardEvent } from 'react'; 
+import { Avatar, Box, Button, Paper, TextField, CircularProgress, Alert, IconButton, Divider, Popover, useTheme, Typography, Grid, LinearProgress, Select, MenuItem } from '@mui/material'; // Removed FormControl
 import { useAppDispatch, useAppSelector } from '../../../app/store/initStore';
 import { selectCurrentUser, requestFeedRefresh } from '@neurolink/shared'; 
 import apiClient from '../../../app/api/apiClient';
 import { useTranslation } from 'react-i18next';
-import { Smiley, Image as ImageIcon, X } from '@phosphor-icons/react'; // Import X instead of XCircle
+import { Smiley, Image as ImageIcon, X, GlobeHemisphereWest, Users, Lock } from '@phosphor-icons/react'; // Import X instead of XCircle, added GlobeHemisphereWest, Users, Lock
 import EmojiPicker, { EmojiClickData, Theme as EmojiTheme } from 'emoji-picker-react'; 
 
 // Define structure for uploaded media result
@@ -24,9 +24,18 @@ interface MediaFileState {
   error: string | null;
 }
 
-const MAX_MEDIA_FILES = 5; // Define the limit
+// Define allowed visibility types
+type PostVisibility = 'public' | 'connections' | 'private';
 
-const CreatePostInput: React.FC = () => {
+const MAX_MEDIA_FILES = 5; // Define the limit
+const ACCEPTED_MIME_TYPES = ['image/', 'video/']; // Define accepted MIME type prefixes
+
+// Add onPostSuccess prop definition
+interface CreatePostInputProps {
+  onPostSuccess?: () => void;
+}
+
+const CreatePostInput: React.FC<CreatePostInputProps> = ({ onPostSuccess }) => {
   const { t } = useTranslation();
   const dispatch = useAppDispatch(); 
   const theme = useTheme(); 
@@ -40,6 +49,7 @@ const CreatePostInput: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null); 
   const [showEmojiPicker, setShowEmojiPicker] = useState(false); 
   const [emojiPickerAnchorEl, setEmojiPickerAnchorEl] = useState<HTMLButtonElement | null>(null); 
+  const [visibility, setVisibility] = useState<PostVisibility>('public'); // <-- Add state for visibility
 
   // --- Multiple Media Upload State ---
   const [mediaFiles, setMediaFiles] = useState<MediaFileState[]>([]);
@@ -72,13 +82,16 @@ const CreatePostInput: React.FC = () => {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleBlur = (_event: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setTimeout(() => {
-      const relatedTarget = document.activeElement; 
-      const popover = document.getElementById('emoji-picker-popover'); 
+      const relatedTarget = document.activeElement;
+      const emojiPopover = document.getElementById('emoji-picker-popover');
+      const visibilityMenu = document.getElementById('visibility-select-menu'); // Get visibility menu
+
       if (
-        containerRef.current && 
-        !containerRef.current.contains(relatedTarget) && 
-        (!popover || !popover.contains(relatedTarget)) && 
-        !postContent.trim() && 
+        containerRef.current &&
+        !containerRef.current.contains(relatedTarget) &&
+        (!emojiPopover || !emojiPopover.contains(relatedTarget)) &&
+        (!visibilityMenu || !visibilityMenu.contains(relatedTarget)) && // Check visibility menu
+        !postContent.trim() &&
         mediaFiles.length === 0 // Collapse only if no text and no media files
       ) {
         setIsExpanded(false);
@@ -92,6 +105,7 @@ const CreatePostInput: React.FC = () => {
     const textBeforeCursor = postContent.substring(0, cursorPosition);
     const textAfterCursor = postContent.substring(cursorPosition);
     setPostContent(textBeforeCursor + emojiData.emoji + textAfterCursor);
+    if (!isExpanded) setIsExpanded(true); // Expand if adding emoji to collapsed input
     inputRef.current?.focus(); 
     setTimeout(() => {
         inputRef.current?.setSelectionRange(cursorPosition + emojiData.emoji.length, cursorPosition + emojiData.emoji.length);
@@ -99,6 +113,7 @@ const CreatePostInput: React.FC = () => {
   };
 
   const handleEmojiPickerToggle = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (!isExpanded) setIsExpanded(true); // Expand if opening emoji picker
     setEmojiPickerAnchorEl(event.currentTarget);
     setShowEmojiPicker((prev) => !prev); 
   };
@@ -108,64 +123,9 @@ const CreatePostInput: React.FC = () => {
     setShowEmojiPicker(false);
   };
 
-  // --- Multiple Media Handling ---
-  const handleMediaButtonClick = () => {
-    // Clear previous general upload errors when opening picker
-    setUploadError(null); 
-    fileInputRef.current?.click(); 
-  };
+  // --- Media Handling ---
 
-  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-    if (files) {
-        const filesToProcess = Array.from(files);
-        const currentFileCount = mediaFiles.length;
-        
-        if (currentFileCount + filesToProcess.length > MAX_MEDIA_FILES) {
-            setUploadError(t('social.uploadLimitError', `You can only upload up to ${MAX_MEDIA_FILES} files.`));
-            // Optionally, only process files up to the limit
-            // filesToProcess = filesToProcess.slice(0, MAX_MEDIA_FILES - currentFileCount);
-            // For simplicity, we just show error and process none if limit exceeded
-             if (event.target) event.target.value = ''; // Reset input
-            return; 
-        }
-
-        setUploadError(null); // Clear any previous limit error
-
-        const newMediaFileStates: MediaFileState[] = [];
-
-        filesToProcess.forEach((file, index) => {
-            if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-                // Skip invalid file types, maybe show individual errors later if needed
-                console.warn(`Skipping invalid file type: ${file.name}`);
-                return; 
-            }
-
-            const fileId = `${Date.now()}-${index}`; // Simple unique ID
-            const previewUrl = URL.createObjectURL(file);
-            
-            newMediaFileStates.push({
-                id: fileId,
-                file: file,
-                previewUrl: previewUrl,
-                status: 'idle',
-                progress: 0,
-                uploadedMedia: null,
-                error: null,
-            });
-        });
-
-        // Add new valid files to state and trigger uploads
-        setMediaFiles(prev => [...prev, ...newMediaFileStates]);
-        newMediaFileStates.forEach(mf => handleUploadMedia(mf.id, mf.file));
-    }
-     // Reset file input value to allow selecting the same file(s) again
-     if (event.target) {
-        event.target.value = '';
-     }
-  };
-
-  const handleUploadMedia = async (fileId: string, file: File) => {
+   const handleUploadMedia = async (fileId: string, file: File) => {
     // Set status to uploading for this specific file
     setMediaFiles(prev => prev.map(mf => mf.id === fileId ? { ...mf, status: 'uploading', progress: 0, error: null } : mf));
 
@@ -224,6 +184,131 @@ const CreatePostInput: React.FC = () => {
     // Note: No finally block needed here as isUploading is not used globally anymore
   };
 
+   /**
+   * Processes a list of files: checks limits, filters types, updates state, and triggers uploads.
+   * @param filesToProcess The File objects to process.
+   * @returns `true` if any valid files were added, `false` otherwise.
+   */
+   const processAndUploadFiles = (filesToProcess: File[]): boolean => {
+    const currentFileCount = mediaFiles.length;
+    
+    if (currentFileCount + filesToProcess.length > MAX_MEDIA_FILES) {
+        setUploadError(t('social.uploadLimitError', `You can only upload up to ${MAX_MEDIA_FILES} files.`));
+        return false; // Indicate no files were processed due to limit
+    }
+
+    setUploadError(null); // Clear any previous limit error
+
+    const newMediaFileStates: MediaFileState[] = [];
+    let validFilesFound = false;
+
+    filesToProcess.forEach((file, index) => {
+        // Check if the file type starts with any of the accepted prefixes
+        const isValidType = ACCEPTED_MIME_TYPES.some(prefix => file.type.startsWith(prefix));
+        
+        if (!isValidType) {
+            console.warn(`Skipping invalid file type: ${file.name} (${file.type})`);
+            // Optionally set a specific error message for invalid types if needed
+            // setUploadError(prev => prev ? `${prev}\nSkipped ${file.name}` : `Skipped ${file.name}: Invalid type`);
+            return; // Skip this file
+        }
+
+        validFilesFound = true;
+        const fileId = `${Date.now()}-${index}`; // Simple unique ID
+        const previewUrl = URL.createObjectURL(file);
+        
+        newMediaFileStates.push({
+            id: fileId,
+            file: file,
+            previewUrl: previewUrl,
+            status: 'idle',
+            progress: 0,
+            uploadedMedia: null,
+            error: null,
+        });
+    });
+
+    if (newMediaFileStates.length > 0) {
+        // Add new valid files to state and trigger uploads
+        setMediaFiles(prev => [...prev, ...newMediaFileStates]);
+        newMediaFileStates.forEach(mf => handleUploadMedia(mf.id, mf.file));
+        if (!isExpanded) {
+            setIsExpanded(true); // Ensure component expands if files were added
+        }
+        return true; // Indicate files were processed
+    } else if (validFilesFound) {
+         // This case might happen if all valid files failed some other check (unlikely here)
+         return false;
+    } else {
+        // No valid files found among the processed ones
+        if (filesToProcess.length > 0) {
+             // Show a generic error if files were provided but none were valid
+             setUploadError(t('social.uploadInvalidTypeError', `No valid image or video files found.`));
+        }
+        return false;
+    }
+  };
+
+
+  const handleMediaButtonClick = () => {
+    setUploadError(null); // Clear previous general upload errors
+    fileInputRef.current?.click(); 
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (files) {
+        processAndUploadFiles(Array.from(files));
+    }
+     // Reset file input value to allow selecting the same file(s) again
+     if (event.target) {
+        event.target.value = '';
+     }
+  };
+
+   // --- Paste Handling ---
+  const handlePaste = (event: ClipboardEvent<HTMLDivElement>) => {
+    const items = event.clipboardData?.items;
+    if (!items) return;
+
+    const filesToProcess: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+      if (item.kind === 'file') {
+        const file = item.getAsFile();
+        if (file) {
+          // Check type immediately before adding to list
+          const isValidType = ACCEPTED_MIME_TYPES.some(prefix => file.type.startsWith(prefix));
+          if (isValidType) {
+             filesToProcess.push(file);
+          } else {
+             console.warn(`Skipping pasted file with invalid type: ${file.name} (${file.type})`);
+             // Optionally accumulate these errors to show the user
+          }
+        }
+      }
+    }
+
+    if (filesToProcess.length > 0) {
+       // Prevent default paste behavior (e.g., pasting file path as text) ONLY if we are handling files.
+       event.preventDefault(); 
+       const filesProcessed = processAndUploadFiles(filesToProcess);
+       if (!filesProcessed && filesToProcess.length > 0) {
+            // Handle case where processing failed (e.g., limit exceeded) but files were present
+            // The error state should already be set by processAndUploadFiles
+       } else if (!filesProcessed) {
+            // Handle case where no *valid* files were found in the paste
+             setUploadError(t('social.uploadInvalidTypeError', `No valid image or video files found in pasted content.`));
+       } else {
+         // Files were successfully processed, ensure focus if needed
+         setTimeout(() => inputRef.current?.focus(), 0); 
+       }
+    } 
+    // If no files were found in clipboard items, allow default paste behavior (for text, etc.)
+  };
+  // --- End Paste Handling ---
+
+
   const handleRemoveMedia = (fileIdToRemove: string) => {
       setMediaFiles(prev => {
           const fileToRemove = prev.find(mf => mf.id === fileIdToRemove);
@@ -237,7 +322,7 @@ const CreatePostInput: React.FC = () => {
           setUploadError(null);
       }
   }
-  // --- End Multiple Media Handling ---
+  // --- End Media Handling ---
 
 
   const handlePostSubmit = async () => {
@@ -281,7 +366,7 @@ const CreatePostInput: React.FC = () => {
       const response = await apiClient.post('/posts', { 
         content: postContent.trim(), 
         mediaUrls: mediaPayload,
-        visibility: 'public', 
+        visibility: visibility, // <-- Use visibility state here
       });
 
       if (response.status === 201) {
@@ -291,6 +376,10 @@ const CreatePostInput: React.FC = () => {
         setIsExpanded(false); 
         dispatch(requestFeedRefresh()); 
         console.log('Post created, requesting feed refresh:', response.data);
+        // Call the success callback if provided
+        if (onPostSuccess) {
+          onPostSuccess();
+        }
       } else {
          console.error('Unexpected response status:', response.status);
          setError(t('social.postErrorUnexpected', 'An unexpected error occurred while posting.'));
@@ -330,6 +419,7 @@ const CreatePostInput: React.FC = () => {
     <Box sx={{ mb: 3 }}> 
       <Paper 
         ref={containerRef} 
+        onPaste={handlePaste} // Add the paste handler here
         sx={theme => ({ 
           p: isExpanded ? 2 : '4px 8px', 
           display: 'flex', 
@@ -341,14 +431,19 @@ const CreatePostInput: React.FC = () => {
           transition: theme.transitions.create(['padding'], { 
             duration: theme.transitions.duration.short,
           }),
+          // Add focus styles if needed, though focus usually goes to the input
+          // '&:focus-within': { borderColor: theme.palette.primary.main } 
         })}
+        // Making the Paper itself focusable *might* be needed in some edge cases,
+        // but usually the TextField handles focus naturally. Add if paste doesn't work reliably.
+        // tabIndex={-1} 
       >
         {/* Hidden File Input */}
          <input
             type="file"
             ref={fileInputRef}
             onChange={handleFileChange}
-            accept="image/*,video/*" 
+            accept={ACCEPTED_MIME_TYPES.map(prefix => `${prefix}*`).join(',')} // Use defined types
             multiple // Allow multiple files
             style={{ display: 'none' }}
         />
@@ -389,7 +484,7 @@ const CreatePostInput: React.FC = () => {
            {!isExpanded && (
              <Button 
                variant="contained" 
-               onClick={handleFocus} 
+               onClick={handleFocus} // Clicking this effectively expands and focuses input
                size="medium" 
                sx={{ 
                  borderRadius: '20px', 
@@ -397,6 +492,8 @@ const CreatePostInput: React.FC = () => {
                  mr: 0.5,
                  textTransform: 'none' 
                }} 
+               // Disable if any media is already attached (user should interact with expanded view)
+               disabled={mediaFiles.length > 0} 
              >
                {t('social.postButton', 'Post')}
              </Button>
@@ -406,23 +503,26 @@ const CreatePostInput: React.FC = () => {
          {/* Media Preview Area (only when expanded and files exist) */}
          {isExpanded && mediaFiles.length > 0 && (
             <Box sx={{ mt: 1.5, ml: 'calc(40px + 12px)' }}> {/* Align with text input */}
-                 {/* General Upload Error (like limit exceeded) */}
+                 {/* General Upload Error (like limit exceeded or invalid type) */}
                  {uploadError && (
-                    <Alert severity="error" sx={{ mb: 1 }}>{uploadError}</Alert>
+                    <Alert severity="warning" sx={{ mb: 1 }}>{uploadError}</Alert> // Changed severity to warning
                  )}
                  {/* Grid for Previews */}
                  <Grid container spacing={1}>
                     {mediaFiles.map((mf) => (
                         <Grid item key={mf.id} xs={6} sm={4} md={3}> {/* Adjust grid sizing as needed */}
                             <Box sx={{ position: 'relative', width: '100%', paddingBottom: '100%', /* 1:1 Aspect Ratio */ height: 0, overflow: 'hidden', borderRadius: '8px', border: `1px solid ${theme.palette.divider}` }}>
-                                <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Box sx={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: theme.palette.action.hover }}>
                                     {mf.previewUrl && mf.file.type.startsWith('image/') ? (
                                         <img src={mf.previewUrl} alt={t('social.mediaPreviewAlt', 'Media preview')} style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }} />
                                     ) : mf.previewUrl && mf.file.type.startsWith('video/') ? (
                                         <video src={mf.previewUrl} controls={mf.status === 'uploaded'} style={{ display: 'block', width: '100%', height: '100%', objectFit: 'cover' }}>
                                             {t('post.videoUnsupported', 'Your browser does not support the video tag.')}
                                         </video>
-                                    ) : null}
+                                    ) : 
+                                    // Fallback for potentially broken previews (shouldn't happen often)
+                                    <Typography variant="caption" color="textSecondary">Preview unavailable</Typography>
+                                    }
                                 </Box>
                                 {/* Progress/Status Overlay */}
                                 {(mf.status === 'uploading' || mf.status === 'error') && (
@@ -434,7 +534,7 @@ const CreatePostInput: React.FC = () => {
                                             </Box>
                                         )}
                                          {mf.status === 'error' && (
-                                            <Typography variant="caption" color="error" textAlign="center" sx={{ color: '#ffcdd2' }}> {/* Lighter error text on dark overlay */}
+                                            <Typography variant="caption" color="error" textAlign="center" sx={{ color: '#ffcdd2', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}> {/* Lighter error text, limit lines */}
                                                 {mf.error || t('social.uploadErrorGeneric', 'Upload failed')}
                                             </Typography>
                                          )}
@@ -471,8 +571,8 @@ const CreatePostInput: React.FC = () => {
           <>
             <Divider sx={{ my: 1.5 }} /> 
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-              {/* Action Icons */}
-              <Box> 
+              {/* Action Icons & Visibility Selector */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}> {/* Wrap icons and selector */}
                 {/* Image Upload Button */}
                  <IconButton 
                   aria-label={t('social.addMedia', 'Add image or video')} 
@@ -480,6 +580,7 @@ const CreatePostInput: React.FC = () => {
                   onClick={handleMediaButtonClick}
                   disabled={isSubmitting || mediaFiles.some(mf => mf.status === 'uploading') || mediaFiles.length >= MAX_MEDIA_FILES} // Disable if uploading or limit reached
                   size="small" 
+                  title={mediaFiles.length >= MAX_MEDIA_FILES ? t('social.uploadLimitReachedTooltip', `Maximum ${MAX_MEDIA_FILES} files reached`) : undefined} // Add tooltip for disabled state
                 >
                   <ImageIcon size={20} /> 
                 </IconButton>
@@ -494,13 +595,76 @@ const CreatePostInput: React.FC = () => {
                   <Smiley size={20} /> 
                 </IconButton>
                  {/* Add other icons here */}
+
+                 {/* Visibility Selector - Styled Select */}
+                  {/* <FormControl variant="standard" sx={{ minWidth: 120, ml: 1 }} size="small"> */}
+                    {/* InputLabel might be redundant with the icon+text in Select */}
+                    {/* <InputLabel id="visibility-select-label">Visibility</InputLabel> */}
+                    <Select
+                        labelId="visibility-select-label" // Keep for accessibility, even without visual label
+                        id="visibility-select"
+                        value={visibility}
+                        onChange={(e) => setVisibility(e.target.value as PostVisibility)}
+                        variant="standard" // Use standard variant to easily remove underline
+                        disableUnderline
+                        MenuProps={{ id: 'visibility-select-menu' }} // Keep ID for blur logic
+                        sx={{
+                            ml: 1, // Add some margin to the left
+                            fontSize: '0.875rem',
+                            cursor: 'pointer',
+                            '& .MuiSelect-select': {
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '6px 8px', // Consistent padding
+                                borderRadius: '4px', // Slight rounding
+                                transition: 'background-color 0.2s ease',
+                                '.MuiSvgIcon-root': { // Style the dropdown arrow within the select display
+                                     marginLeft: '4px', // Space before arrow
+                                     fontSize: '1.1rem',
+                                     color: 'text.secondary',
+                                 },
+                                 // Apply hover effect normally
+                                 '&:hover': { 
+                                     backgroundColor: theme.palette.action.hover, 
+                                 },
+                                 // Ensure focused state (menu open) removes the hover background
+                                 '&.Mui-focused': {
+                                     backgroundColor: 'transparent', 
+                                 },
+                             },
+                             // Remove focus outline from the root Select element if needed
+                             // '&:focus': {
+                             //    backgroundColor: 'transparent', 
+                             // },
+                             // Ensure Menu items still look okay
+                             '& .MuiMenuItem-root': {
+                                 fontSize: '0.875rem',
+                             },
+                        }}
+                        // No label prop needed if we don't use InputLabel
+                    >
+                        <MenuItem value="public">
+                            <GlobeHemisphereWest size={18} style={{ marginRight: 8, color: theme.palette.text.secondary }} />
+                            {t('social.visibility.public', 'Public')}
+                        </MenuItem>
+                        <MenuItem value="connections">
+                             <Users size={18} style={{ marginRight: 8, color: theme.palette.text.secondary }} />
+                            {t('social.visibility.connections', 'Connections')}
+                        </MenuItem>
+                        <MenuItem value="private">
+                            <Lock size={18} style={{ marginRight: 8, color: theme.palette.text.secondary }} />
+                            {t('social.visibility.private', 'Private')}
+                        </MenuItem>
+                    </Select>
+                {/* </FormControl> */}
+
               </Box>
 
               {/* Submit Button */}
               <Button 
-                type="submit" 
+                type="submit" // Changed from onClick to type="submit" for form semantics
                 variant="contained" 
-                onClick={handlePostSubmit} 
+                // onClick removed, form onSubmit handles it
                 disabled={isPostDisabled} 
                 size="medium" 
                 sx={{ 

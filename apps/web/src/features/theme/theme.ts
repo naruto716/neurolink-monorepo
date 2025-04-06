@@ -77,10 +77,11 @@ const getThemeOptions = (mode: PaletteMode): ThemeOptions => ({
           minHeight: 280, // Set minimum height as requested
           height: '100%', // Full height
           width: '100%', // Full width to ensure consistent sizing
+          transition: theme.transitions.create('box-shadow'), // Add transition for shadow
           '&:hover': {
             boxShadow: theme.palette.mode === 'light'
               ? '0 4px 12px rgba(0,0,0,0.05)'
-              : '0 4px 12px rgba(0,0,0,0.2)'
+              : '0 0 15px rgba(255,255,255,0.05)', // Subtle white glow for dark mode
           },
         }),
       },
@@ -206,24 +207,24 @@ const getThemeOptions = (mode: PaletteMode): ThemeOptions => ({
         // Text button - subtle background with specific styling
         text: ({ theme }) => ({
           backgroundColor: theme.palette.mode === 'light'
-            ? 'rgba(28, 28, 28, 0.05)' // black-5 as requested for light mode
-            : 'rgba(255, 255, 255, 0.05)', // white-5 equivalent for dark mode
+            ? 'rgba(28, 28, 28, 0.05)' // black-5 for light mode
+            : 'rgba(255, 255, 255, 0.08)', // Increased opacity for dark mode background (white-8)
           color: theme.palette.mode === 'light'
             ? 'rgba(28, 28, 28, 0.8)' // Dark text for light mode
-            : 'rgba(255, 255, 255, 0.8)', // Light text for dark mode
+            : theme.palette.text.secondary, // Use secondary text color for dark mode (usually rgba(255, 255, 255, 0.7))
           padding: '8px 16px',
           '&:hover': {
             backgroundColor: theme.palette.mode === 'light'
               ? 'rgba(28, 28, 28, 0.1)' // Lighter hover state (less grey, more transparent)
-              : 'rgba(255, 255, 255, 0.15)', // Lighter hover state for dark mode
+              : 'rgba(255, 255, 255, 0.12)', // Slightly brighter hover for dark mode
           },
           '&:disabled': {
             backgroundColor: theme.palette.mode === 'light'
-              ? 'rgba(28, 28, 28, 0.05)' // black-5 as requested for disabled in light mode
-              : 'rgba(255, 255, 255, 0.05)', // white-5 equivalent for dark mode
+              ? 'rgba(28, 28, 28, 0.05)' 
+              : 'rgba(255, 255, 255, 0.05)', // Keep disabled background subtle
             color: theme.palette.mode === 'light'
-              ? 'rgba(28, 28, 28, 0.4)' // More faded dark text for disabled in light mode
-              : 'rgba(255, 255, 255, 0.4)', // More faded light text for disabled in dark mode
+              ? 'rgba(28, 28, 28, 0.4)' 
+              : 'rgba(255, 255, 255, 0.3)', // Make disabled text more faded
           },
         }),
         // Size variants
