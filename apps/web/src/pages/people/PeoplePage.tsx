@@ -38,11 +38,13 @@ import {
 } from '@neurolink/shared/src/features/user/paginatedUsersSlice';
 import { CaretLeft, CaretRight, ChatText, MagnifyingGlass, User, UserPlus } from '@phosphor-icons/react'; // Removed X
 import apiClient from '../../app/api/apiClient';
-// Added Tag, FetchTagsParams, fetchTags, sendFriendRequest
-import { FetchTagsParams, ListedUser, Tag, fetchTags, sendFriendRequest } from '@neurolink/shared';
+// Added Tag, FetchTagsParams, fetchTags, sendFriendRequest, selectCurrentUser
+import { FetchTagsParams, ListedUser, Tag, fetchTags, selectCurrentUser, sendFriendRequest } from '@neurolink/shared';
 import { debounce } from 'lodash'; // Added debounce
 import { toast } from 'react-toastify'; // Added toast
+import { useChatContext } from 'stream-chat-react'; // Import Stream Chat context hook
 import { AccessibleTypography } from '../../app/components/AccessibleTypography';
+// Removed duplicate import of useAppSelector
 
 // --- Define Tag Categories (copied/adapted from Onboarding) ---
 const tagCategories = [
@@ -128,8 +130,11 @@ const CombinedInputContainer = styled(Box)(({ theme }) => ({
 // Enhanced UserCard component
 const UserCard: React.FC<{ user: ListedUser }> = ({ user }) => {
     const { t } = useTranslation();
-    const navigate = useNavigate(); // Add navigate hook
-    const [isConnecting, setIsConnecting] = useState(false); // State for connect button loading
+    const navigate = useNavigate();
+    const { client } = useChatContext(); // Get Stream Chat client
+    const currentUser = useAppSelector(selectCurrentUser); // Get logged-in user from Redux
+    const [isConnecting, setIsConnecting] = useState(false);
+    const [isMessaging, setIsMessaging] = useState(false); // State for message button loading
     const MAX_TAGS_DISPLAYED = 5;
 
     // Filter and limit tags (prioritize skills/interests, then others)
@@ -163,13 +168,42 @@ const UserCard: React.FC<{ user: ListedUser }> = ({ user }) => {
         navigate(`/people/${user.username}`);
     };
 
-    // Prevent navigation when clicking message button (example)
-    const handleMessageClick = (e: React.MouseEvent) => {
+    const handleMessageClick = async (e: React.MouseEvent) => {
         e.stopPropagation();
         e.preventDefault();
-        console.log(`Message clicked for`, user.displayName);
-        // TODO: Implement message functionality (e.g., open chat modal)
-        toast.info('Message functionality not implemented yet.');
+        if (isMessaging || !client || !currentUser?.username) {
+            if (!client) toast.error(t('chat.error.clientNotReady', 'Chat client is not ready.'));
+            if (!currentUser?.username) toast.error(t('chat.error.currentUserNotReady', 'Current user not identified.'));
+            return;
+        }
+
+        setIsMessaging(true);
+        try {
+            console.log(`Initiating chat between ${currentUser.username} and ${user.username}`);
+            // Create a direct messaging channel. If it exists, it will be returned.
+            const channel = client.channel('messaging', {
+                members: [currentUser.username, user.username],
+                // Set channel name to the other user's display name
+                name: user.displayName,
+            });
+
+            // Watch the channel. This creates it if it doesn't exist,
+            // adds the current user as a watcher, marks messages as read,
+            // and sets this channel as the active channel in the context.
+            await channel.watch();
+
+            console.log(`Channel watched/created: ${channel.cid}`);
+            // Navigate to the main chat page. The Chat component will automatically
+            // render the active channel set by watch().
+            navigate('/chat');
+
+        } catch (err) {
+            console.error("Error initiating chat:", err);
+            const message = err instanceof Error ? err.message : t('chat.error.initiateFailed', 'Failed to initiate chat.');
+            toast.error(message);
+        } finally {
+            setIsMessaging(false);
+        }
     };
 
     return (
@@ -244,11 +278,12 @@ const UserCard: React.FC<{ user: ListedUser }> = ({ user }) => {
                         <Button
                             variant="text"
                             size="small"
-                            onClick={handleMessageClick} // Use specific handler
-                            startIcon={<ChatText size={16} weight="regular" />}
+                            onClick={handleMessageClick}
+                            disabled={isMessaging || !client || !currentUser?.username} // Disable if messaging, client not ready, or no current user
+                            startIcon={isMessaging ? <CircularProgress size={16} color="inherit" /> : <ChatText size={16} weight="regular" />}
                             sx={{ flexShrink: 0 }}
                         >
-                            {t('people.messageButton')}
+                            {isMessaging ? t('common.loading', 'Loading...') : t('people.messageButton')}
                         </Button>
                         <Button
                             variant="contained"

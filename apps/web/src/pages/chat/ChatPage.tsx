@@ -12,32 +12,13 @@ import {
 } from 'stream-chat-react';
 import type { ChannelSort, ChannelFilters } from 'stream-chat'; // Import types from base package
 import 'stream-chat-react/dist/css/v2/index.css'; // Stream CSS v2
-import { useTranslation } from 'react-i18next'; // Keep i18n if needed for other text
+// Removed unused useTranslation import
 import { AccessibleTypography } from '../../app/components/AccessibleTypography'; // Keep for title
 
-// Basic CSS for layout (consider moving to a dedicated CSS file or using MUI Grid/Stack)
-const chatContainerStyle = {
-  display: 'flex',
-  height: 'calc(100vh - 120px)', // Example height, adjust based on your layout (navbar, etc.)
-  width: '100%',
-};
-
-const channelListContainerStyle = {
-  width: '300px', // Adjust width as needed
-  borderRight: '1px solid #e0e0e0', // Example border
-  display: 'flex',
-  flexDirection: 'column',
-};
-
-const channelContainerStyle = {
-  flexGrow: 1,
-  display: 'flex',
-  flexDirection: 'column',
-};
-// ---
+// Removed style objects, will apply styles directly using sx prop
 
 const ChatPage: React.FC = () => {
-  const { t } = useTranslation();
+  // Removed unused t variable from useTranslation
   const { client } = useChatContext(); // Get client from context
 
   // Define filters only when the client and userID are definitely available
@@ -63,34 +44,37 @@ const ChatPage: React.FC = () => {
 
   // Render chat UI only when client and filters are ready
   return (
-    <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
-      {/* Keep page title if desired */}
-      <AccessibleTypography variant="h4" gutterBottom>
-        {t('chat.title')}
-      </AccessibleTypography>
+    // Use calculated height for the outermost container (adjust 64px if needed)
+    <Box sx={{ height: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column' }}>
+      {/* Removed Chat title */}
 
       {/* Main Chat Layout */}
-      <Box sx={chatContainerStyle}>
-        <Box sx={channelListContainerStyle}>
-          {filters ? ( // Only render ChannelList if filters are ready
-            <ChannelList
-              filters={filters}
-              sort={sort}
-              // You might add options like Paginator, Preview, etc. here
-            />
+      {/* Use flex: 1 and overflow: 'hidden' */}
+      <Box sx={{ display: 'flex', flex: 1, width: '100%', overflow: 'hidden' }}>
+
+        {/* Channel List Container */}
+        {/* Remove height, add overflowY: 'auto' */}
+        <Box sx={{ width: '300px', flexShrink: 0, display: 'flex', flexDirection: 'column', borderRight: '1px solid', borderColor: 'divider', overflowY: 'auto' }}>
+          {filters ? (
+            <ChannelList filters={filters} sort={sort} />
           ) : (
-            <Box sx={{ p: 2 }}>Loading channels...</Box> // Placeholder while client initializes
+            <Box sx={{ p: 2 }}>Loading channels...</Box>
           )}
         </Box>
-        <Box sx={channelContainerStyle}>
-          <Channel> {/* Renders the currently active channel from context */}
+
+        {/* Channel View Container */}
+        {/* Remove height, keep flex column */}
+        <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          {/* Removed style prop from Channel */}
+          <Channel>
+            {/* Window component should handle its internal scrolling */}
             <Window>
               <ChannelHeader />
-              <MessageList />
+              <MessageList /> {/* Closing tag was missing */}
               <MessageInput />
             </Window>
-            <Thread />
-          </Channel>
+            <Thread /> {/* Thread appears alongside/over Window */}
+          </Channel> {/* Moved closing tag here */}
         </Box>
       </Box>
     </Box>

@@ -295,7 +295,10 @@
     "initSuccess": "Chat token retrieved successfully. Ready to connect.",
     "error": {
       "fetchFailed": "Failed to retrieve chat token. Please try again later.",
-      "prefix": "Error"
+      "prefix": "Error",
+      "clientNotReady": "Chat client is not ready.",
+      "currentUserNotReady": "Current user not identified.",
+      "initiateFailed": "Failed to initiate chat."
     }
   }
 }

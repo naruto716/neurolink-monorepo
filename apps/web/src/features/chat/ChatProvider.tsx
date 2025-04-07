@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect, ReactNode } from 'react';
+import React, { useState, useEffect, ReactNode, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { StreamChat, Event, TokenOrProvider } from 'stream-chat'; // Removed unused User import
-import { Chat } from 'stream-chat-react'; // Import Chat provider
-import { AppDispatch } from '../../app/store/initStore'; // Use web app's dispatch type
+import { StreamChat, Event, TokenOrProvider } from 'stream-chat';
+import { Chat } from 'stream-chat-react'; // Removed Streami18n import
+import { useTheme, alpha, Box } from '@mui/material'; // Import useTheme, alpha, and Box
+import { AppDispatch } from '../../app/store/initStore';
 import {
   setChatConnecting,
   setChatConnected,
@@ -169,14 +170,79 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       // Let the main login/logout flow handle the disconnect dispatch.
     };
   // Depend on the actual logged-in user's username to trigger re-init on user change
+  // Depend on the actual logged-in user's username to trigger re-init on user change
   }, [dispatch, loggedInUser?.username, connectionStatus]); // Added connectionStatus to prevent re-run loops
+
+  const theme = useTheme(); // Get the current MUI theme
+
+  // Memoize the Stream Chat CSS variables based on the MUI theme mode
+  const streamThemeVariables = useMemo(() => {
+    const mode = theme.palette.mode;
+    // Using a distinct blue for primary actions/highlights for better visibility
+    const primaryColor = mode === 'light' ? '#005FFF' : '#589DFF';
+    const ownMessageBg = primaryColor;
+    // Ensure contrast text calculation handles potential undefined theme values gracefully
+    const ownMessageText = theme.palette.getContrastText ? theme.palette.getContrastText(ownMessageBg) : (mode === 'light' ? '#ffffff' : '#000000');
+
+    return {
+        '--str-chat__font-family': theme.typography.fontFamily ?? '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+        '--str-chat__border-radius-circle': '50%',
+        '--str-chat__border-radius-inner': `${theme.shape.borderRadius}px`,
+        '--str-chat__border-radius-message': `${theme.shape.borderRadius}px`,
+
+        // --- Colors ---
+        '--str-chat__primary-color': primaryColor,
+        '--str-chat__text-color': theme.palette.text.primary ?? (mode === 'light' ? '#000000' : '#ffffff'),
+        '--str-chat__text-color-secondary': theme.palette.text.secondary ?? (mode === 'light' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.7)'),
+        '--str-chat__disabled-color': theme.palette.action?.disabled ?? (mode === 'light' ? 'rgba(0, 0, 0, 0.38)' : 'rgba(255, 255, 255, 0.3)'),
+        '--str-chat__bg-color': theme.palette.background?.default ?? (mode === 'light' ? '#ffffff' : '#000000'),
+        '--str-chat__paper-color': theme.palette.background?.paper ?? (mode === 'light' ? '#ffffff' : '#1C1C1E'),
+        '--str-chat__border-color': theme.palette.divider ?? (mode === 'light' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)'),
+        '--str-chat__hover-bg-color': alpha(theme.palette.text.primary ?? '#000', 0.05),
+        '--str-chat__active-bg-color': alpha(primaryColor, 0.1),
+        '--str-chat__active-border-color': primaryColor,
+
+        // --- Messages ---
+        '--str-chat__message-bubble-color': mode === 'light' ? '#F7F9FB' : '#1e1e24',
+        '--str-chat__message-bubble-text-color': theme.palette.text.primary ?? (mode === 'light' ? '#000000' : '#ffffff'),
+        '--str-chat__message-bubble-border-radius': `${theme.shape.borderRadius}px`,
+        '--str-chat__message-bubble-shadow': 'none',
+
+        // --- Own Messages ---
+        '--str-chat__message-bubble-color--mine': ownMessageBg,
+        '--str-chat__message-bubble-text-color--mine': ownMessageText,
+        '--str-chat__message-bubble-border-radius--mine': `${theme.shape.borderRadius}px`,
+        '--str-chat__message-bubble-shadow--mine': 'none',
+
+        // --- Input ---
+        '--str-chat__input-bg-color': theme.palette.background?.paper ?? (mode === 'light' ? '#ffffff' : '#1C1C1E'),
+        '--str-chat__input-border-color': theme.palette.divider ?? (mode === 'light' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)'),
+        '--str-chat__input-text-color': theme.palette.text.primary ?? (mode === 'light' ? '#000000' : '#ffffff'),
+        '--str-chat__input-placeholder-color': theme.palette.text.secondary ?? (mode === 'light' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.7)'),
+        '--str-chat__input-border-radius': `${theme.shape.borderRadius}px`,
+
+        // --- Components ---
+        '--str-chat__channel-list-bg-color': theme.palette.background?.paper ?? (mode === 'light' ? '#ffffff' : '#1C1C1E'),
+        '--str-chat__channel-header-bg-color': theme.palette.background?.paper ?? (mode === 'light' ? '#ffffff' : '#1C1C1E'),
+        '--str-chat__thread-header-bg-color': theme.palette.background?.paper ?? (mode === 'light' ? '#ffffff' : '#1C1C1E'),
+
+        // --- Unread Indicator ---
+        '--str-chat__unread-badge-color': theme.palette.secondary?.main ?? '#BF5AF2',
+        '--str-chat__unread-badge-text-color': theme.palette.secondary?.contrastText ?? '#ffffff',
+
+        // Add more variables as needed
+    };
+  }, [theme]); // Recalculate when MUI theme changes
 
   // Render the Stream Chat Provider only when connected
   if (connectionStatus === 'connected' && chatClient) {
     return (
-      <Chat client={chatClient} theme="messaging light">
-        {children}
-      </Chat>
+      // Apply ONLY CSS variables to this wrapper Box, remove layout styles
+      <Box sx={streamThemeVariables}>
+        <Chat client={chatClient}> {/* Remove the theme prop here */}
+          {children}
+        </Chat>
+      </Box>
     );
   }
 
