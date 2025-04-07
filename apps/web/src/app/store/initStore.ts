@@ -2,11 +2,11 @@ import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 // Import individual shared reducers and their state types
 import {
-  feedPostsReducer // Import the new feed posts reducer
-  ,
+  feedPostsReducer, // Import the new feed posts reducer
   paginatedUsersReducer, // Renamed from SuggestedUsersState
   tokensReducer,
-  userReducer
+  userReducer,
+  chatReducer // Import chat reducer
 } from '@neurolink/shared';
 import accessibilityReducer from '../../features/accessibility/accessibilitySlice';
 import themeReducer from '../../features/theme/themeSlice';
@@ -18,6 +18,7 @@ const webRootReducer = combineReducers({
   user: userReducer,
   paginatedUsers: paginatedUsersReducer, // Use the correct name
   feedPosts: feedPostsReducer, // Add the feed posts reducer
+  chat: chatReducer, // Add chat reducer
   // Web-specific reducers
   theme: themeReducer,
   accessibility: accessibilityReducer,

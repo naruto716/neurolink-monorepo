@@ -17,38 +17,26 @@ export const createApiClient = (getState: GetStateFn): AxiosInstance => {
     headers: API_CONFIG.defaultHeaders,
   });
 
-  // Request interceptor to add authentication token OR handle specific chat route
+  // Request interceptor to add authentication token
   apiClient.interceptors.request.use(
     (config) => {
-      // Check if the request URL starts with /chat for development purposes
-      if (config.url?.startsWith('/chat')) {
-        console.log(`Handling specific request for chat route: ${config.url}`);
-        // Override baseURL for chat requests
-        config.baseURL = 'http://localhost:3000/api/v1';
-        // Hardcode the X-User-Name header for chat requests
-        config.headers['X-User-Name'] = 'simpson1029';
-        // Ensure no Authorization header is sent for chat requests
-        delete config.headers.Authorization;
-      } else {
-        // Existing logic for other requests: Add Authorization token if available
-        try {
-          const state = getState();
-          const accessToken = selectAccessToken(state);
+      // Original logic: Add Authorization token if available
+      try {
+        const state = getState();
+        const accessToken = selectAccessToken(state);
 
-          if (accessToken) {
-            config.headers.Authorization = `Bearer ${accessToken}`;
-            console.log('Added token to request:', config.url);
-          } else {
-            console.warn('No token available via getState for request:', config.url);
-          }
-        } catch (error) {
-          console.error('Error getting token via getState:', error);
+        if (accessToken) {
+          config.headers.Authorization = `Bearer ${accessToken}`;
+          console.log('Added token to request:', config.url);
+        } else {
+          console.warn('No token available via getState for request:', config.url);
         }
+      } catch (error) {
+        console.error('Error getting token via getState:', error);
       }
 
-      // Log the final request details (URL might be relative or absolute depending on baseURL override)
-      const finalUrl = config.baseURL && !config.url?.startsWith('http') ? `${config.baseURL}${config.url}` : config.url;
-      console.log(`API Request: ${config.method?.toUpperCase()} ${finalUrl}`);
+      // Log the request details (using the default baseURL)
+      console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
       return config;
     },
     (error) => Promise.reject(error)

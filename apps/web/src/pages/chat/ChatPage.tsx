@@ -1,71 +1,98 @@
-import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Box, CircularProgress, Paper } from '@mui/material';
-import { AccessibleTypography } from '../../app/components/AccessibleTypography';
-import { ChatTokenResponse, fetchChatToken } from '@neurolink/shared/src/features/chat'; // Import chat API and type
-import apiClient from '../../app/api/apiClient'; // Import the configured apiClient instance
+import React, { useMemo } from 'react'; // Import useMemo
+import { Box, CircularProgress } from '@mui/material'; // Import CircularProgress
+import {
+  Channel,
+  ChannelHeader,
+  ChannelList,
+  MessageInput,
+  MessageList,
+  Thread,
+  Window,
+  useChatContext // Import context hook
+} from 'stream-chat-react';
+import type { ChannelSort, ChannelFilters } from 'stream-chat'; // Import types from base package
+import 'stream-chat-react/dist/css/v2/index.css'; // Stream CSS v2
+import { useTranslation } from 'react-i18next'; // Keep i18n if needed for other text
+import { AccessibleTypography } from '../../app/components/AccessibleTypography'; // Keep for title
+
+// Basic CSS for layout (consider moving to a dedicated CSS file or using MUI Grid/Stack)
+const chatContainerStyle = {
+  display: 'flex',
+  height: 'calc(100vh - 120px)', // Example height, adjust based on your layout (navbar, etc.)
+  width: '100%',
+};
+
+const channelListContainerStyle = {
+  width: '300px', // Adjust width as needed
+  borderRight: '1px solid #e0e0e0', // Example border
+  display: 'flex',
+  flexDirection: 'column',
+};
+
+const channelContainerStyle = {
+  flexGrow: 1,
+  display: 'flex',
+  flexDirection: 'column',
+};
+// ---
 
 const ChatPage: React.FC = () => {
   const { t } = useTranslation();
-  // No need to get user from selector for this call, interceptor handles it
-  const [chatTokenInfo, setChatTokenInfo] = useState<ChatTokenResponse | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
+  const { client } = useChatContext(); // Get client from context
 
-  useEffect(() => {
-    // Define the async function to call the API
-    const getToken = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // Use the imported API function with the imported apiClient instance.
-        // The interceptor handles adding the X-User-Name header for /chat routes.
-        const data = await fetchChatToken(apiClient);
-        setChatTokenInfo(data);
-      } catch (err: unknown) {
-        console.error("Failed to fetch chat token:", err);
-        const errorMessage = err instanceof Error ? err.message : String(err);
-        setError(errorMessage || t('chat.error.fetchFailed'));
-      } finally {
-        setLoading(false);
-      }
-    };
+  // Define filters only when the client and userID are definitely available
+  const filters: ChannelFilters | undefined = useMemo(() => {
+    if (client?.userID) {
+      return { type: 'messaging', members: { $in: [client.userID] } };
+    }
+    return undefined;
+  }, [client?.userID]); // Recalculate only when userID changes
 
-    // Call the function
-    getToken();
+  // Define sort using the correct type and value (-1 for descending)
+  const sort: ChannelSort = useMemo(() => ({ last_message_at: -1 }), []); // Memoize sort object
 
-  }, [t]); // Only depend on t, as apiClient is stable
+  // Show loading state if filters are not ready yet (client or userID is missing)
+  if (!filters) {
+    return (
+        <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+            <CircularProgress />
+            <AccessibleTypography sx={{ ml: 2 }}>Loading Chat...</AccessibleTypography>
+        </Box>
+    );
+  }
 
+  // Render chat UI only when client and filters are ready
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: 3, height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Keep page title if desired */}
       <AccessibleTypography variant="h4" gutterBottom>
         {t('chat.title')}
       </AccessibleTypography>
-      <Paper elevation={3} sx={{ p: 2 }}>
-        {loading && (
-          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100px' }}>
-            <CircularProgress />
-            <AccessibleTypography sx={{ ml: 2 }}>{t('chat.loadingToken')}</AccessibleTypography>
-          </Box>
-        )}
-        {error && (
-          <AccessibleTypography color="error">
-            {t('chat.error.prefix')}: {error}
-          </AccessibleTypography>
-        )}
-        {chatTokenInfo && !loading && (
-          <Box>
-            <AccessibleTypography variant="h6">{t('chat.tokenInfoTitle')}</AccessibleTypography>
-            <AccessibleTypography><strong>{t('chat.apiKeyLabel')}:</strong> {chatTokenInfo.apiKey}</AccessibleTypography>
-            <AccessibleTypography><strong>{t('chat.tokenLabel')}:</strong> {chatTokenInfo.token.substring(0, 30)}...</AccessibleTypography>
-            <AccessibleTypography><strong>{t('chat.userIdLabel')}:</strong> {chatTokenInfo.userId}</AccessibleTypography>
-            {/* TODO: Initialize GetStream client here using the token */}
-            <AccessibleTypography sx={{ mt: 2, fontStyle: 'italic' }}>
-              {t('chat.initSuccess')}
-            </AccessibleTypography>
-          </Box>
-        )}
-      </Paper>
+
+      {/* Main Chat Layout */}
+      <Box sx={chatContainerStyle}>
+        <Box sx={channelListContainerStyle}>
+          {filters ? ( // Only render ChannelList if filters are ready
+            <ChannelList
+              filters={filters}
+              sort={sort}
+              // You might add options like Paginator, Preview, etc. here
+            />
+          ) : (
+            <Box sx={{ p: 2 }}>Loading channels...</Box> // Placeholder while client initializes
+          )}
+        </Box>
+        <Box sx={channelContainerStyle}>
+          <Channel> {/* Renders the currently active channel from context */}
+            <Window>
+              <ChannelHeader />
+              <MessageList />
+              <MessageInput />
+            </Window>
+            <Thread />
+          </Channel>
+        </Box>
+      </Box>
     </Box>
   );
 };

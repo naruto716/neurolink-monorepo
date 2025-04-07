@@ -38,6 +38,8 @@
     "react-toastify": "^11.0.5",
     "react-webcam": "^7.2.0",
     "slick-carousel": "^1.8.1",
+    "stream-chat": "^8.58.0",
+    "stream-chat-react": "^12.13.1",
     "swiper": "^11.2.6"
   },
   "devDependencies": {

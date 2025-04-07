@@ -11,6 +11,7 @@ import { Navigate, Outlet, useLocation } from "react-router-dom"; // Added useLo
 import { ToastContainer } from 'react-toastify';
 import apiClient from "../api/apiClient";
 import { useAppDispatch, useAppSelector } from "../store/initStore";
+import { ChatProvider } from '../../features/chat/ChatProvider'; // Import ChatProvider
 
 
 function App() {
@@ -113,9 +114,11 @@ function App() {
           Error loading profile: {fetchError}
         </div>
       )}
-      <Outlet />
+      <ChatProvider>
+        <Outlet />
+      </ChatProvider>
     </>
   );
 }
 
-export default App; 
+export default App;
