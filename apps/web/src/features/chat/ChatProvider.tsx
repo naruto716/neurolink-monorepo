@@ -2,9 +2,11 @@
 import React, { useState, useEffect, ReactNode } from 'react'; // Removed unused useMemo
 import { useDispatch, useSelector } from 'react-redux';
 import { StreamChat, Event, TokenOrProvider } from 'stream-chat';
-import { Chat } from 'stream-chat-react'; // Removed Streami18n import
-import { useTheme, GlobalStyles } from '@mui/material'; // Removed unused alpha and Box, ADDED GlobalStyles
+import { Chat } from 'stream-chat-react';
+import { StreamVideoClient, StreamVideo, User as VideoUser } from '@stream-io/video-react-sdk'; // Import Video SDK components
+import { useTheme, GlobalStyles, Box, CircularProgress } from '@mui/material'; // Added Box, CircularProgress
 import { Theme } from '@mui/material/styles'; // Import Theme type
+import { AccessibleTypography } from '../../app/components/AccessibleTypography'; // Import AccessibleTypography
 import { AppDispatch } from '../../app/store/initStore';
 import {
   setChatConnecting,
@@ -40,6 +42,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const loggedInUser = useSelector(selectCurrentUser); // Get the main app's logged-in user
 
   const [chatClient, setChatClient] = useState<StreamChat | null>(null);
+  const [videoClient, setVideoClient] = useState<StreamVideoClient | null>(null); // State for Video Client
 
   useEffect(() => {
     // Prevent re-initialization if already connected or connecting
@@ -50,7 +53,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
           chatClient?.disconnectUser().catch((err: unknown) => console.error("Error disconnecting user for switch:", err)); // Typed catch
           // Setting status to disconnected will trigger re-initialization by the effect dependencies
           dispatch(setChatDisconnected({ error: 'User changed, reconnecting.' }));
-          setChatClient(null); // Clear client state
+          setChatClient(null); // Clear chat client state
+          setVideoClient(null); // Clear video client state on user switch
       }
       return; // Already connected/connecting with the correct user
     }
@@ -67,12 +71,14 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         if (chatClient) {
             chatClient.disconnectUser().catch((err: unknown) => console.error("Error disconnecting stale chat client:", err)); // Typed catch
             setChatClient(null);
+            setVideoClient(null); // Clear video client state if logging out
         }
         return;
     }
 
-    let clientInstance: StreamChat | null = null;
-    let listeners: any[] = [];
+    let chatClientInstance: StreamChat | null = null; // Renamed for clarity
+    let videoClientInstance: StreamVideoClient | null = null; // Variable for video client instance
+    let chatListeners: any[] = []; // Renamed for clarity
     const targetUsername = loggedInUser.username; // Use the actual logged-in username
 
     const initializeChat = async () => {
@@ -93,73 +99,98 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         }
 
         // --- Initialize Client ---
-        // Use getInstance to potentially reuse an existing instance (though we manage disconnect/reconnect)
-        clientInstance = StreamChat.getInstance(apiKey, {
+        // --- Initialize Chat Client ---
+        console.log("Initializing Stream Chat Client...");
+        chatClientInstance = StreamChat.getInstance(apiKey, {
              enableInsights: true,
              enableWSFallback: true,
         });
 
-        // --- Setup Event Listeners ---
-        listeners = [
-          clientInstance.on('connection.changed', (event: Event) => {
+        // --- Setup Chat Event Listeners ---
+        chatListeners = [
+          chatClientInstance.on('connection.changed', (event: Event) => {
             console.log('Stream connection changed:', event.online);
             if (event.online) {
-                // Check if the connected user ID is still the one we expect
-                if (clientInstance?.userID === targetUsername) {
-                    dispatch(setChatConnected({ userId: clientInstance.userID }));
+                // Check if the connected chat user ID is still the one we expect
+                if (chatClientInstance?.userID === targetUsername) {
+                    dispatch(setChatConnected({ userId: chatClientInstance.userID }));
                 } else {
-                    console.warn(`Reconnected with unexpected user ID: ${clientInstance?.userID}. Expected: ${targetUsername}. Disconnecting.`);
-                    clientInstance?.disconnectUser().catch((err: unknown) => console.error("Error disconnecting mismatched user:", err)); // Typed catch
+                    console.warn(`Reconnected with unexpected user ID: ${chatClientInstance?.userID}. Expected: ${targetUsername}. Disconnecting.`);
+                    chatClientInstance?.disconnectUser().catch((err: unknown) => console.error("Error disconnecting mismatched user:", err)); // Typed catch
                     dispatch(setChatDisconnected({ error: 'Mismatched user ID on reconnect.' }));
                 }
             } else {
               dispatch(setChatDisconnected({ error: 'Connection lost' }));
             }
           }),
-          clientInstance.on('user.total_unread_count', (event: Event) => {
+          chatClientInstance.on('user.total_unread_count', (event: Event) => {
             // Ensure the payload is a number
             dispatch(setTotalUnreadCount(event.total_unread_count ?? 0));
           }),
-          clientInstance.on('message.new', (event: Event) => {
+          chatClientInstance.on('message.new', (event: Event) => {
               console.log('New message received:', event);
-              if (event.message?.user?.id !== clientInstance?.userID && event.cid) {
+              if (event.message?.user?.id !== chatClientInstance?.userID && event.cid) {
                   playNotificationSound();
               }
           }),
           // Add other listeners as needed
         ];
 
-        // --- Connect User ---
-        // Use the userId from the token endpoint, even if it mismatched the warning above
-        await clientInstance.connectUser( { id: userId }, token as TokenOrProvider );
-        console.log(`User ${clientInstance.userID} connected successfully.`);
+        // --- Initialize Video Client ---
+        console.log("Initializing Stream Video Client...");
+        const videoUser: VideoUser = {
+            id: userId,
+            name: loggedInUser.displayName || userId, // Use displayName or fallback
+            image: loggedInUser.profilePicture, // Use profilePicture
+            // Add other fields if needed from loggedInUser
+        };
+        videoClientInstance = new StreamVideoClient({ apiKey, user: videoUser, token });
+        // Note: Video client connects automatically when StreamVideo provider mounts or call methods used
+
+        // --- Connect Chat User ---
+        await chatClientInstance.connectUser( { id: userId }, token as TokenOrProvider );
+        console.log(`Chat User ${chatClientInstance.userID} connected successfully.`);
 
         // --- Update Redux & Component State ---
-        // Dispatch connected state with the *actually* connected user ID
-        dispatch(setChatConnected({ userId: clientInstance.userID! }));
-        // Ensure unread count is treated as a number
-        const unreadCount = clientInstance.user?.total_unread_count;
+        // --- Update Redux & Component State for BOTH clients ---
+        dispatch(setChatConnected({ userId: chatClientInstance.userID! })); // Dispatch chat connected
+        const unreadCount = chatClientInstance.user?.total_unread_count;
         dispatch(setTotalUnreadCount(typeof unreadCount === 'number' ? unreadCount : 0));
-        setChatClient(clientInstance); // Make client available for the <Chat> provider
+        setChatClient(chatClientInstance); // Set chat client in state
+        setVideoClient(videoClientInstance); // Set video client in state
 
       } catch (error: unknown) { // Typed catch
         console.error('Failed to initialize Stream Chat:', error);
         const errorMessage = error instanceof Error ? error.message : String(error); // Extract message safely
         dispatch(setChatError({ error: errorMessage || 'Initialization failed' }));
         setChatClient(null);
-        listeners.forEach(listener => listener.unsubscribe());
+        setVideoClient(null); // Clear video client on error
+        chatListeners.forEach(listener => listener.unsubscribe());
+        // Attempt to disconnect video client if it exists (though web SDK might not need explicit disconnect)
+        videoClientInstance?.disconnectUser?.().catch(err => console.error("Error disconnecting video user on init failure:", err));
       }
     };
 
     initializeChat();
 
     // --- Cleanup Function ---
+    // --- Cleanup Function ---
     return () => {
-      console.log('Cleaning up Stream Chat client...');
-      listeners.forEach(listener => listener.unsubscribe());
-      // Use the clientInstance captured in this effect's scope for cleanup
-      if (clientInstance) {
-        clientInstance.disconnectUser().catch((err: unknown) => console.error("Error disconnecting:", err)); // Typed catch
+      console.log('Cleaning up Stream Chat & Video clients...');
+      chatListeners.forEach(listener => listener.unsubscribe());
+
+      // Use the instances captured in this effect's scope for cleanup
+      const chatCleanupInstance = chatClientInstance;
+      const videoCleanupInstance = videoClientInstance;
+
+      if (chatCleanupInstance) {
+        console.log('Disconnecting chat user...');
+        chatCleanupInstance.disconnectUser().catch((err: unknown) => console.error("Error disconnecting chat user:", err));
+      }
+      if (videoCleanupInstance) {
+          console.log('Disconnecting video client...');
+          // Use disconnectUser based on tutorial example, adjust if web SDK differs
+          videoCleanupInstance.disconnectUser?.().catch((err: unknown) => console.error("Error disconnecting video client:", err));
       }
       // Avoid dispatching disconnect here if the component unmounts but the user is still logged in
       // Let the main login/logout flow handle the disconnect dispatch.
@@ -171,8 +202,8 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   const theme = useTheme(); // Get the current MUI theme
   const streamTheme = theme.palette.mode === 'dark' ? 'str-chat__theme-dark' : 'str-chat__theme-light';
 
-  // Render the Stream Chat Provider only when connected
-  if (connectionStatus === 'connected' && chatClient) {
+  // Render the Stream Providers only when BOTH clients are ready
+  if (connectionStatus === 'connected' && chatClient && videoClient) {
     return (
       // Remove the wrapping Box with sx variables
       // Pass the official Stream theme name directly to the Chat component
@@ -235,15 +266,21 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
             }
           }}
         />
-        <Chat client={chatClient} theme={streamTheme}>
-          {children}
-        </Chat>
+        {/* Wrap Chat with StreamVideo */}
+        <StreamVideo client={videoClient}>
+          <Chat client={chatClient} theme={streamTheme}>
+            {children}
+          </Chat>
+        </StreamVideo>
       </>
     );
   }
 
-  // Render children without Chat context if not connected/connecting
-  // You might want loading/error states here depending on UX requirements
-  // For now, just pass children through.
-  return <>{children}</>;
+  // If not connected or clients aren't ready, show a loading state
+  return (
+      <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%' }}>
+        <CircularProgress />
+        <AccessibleTypography sx={{ ml: 2 }}>Initializing Chat & Video Services...</AccessibleTypography>
+      </Box>
+  );
 };
