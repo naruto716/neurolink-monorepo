@@ -219,6 +219,25 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
             '.str-chat.str-chat__theme-dark.str-chat__channel-list.str-chat__channel-list-react': {
               backgroundColor: 'transparent',
             },
+            // --- Message Input Styling ---
+            // Light theme message input
+            '.str-chat__theme-light .str-chat__message-input': {
+              backgroundColor: 'rgba(28, 28, 28, 0.05)',
+              borderRadius: '8px',
+              borderTop: 'none', // Remove default top border if any
+              '& textarea': { // Target inner textarea
+                borderRadius: '8px', // Ensure textarea itself is rounded
+              }
+            },
+            // Dark theme message input
+            '.str-chat__theme-dark .str-chat__message-input': {
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              borderRadius: '8px',
+              borderTop: 'none',
+              '& textarea': {
+                borderRadius: '8px',
+              }
+            },
           }}
         />
         <Chat client={chatClient} theme={streamTheme}>

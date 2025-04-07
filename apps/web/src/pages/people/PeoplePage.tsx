@@ -183,8 +183,6 @@ const UserCard: React.FC<{ user: ListedUser }> = ({ user }) => {
             // Create a direct messaging channel. If it exists, it will be returned.
             const channel = client.channel('messaging', {
                 members: [currentUser.username, user.username],
-                // Set channel name to the other user's display name
-                name: user.displayName,
             });
 
             // Watch the channel. This creates it if it doesn't exist,

@@ -119,14 +119,43 @@ const ChatPage: React.FC = () => {
           display: 'flex',
           flexDirection: 'column',
           minWidth: 0,
+          // Target the thread component's container to adjust its height and layout
+          '& .str-chat__thread': {
+             display: 'flex',        // Use flexbox for layout
+             flexDirection: 'column', // Stack children vertically
+             height: '100%',          // Make thread container fill the parent Box height
+             // Target the inner panel within the thread to make it grow
+             '& .str-chat__main-panel-inner': {
+                 flexGrow: 1,       // Allow this panel to take available space
+                 minHeight: 0,      // Prevent flex overflow issues
+                 overflowY: 'auto', // Allow scrolling within the panel
+             }
+          },
         }}>
           <Channel>
-            <Window>
-              <ChannelHeader />
-              <MessageList />
-              <MessageInput />
-            </Window>
-            <Thread />
+            {/* Wrapper Box for styling the main chat window area */}
+            <Box sx={{
+              flexGrow: 1, // Take up available space
+              display: 'flex', // Ensure proper layout for Window internals
+              flexDirection: 'column',
+              minHeight: 0, // Important for scrollable content within Window
+              m: 3, // Add margin around the window frame
+              border: '1px solid',
+              borderColor: 'divider', // Use theme's divider color for subtle border
+              borderRadius: '8px', // Rounded corners
+              overflow: 'hidden' // Clip content to the rounded corners
+            }}>
+              <Window>
+                <Box sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
+                  <ChannelHeader />
+                </Box>
+                <MessageList />
+                <Box sx={{ m: 2 }}>
+                  <MessageInput />
+                </Box>
+              </Window>
+              <Thread />
+            </Box>
           </Channel>
         </Box>
       </Box>
