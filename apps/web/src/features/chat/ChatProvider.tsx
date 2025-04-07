@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useState, useEffect, ReactNode, useMemo } from 'react';
+import React, { useState, useEffect, ReactNode } from 'react'; // Removed unused useMemo
 import { useDispatch, useSelector } from 'react-redux';
 import { StreamChat, Event, TokenOrProvider } from 'stream-chat';
 import { Chat } from 'stream-chat-react'; // Removed Streami18n import
-import { useTheme, alpha, Box } from '@mui/material'; // Import useTheme, alpha, and Box
+import { useTheme, GlobalStyles } from '@mui/material'; // Removed unused alpha and Box, ADDED GlobalStyles
+import { Theme } from '@mui/material/styles'; // Import Theme type
 import { AppDispatch } from '../../app/store/initStore';
 import {
   setChatConnecting,
@@ -84,12 +85,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
         const { apiKey, token, userId } = await fetchChatToken(apiClient);
 
         // Validate the userId returned by the token endpoint matches our target user
-        // Note: The interceptor currently hardcodes 'simpson1029', this check WILL fail
-        // if loggedInUser.username is different. This highlights a potential issue
-        // with the hardcoded interceptor if it's meant for dynamic users.
-        // For this tutorial, we might assume the backend uses the header correctly,
-        // OR adjust the expectation based on the hardcoded value.
-        // Let's assume for now the backend *should* return the correct userId based on the header.
         if (userId !== targetUsername) {
             // If the interceptor is hardcoded, this error is expected for other users.
             console.error(`User ID mismatch! Expected: ${targetUsername}, Received from token endpoint: ${userId}. Check API interceptor/backend logic.`);
@@ -174,75 +169,49 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
   }, [dispatch, loggedInUser?.username, connectionStatus]); // Added connectionStatus to prevent re-run loops
 
   const theme = useTheme(); // Get the current MUI theme
-
-  // Memoize the Stream Chat CSS variables based on the MUI theme mode
-  const streamThemeVariables = useMemo(() => {
-    const mode = theme.palette.mode;
-    // Using a distinct blue for primary actions/highlights for better visibility
-    const primaryColor = mode === 'light' ? '#005FFF' : '#589DFF';
-    const ownMessageBg = primaryColor;
-    // Ensure contrast text calculation handles potential undefined theme values gracefully
-    const ownMessageText = theme.palette.getContrastText ? theme.palette.getContrastText(ownMessageBg) : (mode === 'light' ? '#ffffff' : '#000000');
-
-    return {
-        '--str-chat__font-family': theme.typography.fontFamily ?? '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-        '--str-chat__border-radius-circle': '50%',
-        '--str-chat__border-radius-inner': `${theme.shape.borderRadius}px`,
-        '--str-chat__border-radius-message': `${theme.shape.borderRadius}px`,
-
-        // --- Colors ---
-        '--str-chat__primary-color': primaryColor,
-        '--str-chat__text-color': theme.palette.text.primary ?? (mode === 'light' ? '#000000' : '#ffffff'),
-        '--str-chat__text-color-secondary': theme.palette.text.secondary ?? (mode === 'light' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.7)'),
-        '--str-chat__disabled-color': theme.palette.action?.disabled ?? (mode === 'light' ? 'rgba(0, 0, 0, 0.38)' : 'rgba(255, 255, 255, 0.3)'),
-        '--str-chat__bg-color': theme.palette.background?.default ?? (mode === 'light' ? '#ffffff' : '#000000'),
-        '--str-chat__paper-color': theme.palette.background?.paper ?? (mode === 'light' ? '#ffffff' : '#1C1C1E'),
-        '--str-chat__border-color': theme.palette.divider ?? (mode === 'light' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)'),
-        '--str-chat__hover-bg-color': alpha(theme.palette.text.primary ?? '#000', 0.05),
-        '--str-chat__active-bg-color': alpha(primaryColor, 0.1),
-        '--str-chat__active-border-color': primaryColor,
-
-        // --- Messages ---
-        '--str-chat__message-bubble-color': mode === 'light' ? '#F7F9FB' : '#1e1e24',
-        '--str-chat__message-bubble-text-color': theme.palette.text.primary ?? (mode === 'light' ? '#000000' : '#ffffff'),
-        '--str-chat__message-bubble-border-radius': `${theme.shape.borderRadius}px`,
-        '--str-chat__message-bubble-shadow': 'none',
-
-        // --- Own Messages ---
-        '--str-chat__message-bubble-color--mine': ownMessageBg,
-        '--str-chat__message-bubble-text-color--mine': ownMessageText,
-        '--str-chat__message-bubble-border-radius--mine': `${theme.shape.borderRadius}px`,
-        '--str-chat__message-bubble-shadow--mine': 'none',
-
-        // --- Input ---
-        '--str-chat__input-bg-color': theme.palette.background?.paper ?? (mode === 'light' ? '#ffffff' : '#1C1C1E'),
-        '--str-chat__input-border-color': theme.palette.divider ?? (mode === 'light' ? 'rgba(0, 0, 0, 0.12)' : 'rgba(255, 255, 255, 0.12)'),
-        '--str-chat__input-text-color': theme.palette.text.primary ?? (mode === 'light' ? '#000000' : '#ffffff'),
-        '--str-chat__input-placeholder-color': theme.palette.text.secondary ?? (mode === 'light' ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.7)'),
-        '--str-chat__input-border-radius': `${theme.shape.borderRadius}px`,
-
-        // --- Components ---
-        '--str-chat__channel-list-bg-color': theme.palette.background?.paper ?? (mode === 'light' ? '#ffffff' : '#1C1C1E'),
-        '--str-chat__channel-header-bg-color': theme.palette.background?.paper ?? (mode === 'light' ? '#ffffff' : '#1C1C1E'),
-        '--str-chat__thread-header-bg-color': theme.palette.background?.paper ?? (mode === 'light' ? '#ffffff' : '#1C1C1E'),
-
-        // --- Unread Indicator ---
-        '--str-chat__unread-badge-color': theme.palette.secondary?.main ?? '#BF5AF2',
-        '--str-chat__unread-badge-text-color': theme.palette.secondary?.contrastText ?? '#ffffff',
-
-        // Add more variables as needed
-    };
-  }, [theme]); // Recalculate when MUI theme changes
+  const streamTheme = theme.palette.mode === 'dark' ? 'str-chat__theme-dark' : 'str-chat__theme-light';
 
   // Render the Stream Chat Provider only when connected
   if (connectionStatus === 'connected' && chatClient) {
     return (
-      // Apply ONLY CSS variables to this wrapper Box, remove layout styles
-      <Box sx={streamThemeVariables}>
-        <Chat client={chatClient}> {/* Remove the theme prop here */}
+      // Remove the wrapping Box with sx variables
+      // Pass the official Stream theme name directly to the Chat component
+      <>
+        <GlobalStyles
+          styles={{
+            '.str-chat': {
+              fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+            },
+            // Add overrides for specific elements if needed, e.g.:
+            // '.str-chat__message-text p': {
+            //   fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
+            // }
+            // --- Selected Channel Preview Background ---
+            '.str-chat__channel-preview--selected': {
+              // Use a function to access the theme
+              backgroundColor: (theme: Theme) =>
+                theme.palette.mode === 'light'
+                  ? 'rgba(28, 28, 28, 0.05)' // Light mode subtle bg
+                  : 'rgba(255, 255, 255, 0.08)', // Dark mode subtle bg
+              // Adjust hover for selected item slightly
+              '&:hover': {
+                 backgroundColor: (theme: Theme) =>
+                  theme.palette.mode === 'light'
+                    ? 'rgba(28, 28, 28, 0.08)' // Slightly darker hover
+                    : 'rgba(255, 255, 255, 0.12)', // Slightly brighter hover
+              }
+            },
+            // --- Rounded Corners for Channel Previews ---
+            '.str-chat__channel-preview-messenger': {
+              borderRadius: '8px',
+              margin: '4px 0', // Add some vertical margin between items
+            },
+          }}
+        />
+        <Chat client={chatClient} theme={streamTheme}>
           {children}
         </Chat>
-      </Box>
+      </>
     );
   }
 
