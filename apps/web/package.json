@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@emoji-mart/data": "^1.2.1",
+    "@emoji-mart/react": "^1.1.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
     "@mui/icons-material": "^6.4.7",
@@ -19,6 +21,7 @@
     "@types/react-slick": "^0.23.13",
     "axios": "^1.8.4",
     "date-fns": "^4.1.0",
+    "emoji-mart": "^5.6.0",
     "emoji-picker-react": "^4.12.2",
     "i18next": "^24.2.3",
     "i18next-browser-languagedetector": "^8.0.4",

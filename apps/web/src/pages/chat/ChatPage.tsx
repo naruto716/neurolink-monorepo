@@ -11,6 +11,7 @@ import {
   Window,
   useChatContext // Import context hook
 } from 'stream-chat-react';
+import { EmojiPicker } from 'stream-chat-react/emojis'; // Import EmojiPicker
 import type { ChannelSort, ChannelFilters } from 'stream-chat'; // Import types from base package
 import 'stream-chat-react/dist/css/v2/index.css'; // Stream CSS v2
 import { AccessibleTypography } from '../../app/components/AccessibleTypography';
@@ -132,21 +133,20 @@ const ChatPage: React.FC = () => {
              }
           },
         }}>
-          <Channel>
+          <Channel EmojiPicker={EmojiPicker}>
             {/* Wrapper Box for styling the main chat window area */}
             <Box sx={{
               flexGrow: 1, // Take up available space
               display: 'flex', // Ensure proper layout for Window internals
-              flexDirection: 'column',
+              flexDirection: 'row',
               minHeight: 0, // Important for scrollable content within Window
               m: 3, // Add margin around the window frame
               border: '1px solid',
               borderColor: 'divider', // Use theme's divider color for subtle border
               borderRadius: '8px', // Rounded corners
-              overflow: 'hidden' // Clip content to the rounded corners
             }}>
               <Window>
-                <Box sx={{ borderBottom: '1px solid', borderColor: 'divider' }}>
+                <Box sx={{ borderBottom: '1px solid', borderColor: 'divider', p: 1 }}>
                   <ChannelHeader />
                 </Box>
                 <MessageList />
