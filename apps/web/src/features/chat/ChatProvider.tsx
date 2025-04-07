@@ -182,11 +182,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
             '.str-chat': {
               fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
             },
-            // Add overrides for specific elements if needed, e.g.:
-            // '.str-chat__message-text p': {
-            //   fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-            // }
-            // --- Selected Channel Preview Background ---
             '.str-chat__channel-preview--selected': {
               // Use a function to access the theme
               backgroundColor: (theme: Theme) =>
@@ -205,6 +200,24 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
             '.str-chat__channel-preview-messenger': {
               borderRadius: '8px',
               margin: '4px 0', // Add some vertical margin between items
+            },
+            // Light theme active/selected messenger preview
+            '.str-chat__theme-light .str-chat__channel-preview-messenger--active': {
+              backgroundColor: 'rgba(28, 28, 28, 0.05)',
+              '&:hover': {
+                backgroundColor: 'rgba(28, 28, 28, 0.08)',
+              },
+            },
+            // Dark theme active/selected messenger preview
+            '.str-chat__theme-dark .str-chat__channel-preview-messenger--active': {
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              '&:hover': {
+                backgroundColor: 'rgba(255, 255, 255, 0.12)',
+              },
+            },
+            // --- Transparent Channel List Background ---
+            '.str-chat.str-chat__theme-dark.str-chat__channel-list.str-chat__channel-list-react': {
+              backgroundColor: 'transparent',
             },
           }}
         />

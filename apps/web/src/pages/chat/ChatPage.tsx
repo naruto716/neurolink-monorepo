@@ -14,13 +14,6 @@ import {
 import type { ChannelSort, ChannelFilters } from 'stream-chat'; // Import types from base package
 import 'stream-chat-react/dist/css/v2/index.css'; // Stream CSS v2
 import { AccessibleTypography } from '../../app/components/AccessibleTypography';
-// Removed unused alpha and Theme imports
-// Removed unused SearchIcon, SettingsOutlinedIcon, EditOutlinedIcon imports
-// Removed unused IconButton, InputAdornment, TextField imports
-
-// Removed style objects, will apply styles directly using sx prop
-
-// Removed ChannelListHeader component definition
 
 const ChatPage: React.FC = () => {
   // Removed unused t variable from useTranslation
