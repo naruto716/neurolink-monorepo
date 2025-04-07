@@ -10,6 +10,7 @@ import App from '../layout/App';
 import PeoplePage from '../../pages/people/PeoplePage';
 import UserProfilePage from '../../pages/people/UserProfilePage';
 import EditProfilePage from '../../pages/profile/EditProfilePage'; // Import the new page
+import ChatPage from '../../pages/chat/ChatPage'; // Import ChatPage
 // import FriendListPage from '../../pages/people/FriendListPage'; // Removed old page import
 // import NotFoundPage from '../../pages/notFound/NotFoundPage'; // Removed non-existent import
 import { RequireAuth } from './requireAuth';
@@ -35,6 +36,7 @@ const routes: RouteObject[] = [
               { path: 'people', element: <PeoplePage /> },
               { path: 'people/:username', element: <UserProfilePage /> }, // Keep existing user profile route
               { path: 'profile/edit', element: <EditProfilePage /> }, // Add route for editing profile
+              { path: 'chat', element: <ChatPage /> }, // Add route for chat page
               // { path: 'people/:username/friends', element: <FriendListPage /> }, // Removed old page route
               // Add other authenticated routes that need Layout here
             ]

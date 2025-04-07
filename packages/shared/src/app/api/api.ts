@@ -17,30 +17,38 @@ export const createApiClient = (getState: GetStateFn): AxiosInstance => {
     headers: API_CONFIG.defaultHeaders,
   });
 
-  // Request interceptor to add authentication token
+  // Request interceptor to add authentication token OR handle specific chat route
   apiClient.interceptors.request.use(
     (config) => {
-      try {
-        // Get the current state using the provided getState function
-        const state = getState();
-        // Use the specific selector to get the token from the state
-        const accessToken = selectAccessToken(state);
+      // Check if the request URL starts with /chat for development purposes
+      if (config.url?.startsWith('/chat')) {
+        console.log(`Handling specific request for chat route: ${config.url}`);
+        // Override baseURL for chat requests
+        config.baseURL = 'http://localhost:3000/api/v1';
+        // Hardcode the X-User-Name header for chat requests
+        config.headers['X-User-Name'] = 'simpson1029';
+        // Ensure no Authorization header is sent for chat requests
+        delete config.headers.Authorization;
+      } else {
+        // Existing logic for other requests: Add Authorization token if available
+        try {
+          const state = getState();
+          const accessToken = selectAccessToken(state);
 
-        if (accessToken) {
-          config.headers.Authorization = `Bearer ${accessToken}`;
-          console.log('Added token to request:', config.url);
-        } else {
-          // Fallback or warning (consider if localStorage fallback is still needed/desired)
-          console.warn('No token available via getState for request:', config.url);
-          // Optional: Remove localStorage fallback if Redux is the single source of truth
-          // const fallbackToken = localStorage.getItem('auth_access_token');
-          // if (fallbackToken) { ... }
+          if (accessToken) {
+            config.headers.Authorization = `Bearer ${accessToken}`;
+            console.log('Added token to request:', config.url);
+          } else {
+            console.warn('No token available via getState for request:', config.url);
+          }
+        } catch (error) {
+          console.error('Error getting token via getState:', error);
         }
-      } catch (error) {
-        console.error('Error getting token via getState:', error);
       }
 
-      console.log(`API Request: ${config.method?.toUpperCase()} ${config.url}`);
+      // Log the final request details (URL might be relative or absolute depending on baseURL override)
+      const finalUrl = config.baseURL && !config.url?.startsWith('http') ? `${config.baseURL}${config.url}` : config.url;
+      console.log(`API Request: ${config.method?.toUpperCase()} ${finalUrl}`);
       return config;
     },
     (error) => Promise.reject(error)
@@ -61,4 +69,4 @@ export const createApiClient = (getState: GetStateFn): AxiosInstance => {
   );
 
   return apiClient;
-}; 
+};

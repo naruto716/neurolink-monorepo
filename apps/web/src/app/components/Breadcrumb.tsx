@@ -34,6 +34,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ customItems }) => {
       '/accessibility': t('nav.accessibility'),
       '/settings': t('nav.settings'),
       '/profile/edit': t('editProfile.title'), // Add mapping for edit profile page
+      '/chat': t('nav.chat'), // Add mapping for chat page
       // Add onboarding route if needed, or rely on customItems
       '/onboarding': t('nav.onboarding'),
     };

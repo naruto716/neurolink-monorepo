@@ -18,7 +18,8 @@ import {
   Info,
   User,
   Wheelchair,
-  Users // Added Users icon
+  Users, // Added Users icon
+  ChatCircleDots // Added Chat icon
 } from '@phosphor-icons/react';
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -54,6 +55,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ open, onClose }) => {
   const navItems = [
     { key: 'social', label: 'Social', path: '/', icon: <House weight="regular" size={20} /> },
     { key: 'people', label: 'People', path: '/people', icon: <Users weight="regular" size={20} /> }, // Added People link
+    { key: 'chat', label: 'Chat', path: '/chat', icon: <ChatCircleDots weight="regular" size={20} /> }, // Added Chat link
     { key: 'about', label: 'About', path: '/about', icon: <Info weight="regular" size={20} /> },
     // { key: 'courses', label: 'Online Courses', path: '/courses', icon: <BookOpen weight="regular" size={20} /> },
     { key: 'commitment', label: 'Commitment', path: '/courses', icon: <BookOpen weight="regular" size={20} /> },

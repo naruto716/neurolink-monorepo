@@ -11,7 +11,8 @@
     "signIn": "Sign In",
     "signOut": "Sign Out",
     "onboarding": "Onboarding",
-    "people": "People" 
+    "people": "People",
+    "chat": "Chat"
   },
   "theme": {
     "light": "Light Mode",
@@ -283,5 +284,18 @@
     "imageAltWithNumber": "Post image {{index}}",
     "videoUnsupported": "Your browser does not support the video tag.",
     "audioUnsupported": "Your browser does not support the audio tag."
+  },
+  "chat": {
+    "title": "Chat",
+    "loadingToken": "Initializing chat...",
+    "tokenInfoTitle": "Chat Token Details (For Debugging)",
+    "apiKeyLabel": "API Key",
+    "tokenLabel": "Token",
+    "userIdLabel": "User ID",
+    "initSuccess": "Chat token retrieved successfully. Ready to connect.",
+    "error": {
+      "fetchFailed": "Failed to retrieve chat token. Please try again later.",
+      "prefix": "Error"
+    }
   }
 }
