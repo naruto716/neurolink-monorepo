@@ -39,7 +39,7 @@ const FeedPosts: React.FC = () => {
   const [allFeedPosts, setAllFeedPosts] = useState<Post[]>([]); // Accumulate posts here
   const isLoadingMorePosts = useRef(false);
   const postsObserver = useRef<IntersectionObserver | null>(null);
-  const isInitialUsernameFetch = useRef(true); // Track if it's the first fetch for current usernames
+  // const isInitialUsernameFetch = useRef(true); // No longer needed
 
   // --- Redux State ---
   // Suggestions
@@ -78,8 +78,7 @@ const FeedPosts: React.FC = () => {
     console.log(`Triggering post fetch - Page: ${page}, NewUsernames: ${isNewUsernameSet}, Usernames: ${usernamesToFetch.join(',')}`);
 
     if (isNewUsernameSet) {
-      isInitialUsernameFetch.current = true; // Mark as initial fetch for these usernames
-      // No need to clear Redux state here, the thunk handles it implicitly on page 1? Or should we? Let's assume thunk handles it.
+      // isInitialUsernameFetch.current = true; // No longer needed
     } else {
       isLoadingMorePosts.current = true; // Loading *more* posts
     }
@@ -105,43 +104,48 @@ const FeedPosts: React.FC = () => {
 
     const usernamesChanged = stringifiedUsernamesToFetch !== stringifiedUsernamesActuallyFetched;
 
-    // Fetch if we have usernames AND (the list changed OR it's the initial idle state)
-    if (usernamesToFetch.length > 0 && (usernamesChanged || feedStatus === 'idle')) {
-        console.log("Usernames to fetch changed or initial load, fetching page 1.");
-        setAllFeedPosts([]); // Clear existing posts when usernames change
-        isLoadingMorePosts.current = false; // Reset loading more flag
-        triggerPostFetch(1, true); // Fetch page 1, mark as new username set
-    } else if (usernamesToFetch.length === 0 && suggestionsStatus === 'succeeded') {
-        // This case might need refinement - if suggestions load but are empty,
-        // we still might want to show the current user's posts if they exist.
-        // However, the current logic clears posts if usernamesToFetch is empty.
-        console.log("No usernames (including current user) to fetch posts for.");
-        setAllFeedPosts([]); // Clear posts if the final list is empty
+    // Determine if we should fetch based on username changes and statuses
+    const shouldFetch =
+      // Ensure suggestions are loaded or failed before proceeding
+      (suggestionsStatus === 'succeeded' || suggestionsStatus === 'failed') &&
+      // Ensure we actually have usernames to fetch for
+      usernamesToFetch.length > 0 &&
+      // Fetch if usernames changed OR it's the initial idle state for the feed
+      (usernamesChanged || feedStatus === 'idle');
+
+    if (shouldFetch) {
+      console.log(`Should fetch: true. Suggestions: ${suggestionsStatus}, Usernames changed: ${usernamesChanged}, Feed status: ${feedStatus}. Fetching page 1.`);
+      setAllFeedPosts([]); // Clear existing posts when usernames change or on initial load
+      isLoadingMorePosts.current = false; // Reset loading more flag
+      triggerPostFetch(1, true); // Fetch page 1, mark as new username set
+    } else if (suggestionsStatus === 'succeeded' && usernamesToFetch.length === 0) {
+      // Handle the case where suggestions loaded successfully, but the final list (including current user) is empty
+      console.log("Suggestions loaded, but no usernames (including current user) to fetch posts for.");
+      setAllFeedPosts([]); // Clear posts if the final list is empty
+    } else {
+       console.log(`Should fetch: false. Suggestions: ${suggestionsStatus}, Usernames changed: ${usernamesChanged}, Feed status: ${feedStatus}.`);
     }
-    // Dependency includes the calculated list and the trigger function
+
+    // Dependency includes the calculated list, the trigger function, statuses, and the previously fetched usernames
   }, [usernamesToFetch, triggerPostFetch, currentFeedUsernames, feedStatus, suggestionsStatus]);
 
   // Effect to update local state when Redux state changes (new page loaded)
   useEffect(() => {
     if (feedStatus === 'succeeded') {
-      console.log(`Feed status succeeded. Current Page: ${feedCurrentPage}, InitialFetch: ${isInitialUsernameFetch.current}`);
-      if (isInitialUsernameFetch.current || feedCurrentPage === 1) {
-        console.log("Setting initial posts:", latestFeedPostsPage);
-        setAllFeedPosts(latestFeedPostsPage);
-        isInitialUsernameFetch.current = false; // Mark initial fetch as done
-      } else {
-        console.log("Appending new posts:", latestFeedPostsPage);
-        setAllFeedPosts(prev => {
-          const existingIds = new Set(prev.map(post => post.id));
-          const newPosts = latestFeedPostsPage.filter(post => !existingIds.has(post.id));
-          return [...prev, ...newPosts];
-        });
-      }
+      console.log(`Feed status succeeded. Current Redux Page: ${feedCurrentPage}. Appending posts.`);
+      // Always append new posts, handling duplicates.
+      // This works for initial load (prev is empty) and subsequent pages.
+      setAllFeedPosts(prev => {
+        const existingIds = new Set(prev.map(post => post.id));
+        const newPosts = latestFeedPostsPage.filter(post => !existingIds.has(post.id));
+        console.log(`Appending ${newPosts.length} new posts to ${prev.length} existing posts.`);
+        return [...prev, ...newPosts];
+      });
       isLoadingMorePosts.current = false; // Done loading more
     } else if (feedStatus === 'failed') {
       isLoadingMorePosts.current = false; // Reset on error too
     }
-  }, [latestFeedPostsPage, feedStatus, feedCurrentPage]); // Depend on the fetched page data and status
+  }, [latestFeedPostsPage, feedStatus, feedCurrentPage]); // Depend on the fetched page data, status, and page number
 
   // --- Intersection Observer Logic ---
   const lastPostElementRef = useCallback((node: HTMLElement | null) => {

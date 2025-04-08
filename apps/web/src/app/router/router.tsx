@@ -16,6 +16,7 @@ import ChatPage from '../../pages/chat/ChatPage'; // Import ChatPage
 import { RequireAuth } from './requireAuth';
 import OnboardingPage from '../../pages/onboarding/OnboardingPage';
 import Layout from '../layout/Layout';
+import AuthenticatedLayout from '../layout/AuthenticatedLayout'; // Import the new layout
 
 // Define public and authenticated routes
 const routes: RouteObject[] = [
@@ -25,28 +26,32 @@ const routes: RouteObject[] = [
     children: [
       // Authenticated routes (RequireAuth)
       { 
+        // This route ensures authentication via RequireAuth
         element: <RequireAuth />,
         children: [
-          // Authenticated routes WITH Layout
+          // All routes under RequireAuth now go through AuthenticatedLayout
           {
-            element: <Layout />,
+            element: <AuthenticatedLayout />, // Apply ChatProvider here
             children: [
-              { index: true, element: <SocialPage /> }, // Default route after login
-              // Removed profile route
-              { path: 'people', element: <PeoplePage /> },
-              { path: 'people/:username', element: <UserProfilePage /> }, // Keep existing user profile route
-              { path: 'profile/edit', element: <EditProfilePage /> }, // Add route for editing profile
-              { path: 'chat', element: <ChatPage /> }, // Add route for chat page
-              // { path: 'people/:username/friends', element: <FriendListPage /> }, // Removed old page route
-              // Add other authenticated routes that need Layout here
+              // Authenticated routes WITH standard Layout (nested inside AuthenticatedLayout)
+              {
+                element: <Layout />,
+                children: [
+                  { index: true, element: <SocialPage /> },
+                  { path: 'people', element: <PeoplePage /> },
+                  { path: 'people/:username', element: <UserProfilePage /> },
+                  { path: 'profile/edit', element: <EditProfilePage /> },
+                  { path: 'chat', element: <ChatPage /> },
+                  // Add other routes needing standard Layout here
+                ]
+              },
+              // Authenticated routes WITHOUT standard Layout (but still need ChatProvider)
+              { path: 'onboarding', element: <OnboardingPage /> },
+              // Add other routes needing only ChatProvider here
             ]
-          },
-          
-          // Authenticated routes WITHOUT Layout
-          { path: 'onboarding', element: <OnboardingPage /> },
-          // Add other authenticated routes that don't need Layout here
+          }
         ]
-      },
+       },
       
       // Public routes (no RequireAuth)
       // Public routes WITH Layout

@@ -195,9 +195,7 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       // Avoid dispatching disconnect here if the component unmounts but the user is still logged in
       // Let the main login/logout flow handle the disconnect dispatch.
     };
-  // Depend on the actual logged-in user's username to trigger re-init on user change
-  // Depend on the actual logged-in user's username to trigger re-init on user change
-  }, [dispatch, loggedInUser?.username, connectionStatus]); // Added connectionStatus to prevent re-run loops
+  }, [dispatch, loggedInUser?.username, connectionStatus, loggedInUser?.displayName, loggedInUser?.profilePicture, currentChatUserId, chatClient]); // Added connectionStatus to prevent re-run loops
 
   const theme = useTheme(); // Get the current MUI theme
   const streamTheme = theme.palette.mode === 'dark' ? 'str-chat__theme-dark' : 'str-chat__theme-light';
@@ -209,20 +207,18 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       // Pass the official Stream theme name directly to the Chat component
       <>
         <GlobalStyles
-          styles={{
+          styles={(theme: Theme) => ({ // Wrap the object in a function accepting theme
             '.str-chat': {
               fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
             },
             '.str-chat__channel-preview--selected': {
-              // Use a function to access the theme
-              backgroundColor: (theme: Theme) =>
-                theme.palette.mode === 'light'
+              // Use a function to access the theme (already correct here)
+              backgroundColor: theme.palette.mode === 'light'
                   ? 'rgba(28, 28, 28, 0.05)' // Light mode subtle bg
                   : 'rgba(255, 255, 255, 0.08)', // Dark mode subtle bg
               // Adjust hover for selected item slightly
               '&:hover': {
-                 backgroundColor: (theme: Theme) =>
-                  theme.palette.mode === 'light'
+                 backgroundColor: theme.palette.mode === 'light'
                     ? 'rgba(28, 28, 28, 0.08)' // Slightly darker hover
                     : 'rgba(255, 255, 255, 0.12)', // Slightly brighter hover
               }
@@ -263,8 +259,28 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
             },
             '.str-chat__channel-header': {
               backgroundColor: 'transparent',
+            },
+            // --- Video Menu Button Text Color Fix (Light Mode) ---
+            '.str-chat__theme-light': {
+              '.str-video__generic-menu .str-video__generic-menu--item button': {
+                color: 'white', // Set button text color to white in light mode
+              },
+              '.str-video__notification .str-video__notification__message': {
+                color: 'white', // Set notification message text color to white in light mode
+              },
+              '.str-video__participant-view .str-video__participant-details .str-video__participant-details__name': {
+                color: 'white', // Set participant name text color to white in light mode
+              },
+              // Add other light-mode specific overrides here if needed
+            },
+            // Add specific dark mode overrides if necessary
+            '.str-chat__theme-dark': {
+              // Example: If dark mode needed adjustments too
+              // '.str-video__generic-menu .str-video__generic-menu--item button': {
+              //   color: theme.palette.text.primary, // Example for dark mode
+              // }
             }
-          }}
+          })}
         />
         {/* Wrap Chat with StreamVideo */}
         <StreamVideo client={videoClient}>
@@ -284,3 +300,4 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
       </Box>
   );
 };
+
