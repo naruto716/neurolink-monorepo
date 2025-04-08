@@ -193,7 +193,7 @@ const UserCard: React.FC<{ user: ListedUser }> = ({ user }) => {
             console.log(`Channel watched/created: ${channel.cid}`);
             // Navigate to the main chat page. The Chat component will automatically
             // render the active channel set by watch().
-            navigate('/chat');
+            navigate('/chat', { state: { channelId: channel.id } });
 
         } catch (err) {
             console.error("Error initiating chat:", err);

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { useParams, Link as RouterLink } from 'react-router-dom'; // Import Link
+import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom'; // Import Link and useNavigate
 import {
   Box,
   Container,
@@ -40,6 +40,7 @@ import CreatePostInput from '../../features/posts/components/CreatePostInput'; /
 import { ChatText, LockSimple, UserCircleMinus, UserPlus, UserMinus, PencilSimple } from '@phosphor-icons/react'; // Added PencilSimple
 import FriendList from '../../features/friends/components/FriendList'; // Import FriendList
 import { useAppSelector } from '../../app/store/initStore'; // Removed useAppDispatch if no longer needed (verify)
+import { useChatContext } from 'stream-chat-react'; // Import Stream Chat context hook
 
 // Define Tag Categories mapping
 const tagCategoryLabels: { [key: string]: string } = {
@@ -178,11 +179,9 @@ const PostCardSkeleton = () => (
 const UserProfilePage = () => {
   const { username } = useParams<{ username: string }>();
   const { t } = useTranslation();
-  // const navigate = useNavigate(); // Removed unused hook
+  const navigate = useNavigate(); // Add navigate hook
   const theme = useTheme();
-  // const dispatch = useAppDispatch(); // Remove dispatch if unused
   const currentUser = useAppSelector(selectCurrentUser); // Get current user
-  // const refreshRequested = useAppSelector(selectRefreshRequested); // Remove refresh state
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true); // For user profile loading
   const [error, setError] = useState<string | null>(null); // For user profile error
@@ -230,6 +229,8 @@ const UserProfilePage = () => {
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
+
+  const { client: chatClient } = useChatContext(); // Get chat client from context
 
   // Fetch User Profile & Connection Status
   useEffect(() => {
@@ -470,6 +471,37 @@ const UserProfilePage = () => {
     }
   };
 
+  // Handle message button click to start a chat
+  const handleMessageClick = async () => {
+    if (!chatClient || !currentUser?.username || !user?.username) {
+      if (!chatClient) toast.error(t('chat.error.clientNotReady', 'Chat client is not ready.'));
+      if (!currentUser?.username) toast.error(t('chat.error.currentUserNotReady', 'Current user not identified.'));
+      if (!user?.username) toast.error(t('chat.error.userNotFound', 'Chat recipient not found.'));
+      return;
+    }
+
+    try {
+      console.log(`Initiating chat between ${currentUser.username} and ${user.username}`);
+      // Create a direct messaging channel. If it exists, it will be returned.
+      const channel = chatClient.channel('messaging', {
+        members: [currentUser.username, user.username],
+      });
+
+      // Watch the channel. This creates it if it doesn't exist,
+      // adds the current user as a watcher, marks messages as read,
+      // and sets this channel as the active channel in the context.
+      await channel.watch();
+
+      console.log(`Channel watched/created: ${channel.cid}`);
+      // Navigate to the chat page with the channel ID in state
+      navigate('/chat', { state: { channelId: channel.id } });
+    } catch (err) {
+      console.error("Error initiating chat:", err);
+      const message = err instanceof Error ? err.message : t('chat.error.initiateFailed', 'Failed to initiate chat.');
+      toast.error(message);
+    }
+  };
+
   // --- Render Logic ---
 
   if (loading) { // Show skeleton while fetching user profile
@@ -576,10 +608,16 @@ const UserProfilePage = () => {
               {connectionStatus !== 'self' && ( // Don't show buttons on own profile
                  <Stack direction="row" spacing={1} alignItems="center">
                    {renderConnectionButton()}
-                   <Button variant="text" size="small" startIcon={<ChatText size={16} weight="regular" />}>
-                    {t('people.messageButton', 'Message')}
-                  </Button>
-                </Stack>
+                   <Button
+                     variant="text"
+                     size="small"
+                     startIcon={<ChatText size={16} weight="regular" />}
+                     onClick={handleMessageClick}
+                     disabled={!chatClient || !currentUser?.username}
+                   >
+                     {t('people.messageButton', 'Message')}
+                   </Button>
+                 </Stack>
               )}
               {/* Add Edit Profile button for self */}
               {connectionStatus === 'self' && (

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { Box, CircularProgress, TextField, InputAdornment, IconButton } from '@mui/material'; // Added IconButton
 import SearchIcon from '@mui/icons-material/Search'; // Keep SearchIcon for TextField
 // Import Phosphor icons
@@ -12,10 +12,10 @@ import {
   Thread,
   Window,
   useChatContext, // Import context hook
-  useChannelStateContext // Import channel context hook
+  useChannelStateContext, // Import channel context hook
 } from 'stream-chat-react';
 import { EmojiPicker } from 'stream-chat-react/emojis'; // Import EmojiPicker
-import type { ChannelSort, ChannelFilters } from 'stream-chat'; // Import types from base package
+import type { ChannelSort, ChannelFilters, Channel as ChannelType } from 'stream-chat'; // Import types from base package
 import {
   Call,
   CallControls,
@@ -33,6 +33,7 @@ import '@stream-io/video-react-sdk/dist/css/styles.css';
 import 'stream-chat-react/dist/css/v2/index.css';
 
 import { AccessibleTypography } from '../../app/components/AccessibleTypography';
+import { useLocation } from 'react-router-dom';
 
 const ChatPage: React.FC = () => {
   // Removed unused t variable from useTranslation
@@ -41,14 +42,52 @@ const ChatPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState(''); // State for search input
   // State for the active call, storing both the call object and its type
   const [activeCallInfo, setActiveCallInfo] = useState<{ call: Call; type: 'video' | 'voice' } | null>(null);
+  const location = useLocation();
+  const channelId = location.state?.channelId;
+  const initialChannel = useMemo(() => {
+    if (chatClient && channelId) {
+      return chatClient.channel('messaging', channelId);
+    }
+    return undefined;
+  }, [chatClient, channelId]);
+
+  // Create a ref to track if we've already set the initial channel
+  const hasSetInitialChannel = useRef(false);
+
+  // Effect to set initial active channel when navigating from PeoplePage
+  useEffect(() => {
+    if (initialChannel && !hasSetInitialChannel.current) {
+      // Need to watch the channel before it can be displayed
+      initialChannel.watch().then(() => {
+        console.log(`Setting initial channel: ${initialChannel.id}`);
+        hasSetInitialChannel.current = true;
+        // Don't directly set activeChannel yet - let ChannelList handle it when it loads
+      }).catch(error => {
+        console.error("Error watching initial channel:", error);
+      });
+    }
+  }, [initialChannel]);
+
+  // Reset the ref when component unmounts
+  useEffect(() => {
+    return () => {
+      hasSetInitialChannel.current = false;
+    };
+  }, []);
 
   // Define filters only when the client and userID are definitely available
   const filters: ChannelFilters | undefined = useMemo(() => {
     if (chatClient?.userID) {
       const baseFilters = { type: 'messaging', members: { $in: [chatClient.userID] } };
       if (searchTerm) {
-        // Combine base filter with name autocomplete search
-        return { ...baseFilters, name: { $autocomplete: searchTerm } };
+        // Enhanced search that looks at both channel names and message text
+        return { 
+          ...baseFilters, 
+          $or: [
+            { name: { $autocomplete: searchTerm } },
+            { 'messages.text': { $autocomplete: searchTerm } }
+          ]
+        };
       }
       return baseFilters; // Return only base filters if no search term
     }
@@ -57,6 +96,28 @@ const ChatPage: React.FC = () => {
 
   // Define sort using the correct type and value (-1 for descending)
   const sort: ChannelSort = useMemo(() => ({ last_message_at: -1 }), []); // Memoize sort object
+
+  // Add a custom handler for the ChannelList
+  // Custom filter function to make the initial channel appear first when needed
+  const customChannelListFilter = useMemo(() => {
+    return (channels: ChannelType[]) => {
+      if (initialChannel && hasSetInitialChannel.current) {
+        // Find our target channel in the list
+        const targetChannelIndex = channels.findIndex((c: ChannelType) => c.id === initialChannel.id);
+        if (targetChannelIndex > 0) {
+          // If found but not first, move it to the top
+          const targetChannel = channels[targetChannelIndex];
+          const reordered = [
+            targetChannel,
+            ...channels.slice(0, targetChannelIndex),
+            ...channels.slice(targetChannelIndex + 1)
+          ];
+          return reordered;
+        }
+      }
+      return channels;
+    };
+  }, [initialChannel]);
 
   // Show loading state if filters are not ready yet (client or userID is missing)
   // Loading state: Wait for chat filters AND video client to be ready
@@ -164,7 +225,18 @@ const ChatPage: React.FC = () => {
           sx={{ mb: 2, '& .MuiOutlinedInput-root': { borderRadius: '8px', backgroundColor: (theme) => theme.palette.mode === 'light' ? 'rgba(28, 28, 28, 0.05)' : 'rgba(255, 255, 255, 0.08)', border: 'none', '& fieldset': { border: 'none' }, '&.Mui-focused fieldset': { border: '1px solid', borderColor: 'primary.main' } } }}
         />
         <Box sx={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
-          <ChannelList filters={filters} sort={sort} />
+          <ChannelList 
+            filters={filters} 
+            sort={sort} 
+            customActiveChannel={initialChannel?.id}
+            channelRenderFilterFn={customChannelListFilter}
+            options={{ limit: 30, state: true, watch: true, presence: true }}
+            EmptyStateIndicator={() => (
+              <Box sx={{ p: 2, textAlign: 'center' }}>
+                <AccessibleTypography>No channels match your search</AccessibleTypography>
+              </Box>
+            )}
+          />
         </Box>
       </Box>
 
@@ -173,9 +245,7 @@ const ChatPage: React.FC = () => {
         <Channel EmojiPicker={EmojiPicker}>
           {/* Conditionally render Video UI or Chat UI */}
           {activeCallInfo ? (
-            // Render Video Call UI if a call is active (pass type if needed by UI)
             <StreamCall call={activeCallInfo.call}>
-              {/* Pass call type if VideoCallUI needs to adapt */}
               <VideoCallUI /* callType={activeCallInfo.type} */ />
             </StreamCall>
           ) : (
@@ -188,7 +258,7 @@ const ChatPage: React.FC = () => {
                 </Box>
                 <MessageList />
                 <Box sx={{ m: 2 }}>
-                  <MessageInput />
+                  <MessageInput grow={true} audioRecordingEnabled={true} />
                 </Box>
               </Window>
               <Thread />

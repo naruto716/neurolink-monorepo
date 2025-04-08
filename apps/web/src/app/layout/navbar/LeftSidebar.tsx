@@ -10,22 +10,21 @@ import {
   styled,
   Typography,
   useMediaQuery,
-  useTheme
+  useTheme,
+  Badge
 } from '@mui/material';
 import {
   BookOpen,
   House,
-  Info,
-  User,
-  Wheelchair,
-  Users, // Added Users icon
-  ChatCircleDots // Added Chat icon
+  Users,
+  ChatCircleDots,
+  Info
 } from '@phosphor-icons/react';
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { alpha } from '@mui/material/styles';
 import { useAppSelector } from '../../store/initStore'; // Correct path based on search
-import { selectCurrentUser } from '@neurolink/shared'; // Import selector
+import { selectCurrentUser, selectTotalUnreadCount } from '@neurolink/shared'; // Import selector
 
 interface LeftSidebarProps {
   open: boolean;
@@ -51,17 +50,14 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ open, onClose }) => {
   const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const currentUser = useAppSelector(selectCurrentUser); // Get current user
+  const totalUnreadCount = useAppSelector(selectTotalUnreadCount); // Get total unread message count
   
   const navItems = [
     { key: 'social', label: 'Social', path: '/', icon: <House weight="regular" size={20} /> },
-    { key: 'people', label: 'People', path: '/people', icon: <Users weight="regular" size={20} /> }, // Added People link
-    { key: 'chat', label: 'Chat', path: '/chat', icon: <ChatCircleDots weight="regular" size={20} /> }, // Added Chat link
-    { key: 'about', label: 'About', path: '/about', icon: <Info weight="regular" size={20} /> },
-    // { key: 'courses', label: 'Online Courses', path: '/courses', icon: <BookOpen weight="regular" size={20} /> },
+    { key: 'people', label: 'People', path: '/people', icon: <Users weight="regular" size={20} /> },
+    { key: 'chat', label: 'Chat', path: '/chat', icon: <ChatCircleDots weight="regular" size={20} /> },
     { key: 'commitment', label: 'Commitment', path: '/courses', icon: <BookOpen weight="regular" size={20} /> },
-    { key: 'profile', label: 'Profile', path: '/profile', icon: <User weight="regular" size={20} /> },
-    { key: 'accessibility', label: 'Accessibility', path: '/accessibility', icon: <Wheelchair weight="regular" size={20} /> },
-    // { key: 'account', label: 'Account', path: '/account', icon: <Gear weight="regular" size={20} /> },
+    { key: 'about', label: 'About', path: 'https://www.auckland.ac.nz/en/students/student-support/academic-support/inclusive-learning.html', isExternal: true, icon: <Info weight="regular" size={20} /> },
   ];
 
   const isActivePath = (path: string) => {
@@ -171,13 +167,21 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ open, onClose }) => {
       {/* Navigation Tabs */}
       <List sx={{ width: '100%', p: 0 }}>
         {navItems.map((item) => {
-          const isActive = isActivePath(item.path);
+          const isActive = !item.isExternal && isActivePath(item.path);
           
           return (
             <ListItemButton
               key={item.key}
               selected={isActive}
-              onClick={() => handleNavigate(item.path)}
+              onClick={() => {
+                if (item.isExternal) {
+                  window.open(item.path, '_blank'); // Open external link in a new tab
+                } else if (item.path) {
+                  handleNavigate(item.path);
+                } else if (item.key === 'profile' && currentUser) {
+                  handleNavigate(`/people/${currentUser.username}`);
+                }
+              }}
               sx={{
                 padding: '8px',
                 borderRadius: '12px',
@@ -208,7 +212,25 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ open, onClose }) => {
                   color: isActive ? theme.palette.text.primary : theme.palette.text.secondary, // Adjust icon color based on active state
                 }}
               >
-                {item.icon}
+                {item.key === 'chat' ? (
+                  <Badge 
+                    badgeContent={totalUnreadCount} 
+                    color="error"
+                    max={99}
+                    sx={{
+                      '& .MuiBadge-badge': {
+                        fontSize: '0.7rem',
+                        height: '18px',
+                        minWidth: '18px',
+                        padding: '0 4px',
+                      }
+                    }}
+                  >
+                    {item.icon}
+                  </Badge>
+                ) : (
+                  item.icon
+                )}
               </ListItemIcon>
               <ListItemText 
                 primary={item.label}
