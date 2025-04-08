@@ -127,7 +127,6 @@ export const ChatProvider: React.FC<ChatProviderProps> = ({ children }) => {
     if (!loggedInUser?.username) {
         console.log("App user not logged in, skipping chat initialization.");
         // Ensure chat state reflects disconnection if it wasn't already idle/disconnected
-        // eslint-disable-next-line -- Attempt to suppress persistent linter warning on this line
         if (connectionStatus !== 'idle' && connectionStatus !== 'disconnected') {
             dispatch(setChatDisconnected(undefined)); // Explicitly pass undefined payload
         }
