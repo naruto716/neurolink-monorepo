@@ -1,21 +1,23 @@
 import {
   Alert,
   // alpha, // Unused
+  alpha, // Add alpha import
   Avatar,
   Box,
   Button,
+  CircularProgress, // Add CircularProgress import
   // Card, // Unused
   // CardContent, // Unused
   Divider,
   Grid,
-  IconButton,
+  IconButton, // Add IconButton import
   Paper,
   Stack,
+  Tooltip, // Add Tooltip import
   Typography,
-  // useTheme, // No longer needed here
-  Tooltip,
   Link,
-  Skeleton
+  // Skeleton // No longer used
+  Chip, // Add Chip import
 } from '@mui/material';
 import {
   // BookmarkSimple, // Moved to PostCard component
@@ -23,18 +25,18 @@ import {
   // DotsThree, // Moved to PostCard component
   // Heart, // Moved to PostCard component
   // ShareNetwork, // Moved to PostCard component
-  ArrowSquareOut,
   CaretRight,
-  ArrowClockwise // Import icon for refresh button
+  ArrowClockwise, // Import icon for refresh button
+  UserPlus, // Add UserPlus for connect button
 } from '@phosphor-icons/react';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react'; // Add useState import
 import { Link as RouterLink } from 'react-router-dom';
 import { AccessibleTypography } from '../../app/components/AccessibleTypography';
 import { NAVBAR_HEIGHT } from '../../app/layout/navbar/Navbar';
 // Import RootState along with the hooks
 import { RootState, useAppDispatch, useAppSelector } from '../../app/store/initStore';
 // Import shared selectors with aliases
-import { User, fetchPaginatedUsers, selectFeedPostsCurrentPage, selectFeedPostsStatus, selectFeedPostsTotalPages } from '@neurolink/shared'; // Added feed selectors
+import { fetchPaginatedUsers, selectFeedPostsCurrentPage, selectFeedPostsStatus, selectFeedPostsTotalPages, sendFriendRequest } from '@neurolink/shared'; // Removed unused User import // Added feed selectors // Added sendFriendRequest
 import {
   selectPaginatedUsers as selectSharedPaginatedUsers,
   selectPaginatedUsersError as selectSharedPaginatedUsersError,
@@ -46,9 +48,12 @@ import apiClient from '../../app/api/apiClient';
 import { useTranslation } from 'react-i18next';
 import FeedPosts from '../../features/posts/components/FeedPosts'; // Import the new FeedPosts component
 import CreatePostInput from '../../features/posts/components/CreatePostInput'; // Import the new CreatePostInput component
+import { toast } from 'react-toastify'; // Import toast
 
 // Placeholder data and inline PostCard removed
 
+// SuggestionCard removed as it's replaced by the inline implementation in the sidebar
+/*
 const SuggestionCard: React.FC<{ user: User }> = ({ user }) => {
   const { t } = useTranslation();
   const profileUrl = `/people/${user.username}`;
@@ -111,6 +116,7 @@ const SuggestionCard: React.FC<{ user: User }> = ({ user }) => {
     </Stack>
   );
 };
+*/
 
 // --- Wrapper Selectors ---
 const selectPaginatedUsers = (state: RootState) => selectSharedPaginatedUsers(state);
@@ -123,6 +129,7 @@ const selectTotalSuggestionPages = (state: RootState) => selectUsersTotalPages(s
 const SocialPage = () => {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
+  const [connectingUsernames, setConnectingUsernames] = useState<Set<string>>(new Set()); // State to track connecting status per user
   
   // --- Use Redux State for Suggestions ---
   const SUGGESTIONS_PAGE_SIZE = 10;
@@ -167,6 +174,29 @@ const SocialPage = () => {
     }));
   };
 
+  // Handle clicking the Connect button
+  const handleConnectClick = async (username: string, displayName: string) => {
+    if (connectingUsernames.has(username)) return; // Prevent multiple clicks
+
+    setConnectingUsernames(prev => new Set(prev).add(username)); // Add username to connecting set
+    try {
+        await sendFriendRequest(apiClient, username);
+        toast.success(t('people.toast.requestSent', 'Friend request sent to {displayName}!', { displayName }));
+        // Optionally, you might want to update the UI further (e.g., change button state permanently)
+        // For now, we just remove it from the loading state upon completion/error.
+    } catch (err) {
+        const message = err instanceof Error ? err.message : t('people.error.sendRequestFailed', 'Failed to send friend request.');
+        toast.error(message);
+        console.error("Error sending friend request from SocialPage sidebar:", err);
+    } finally {
+        setConnectingUsernames(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(username);
+            return newSet;
+        }); // Remove username from connecting set
+    }
+  };
+
   return (
     <Grid container spacing={3} sx={{ maxWidth: '1200px', mx: 'auto', px: { xs: 1, sm: 2, md: 3 } }}>
 
@@ -205,15 +235,36 @@ const SocialPage = () => {
 
       {/* --- Right Sidebar Column (People You Might Like) --- */}
       <Grid item md={4} lg={5} sx={{ display: { xs: 'none', md: 'block' } }}>
-        <Paper sx={theme => ({ p: 2.5, position: 'sticky', top: NAVBAR_HEIGHT + 24, borderRadius: '12px', border: `1px solid ${theme.palette.divider}`, boxShadow: theme.palette.mode === 'light' ? '0 1px 2px rgba(0,0,0,0.05)' : '0 1px 2px rgba(0,0,0,0.2)' })}>
-          {/* Title and Refresh Button */}
+        <Paper sx={theme => ({ 
+          p: 2, // Slightly reduced padding
+          position: 'sticky', 
+          top: NAVBAR_HEIGHT + 24, 
+          borderRadius: '12px', 
+          border: `1px solid ${theme.palette.divider}`,
+          boxShadow: 'none', // Remove shadow for subtlety
+          bgcolor: theme.palette.background.paper,
+          overflowY: 'auto',
+          '&::-webkit-scrollbar': { width: '6px' },
+          '&::-webkit-scrollbar-track': {
+            background: 'transparent', // Or theme.palette.background.default
+          },
+          '&::-webkit-scrollbar-thumb': {
+            background: theme.palette.action.selected, // Or a subtle color
+            borderRadius: '3px',
+          },
+          '&::-webkit-scrollbar-thumb:hover': {
+            background: theme.palette.action.active, // Darker on hover
+          },
+        })}>
+          {/* Wrap Title and Refresh Button in a Stack */}
           <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 2 }}>
-            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
               {t('social.suggestionsTitle', 'People You Might Like')}
             </Typography>
+            {/* Add Refresh IconButton here */} 
             {suggestionsTotalPages > 0 && (
               <Tooltip title={t('social.refreshSuggestions', 'Refresh Suggestions')}>
-                <span> {/* Span needed for tooltip when button is disabled */}
+                <span> {/* Span needed for tooltip when button is disabled */} 
                   <IconButton
                     size="small"
                     onClick={handleMoreSuggestions}
@@ -227,54 +278,142 @@ const SocialPage = () => {
             )}
           </Stack>
           
-          {/* Loading State */}
           {suggestionsStatus === 'loading' && (
-            <Stack spacing={2.5} sx={{ p: 1 }}>
-              {[...Array(10)].map((_, index) => ( 
-                 <Stack key={index} direction="row" spacing={2} alignItems="center"> 
-                   <Skeleton variant="circular" width={48} height={48} />
-                   <Box sx={{ flexGrow: 1 }}>
-                     <Skeleton variant="text" width="70%" sx={{ fontSize: '1rem' }} />
-                     <Skeleton variant="text" width="40%" sx={{ fontSize: '0.75rem' }} />
-                   </Box>
-                 </Stack>
-              ))}
-            </Stack>
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
+              <CircularProgress size={24} />
+            </Box>
           )}
-          {/* Failed State */}
           {suggestionsStatus === 'failed' && (
-            <Alert severity="error" sx={{ mb: 2 }}>{suggestionsError}</Alert>
+            <Alert severity="error" sx={{ mb: 2 }}>{suggestionsError || t('social.suggestionsError', 'Failed to load suggestions.')}</Alert>
           )}
-          {/* Succeeded State - Corrected condition */}
           {suggestionsStatus === 'succeeded' && (
             <>
-              <Stack spacing={0}>
-                {suggestedUsers.length > 0 ? (
-                  suggestedUsers.map((user, index) => (
+              {suggestedUsers.length > 0 ? (
+                // Map ALL suggested users (old functionality)
+                suggestedUsers.map((user, index, arr) => {
+                  const isConnecting = connectingUsernames.has(user.username);
+                  const MAX_TAGS_DISPLAYED_SIDEBAR = 3; // Limit tags shown in sidebar
+
+                  // Filter and limit tags (prioritize skills/interests/program)
+                  const prioritizedTags = [
+                      ...(user.tags?.filter(tag => ['skill', 'interest', 'programOfStudy'].includes(tag.type)) || []),
+                      ...(user.tags?.filter(tag => !['skill', 'interest', 'programOfStudy'].includes(tag.type)) || []),
+                  ].slice(0, MAX_TAGS_DISPLAYED_SIDEBAR);
+
+                  return (
                     <React.Fragment key={user.id}>
-                      <SuggestionCard user={user} />
-                      {index < suggestedUsers.length - 1 && <Divider sx={{ my: 1.5 }} />}
+                      <Box sx={{ py: 1 }}> {/* Reduced padding */}
+                        {/* User header with avatar and name */}
+                        <Stack direction="row" spacing={1.5} sx={{ alignItems: 'flex-start', mb: 1 }}>
+                          <Avatar 
+                            component={RouterLink}
+                            to={`/people/${user.username}`}
+                            src={user.profilePicture || undefined} // Use undefined for default MUI avatar if no picture
+                            sx={{ width: 40, height: 40, cursor: 'pointer' }} 
+                          /> {/* Smaller avatar */}
+                          <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                            <Link 
+                              component={RouterLink} 
+                              to={`/people/${user.username}`}
+                              color="inherit"
+                              underline="hover"
+                              sx={{ display: 'block' }}
+                            >
+                              <AccessibleTypography variant="subtitle2" sx={{ fontWeight: 500, fontSize: '0.875rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {user.displayName}
+                              </AccessibleTypography>
+                            </Link>
+                            {/* TODO: Replace with actual user role/details if available - CHANGED TO USERNAME */}
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: '0.75rem' }}>
+                              {/* {t('social.placeholderRole', 'Neurolink User')} */}
+                              @{user.username} {/* Display @username */}
+                            </Typography>
+                          </Box>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            onClick={() => handleConnectClick(user.username, user.displayName)}
+                            disabled={isConnecting} // Disable button while connecting
+                            startIcon={isConnecting ? <CircularProgress size={16} color="inherit" /> : <UserPlus size={16}/>} // Show spinner or icon
+                            sx={{ 
+                              borderRadius: '20px', 
+                              px: 1.5,
+                              py: 0.3,
+                              fontSize: '0.75rem',
+                              alignSelf: 'flex-start', 
+                              flexShrink: 0 
+                            }}
+                          >
+                            {/* Update button text based on state */}
+                            {isConnecting ? t('common.sending', 'Sending...') : t('common.connect', 'Connect')}
+                          </Button>
+                        </Stack>
+                        
+                        {/* Tags Section (Added) */} 
+                        {prioritizedTags.length > 0 && (
+                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1, mb: user.bio ? 1 : 0 }}> {/* Add margin top and conditionally bottom */}
+                            {prioritizedTags.map((tag) => (
+                              <Chip
+                                key={`${tag.type}-${tag.value}`}
+                                label={tag.value}
+                                size="small"
+                                // Optional: Add sx for specific styling if needed
+                                sx={{ fontSize: '0.7rem' }} // Make chips slightly smaller
+                              />
+                            ))}
+                          </Box>
+                        )}
+                        
+                        {/* Bio in card */}
+                        {user.bio && (
+                          <Paper 
+                            elevation={0} 
+                            sx={(theme) => ({ 
+                              p: 1.2, 
+                              bgcolor: theme.palette.background.default,
+                              borderRadius: '8px',
+                              mb: 1,
+                              fontSize: '0.8rem'
+                            })}
+                          >
+                            <Typography variant="body2" color="text.primary" sx={{ fontSize: '0.8rem', lineHeight: 1.4 }}>
+                              {user.bio}
+                            </Typography>
+                          </Paper>
+                        )}
+                        
+                        {/* View Full Profile button */}
+                        <Button 
+                          variant="text" 
+                          fullWidth
+                          component={RouterLink}
+                          to={`/people/${user.username}`}
+                          sx={(theme) => ({
+                            borderRadius: '8px',
+                            py: 0.6,
+                            bgcolor: alpha(theme.palette.primary.light, 0.1), // Use theme color
+                            color: theme.palette.primary.main, // Use theme color
+                            fontSize: '0.8rem',
+                            '&:hover': {
+                              bgcolor: alpha(theme.palette.primary.light, 0.2) // Adjust hover
+                            }
+                          })}
+                        >
+                          {t('people.viewFullProfile', 'View Full Profile')}
+                        </Button>
+                        
+                        {/* Divider between users */}
+                        {index < arr.length - 1 && (
+                          <Divider sx={{ mt: 1.5, mb: 0.5 }} />
+                        )}
+                      </Box>
                     </React.Fragment>
-                  ))
-                ) : (
-                  <Typography variant="body2" color="text.secondary" align="center">
-                    {t('social.noSuggestions', 'No suggestions available right now.')}
-                  </Typography>
-                )}
-              </Stack>
-              {/* Updated More Button - only show if there are pages to navigate */}
-              {suggestionsTotalPages > 0 && (
-                <Box sx={{ mt: 3, textAlign: 'center' }}>
-                  <Button 
-                    variant="text" 
-                    onClick={handleMoreSuggestions}
-                    // @ts-expect-error - Linter incorrectly flags this valid comparison
-                    disabled={suggestionsStatus === 'loading'} 
-                    endIcon={<CaretRight size={16}/>}
-                  >
-                    {t('common.more', 'More')}
-                  </Button>
-                </Box>
+                  );
+                })
+              ) : (
+                <Typography variant="body2" color="text.secondary" align="center">
+                  {t('social.noSuggestions', 'No suggestions available right now.')}
+                </Typography>
               )}
             </>
           )}
