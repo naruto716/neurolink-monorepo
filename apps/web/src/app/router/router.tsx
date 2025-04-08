@@ -25,7 +25,7 @@ const routes: RouteObject[] = [
     element: <App />, // Main app component handling auth
     children: [
       // Authenticated routes (RequireAuth)
-      { 
+      {
         // This route ensures authentication via RequireAuth
         element: <RequireAuth />,
         children: [
@@ -45,14 +45,13 @@ const routes: RouteObject[] = [
                   // Add other routes needing standard Layout here
                 ]
               },
-              // Authenticated routes WITHOUT standard Layout (but still need ChatProvider)
-              { path: 'onboarding', element: <OnboardingPage /> },
-              // Add other routes needing only ChatProvider here
             ]
-          }
+          },
+          // Authenticated routes WITHOUT standard Layout (but still need ChatProvider)
+          { path: 'onboarding', element: <OnboardingPage /> },
         ]
-       },
-      
+      },
+
       // Public routes (no RequireAuth)
       // Public routes WITH Layout
       {
@@ -62,10 +61,10 @@ const routes: RouteObject[] = [
           // Add other public routes that need Layout here
         ]
       },
-      
+
       // Public routes WITHOUT Layout
       { path: 'auth', element: <AuthPage /> }, // Handles logout redirect
-      
+
       // Catch-all for 404 Not Found
       { path: '*', element: <div>404 - Page Not Found</div> }
     ]

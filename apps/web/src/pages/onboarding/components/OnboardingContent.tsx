@@ -679,7 +679,9 @@ const OnboardingContent: React.FC = () => {
      const profileData: UserProfileInput = {
       email: decodedToken.email,
       displayName: formValues.displayName,
-      profilePicture: formValues.profilePicture || undefined,
+      profilePicture: formValues.profilePicture
+        ? formValues.profilePicture.replace('/profile-pictures/', '/thumbnail/profile-pictures/')
+        : undefined,
       age: formValues.age ? parseInt(formValues.age, 10) : undefined,
       bio: formValues.bio || undefined,
       tags: formValues.selectedTags,
