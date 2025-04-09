@@ -1,44 +1,47 @@
 // apps/web/src/pages/commitments/components/CommitmentList.tsx
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom'; // Keep for participant navigation
 import {
   Box,
-  Avatar, // Re-add Avatar import
-  AvatarGroup, // Import AvatarGroup
+  Avatar,
+  AvatarGroup,
   Pagination,
   CircularProgress,
   Alert,
   Typography,
-  TableContainer, // Import Table components
+  TableContainer,
   Table,
   TableHead,
   TableRow,
   TableCell,
   TableBody,
-  TableSortLabel, // Import TableSortLabel
+  TableSortLabel,
   Tooltip,
   Button,
-  // Paper, // Removed unused import
+  Dialog, // Import Dialog components
+  DialogTitle,
+  DialogContent,
+  IconButton,
 } from '@mui/material';
-// Import icons if needed for custom sort indicator
-// import { ArrowUpward, ArrowDownward } from '@mui/icons-material';
+import CloseIcon from '@mui/icons-material/Close'; // Import CloseIcon
 import { useTranslation } from 'react-i18next';
-// Import types and API function from their specific modules within the shared package
 import { selectCurrentUser } from '@neurolink/shared/src/features/user/userSlice';
-import { Commitment, PaginatedCommitmentsResponse } from '@neurolink/shared/src/features/user/types';
+// Commitment type is needed here, PaginatedCommitmentsResponse might not be if we only use items
+import { Commitment, PaginatedCommitmentsResponse } from '@neurolink/shared';
 import { fetchUserCommitments } from '@neurolink/shared/src/features/user/userAPI';
 import { SharedRootState } from '@neurolink/shared/src/app/store/store';
 import { AccessibleTypography } from '../../../app/components/AccessibleTypography';
-import apiClientInstance from '../../../app/api/apiClient'; // Import the default instance
-import { Info } from '@phosphor-icons/react'; // Change to Info icon
+import apiClientInstance from '../../../app/api/apiClient';
+import { Info } from '@phosphor-icons/react';
+import CommitmentDetail from './CommitmentDetail'; // Import the detail component
 
-const ITEMS_PER_PAGE = 5; // Or adjust as needed
+const ITEMS_PER_PAGE = 5;
 
 const CommitmentList: React.FC = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const apiClient = apiClientInstance; // Use the imported instance directly
+  const navigate = useNavigate(); // Keep for navigating to participant profiles
+  const apiClient = apiClientInstance;
   const currentUser = useSelector((state: SharedRootState) => selectCurrentUser(state));
 
   const [commitments, setCommitments] = useState<Commitment[]>([]);
@@ -46,13 +49,15 @@ const CommitmentList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(0);
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc'); // Add state for sorting, default 'desc'
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  // Update fetchCommitments to accept sortOrder
+  // State for the modal
+  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  const [selectedCommitmentId, setSelectedCommitmentId] = useState<number | null>(null);
+
   const fetchCommitments = useCallback(async (currentPage: number, currentSortOrder: 'asc' | 'desc') => {
     const username = currentUser?.username;
     if (!username || !apiClient) {
-      console.log('Skipping fetch: No username or apiClient');
       return;
     }
 
@@ -62,13 +67,8 @@ const CommitmentList: React.FC = () => {
       const params = {
         pageNumber: currentPage,
         pageSize: ITEMS_PER_PAGE,
-        sortOrder: currentSortOrder, // Pass sortOrder to params
-        // role: 'creator' // Example: Add role filter if needed
+        sortOrder: currentSortOrder,
       };
-      // Log the exact URL and params just before the call
-      const requestUrl = `${apiClient.defaults.baseURL}${'/Commitment/users'}/${username}`; // Construct expected URL for logging
-      console.log(`Fetching commitments: URL=${requestUrl}, Params=`, params);
-
       const response: PaginatedCommitmentsResponse = await fetchUserCommitments(
         apiClient,
         username,
@@ -76,9 +76,8 @@ const CommitmentList: React.FC = () => {
       );
       setCommitments(response.items);
       setTotalPages(response.totalPages);
-      setPage(response.pageNumber); // Ensure page state matches response
-    } catch (err: unknown) { // Use unknown instead of any
-      // Type assertion or check needed for err.message
+      setPage(response.pageNumber);
+    } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : String(err);
       setError(errorMessage || t('commitments.errorLoading'));
       setCommitments([]);
@@ -86,50 +85,45 @@ const CommitmentList: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-    // Depend only on stable primitives/instances known to be stable
-  // Add sortOrder to dependency array if it's used directly inside, but it's passed as arg now
   }, [apiClient, currentUser?.username, t]);
 
-  // Extract username *outside* useEffect to stabilize dependency
   const usernameForEffect = currentUser?.username;
 
   useEffect(() => {
-    // Only fetch if we have a username
     if (usernameForEffect) {
-      console.log(`CommitmentList useEffect triggered: page=${page}, username=${usernameForEffect}`);
-      fetchCommitments(page, sortOrder); // Pass current sortOrder
-    } else {
-      console.log('CommitmentList useEffect skipped: no username');
+      fetchCommitments(page, sortOrder);
     }
-  // Add sortOrder to dependency array
   }, [page, usernameForEffect, sortOrder, fetchCommitments]);
 
   const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
-    setPage(value); // Update page state, useEffect will trigger refetch
+    setPage(value);
   };
 
-  // Handler for changing sort order
   const handleSortChange = () => {
     const newSortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
     setSortOrder(newSortOrder);
-    // Reset to page 1 when sort order changes
     setPage(1);
-    // Fetching will be triggered by useEffect due to sortOrder change
   };
 
   const formatDate = (dateString: string) => {
-    // Format date only, similar to design image
     return new Date(dateString).toLocaleDateString(undefined, {
       year: 'numeric', month: 'short', day: 'numeric'
     });
   };
 
-  const now = new Date(); // For status chip logic
+  const now = new Date();
 
-  // Add handler for viewing commitment details
+  // --- Modal Handlers ---
   const handleViewDetails = (commitmentId: number) => {
-    navigate(`/commitments/${commitmentId.toString()}`);
+    setSelectedCommitmentId(commitmentId);
+    setModalOpen(true);
   };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setSelectedCommitmentId(null); // Clear selection on close
+  };
+  // --- End Modal Handlers ---
 
   return (
     <Box>
@@ -137,42 +131,37 @@ const CommitmentList: React.FC = () => {
         {t('commitments.yourCommitments')}
       </AccessibleTypography>
 
+      {/* Loading/Error/Empty States remain the same */}
       {isLoading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
           <CircularProgress />
         </Box>
       )}
-
       {error && (
         <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>
       )}
-
       {!isLoading && !error && commitments.length === 0 && (
         <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', my: 3 }}>
           {t('commitments.noCommitmentsFound')}
         </Typography>
       )}
 
+      {/* Table remains the same, except the onClick handler for the details button */}
       {!isLoading && !error && commitments.length > 0 && (
-        // Use TableContainer without Paper component and remove border/background styles
-        <TableContainer sx={{ borderRadius: 2 /* Keep radius if desired, or remove */ }}>
+        <TableContainer sx={{ borderRadius: 2 }}>
           <Table sx={{ minWidth: 650 }} aria-label="commitments table">
-            {/* Apply specific header styles */}
             <TableHead
               sx={{
                 '& .MuiTableCell-root': {
-                  color: 'text.secondary', // Use theme color (maps to rgba(28, 28, 28, 0.40) in light mode)
+                  color: 'text.secondary',
                   fontFamily: 'Inter, sans-serif',
-                  fontSize: '12px', // --Font-size-12
-                  fontStyle: 'normal',
-                  fontWeight: 400, // --Font-weight-Regular
-                  lineHeight: '18px', // --Line-height-18
-                  letterSpacing: '0px',
-                  fontFeatureSettings: "'ss01' on, 'cv01' on",
-                  borderBottom: (theme) => `1px solid ${theme.palette.divider}`, // Ensure divider below header
-                  py: 1, // Adjust vertical padding
-                  px: 2, // Adjust horizontal padding
-                  maxWidth: 250, // Add max width for headers
+                  fontSize: '12px',
+                  fontWeight: 400,
+                  lineHeight: '18px',
+                  borderBottom: (theme) => `1px solid ${theme.palette.divider}`,
+                  py: 1,
+                  px: 2,
+                  maxWidth: 250,
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap'
@@ -180,15 +169,10 @@ const CommitmentList: React.FC = () => {
               }}
             >
               <TableRow>
-                {/* Reordered Headers: Organizer first */}
-                {/* Change header to Participants */}
-                {/* Swapped back: Title first */}
                 <TableCell>{t('commitments.table.title')}</TableCell>
-                {/* Make Date header clickable for sorting */}
-                {/* Make Date header clickable for sorting */}
                 <TableCell align="left" sortDirection={sortOrder}>
                   <TableSortLabel
-                    active={true} // Indicate this column is active for sorting
+                    active={true}
                     direction={sortOrder}
                     onClick={handleSortChange}
                   >
@@ -196,37 +180,33 @@ const CommitmentList: React.FC = () => {
                   </TableSortLabel>
                 </TableCell>
                 <TableCell align="left">{t('commitments.table.location')}</TableCell>
-                {/* Align status header left */}
                 <TableCell align="left">{t('commitments.table.status')}</TableCell>
                 <TableCell>{t('commitments.table.participants')}</TableCell>
-
               </TableRow>
             </TableHead>
-            {/* Adjust body cell padding and ensure border */}
-            {/* Remove bottom border from body cells */}
-            <TableBody sx={{ 
-              '& .MuiTableCell-root': { 
-                borderBottom: 'none', 
-                py: 1.5, 
+            <TableBody sx={{
+              '& .MuiTableCell-root': {
+                borderBottom: 'none',
+                py: 1.5,
                 px: 2,
                 maxWidth: 250,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap'
-              } 
+              }
             }}>
               {commitments.map((commitment) => (
                 <TableRow
                   key={commitment.id}
-                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }} // Remove border for last row
+                  sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                 >
-                  {/* Title Cell */}
+                  {/* Title */}
                   <TableCell component="th" scope="row">
                     <Tooltip title={commitment.title} placement="top">
                       <Box sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <AccessibleTypography 
-                          variant="body2" 
-                          fontWeight="medium" 
+                        <AccessibleTypography
+                          variant="body2"
+                          fontWeight="medium"
                           color="text.primary"
                           sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                         >
@@ -235,22 +215,22 @@ const CommitmentList: React.FC = () => {
                       </Box>
                     </Tooltip>
                   </TableCell>
-                  {/* Date Cell */}
+                  {/* Date */}
                   <TableCell align="left">
-                    <AccessibleTypography 
-                      variant="body2" 
+                    <AccessibleTypography
+                      variant="body2"
                       color="text.secondary"
                       sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                     >
                       {formatDate(commitment.dateTime)}
                     </AccessibleTypography>
                   </TableCell>
-                  {/* Location Cell */}
+                  {/* Location */}
                   <TableCell align="left">
                     <Tooltip title={commitment.location.description} placement="top">
                       <Box sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        <AccessibleTypography 
-                          variant="body2" 
+                        <AccessibleTypography
+                          variant="body2"
                           color="text.secondary"
                           sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                         >
@@ -259,7 +239,7 @@ const CommitmentList: React.FC = () => {
                       </Box>
                     </Tooltip>
                   </TableCell>
-                  {/* Status Cell */}
+                  {/* Status */}
                   <TableCell align="left">
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                       <Box
@@ -269,20 +249,19 @@ const CommitmentList: React.FC = () => {
                           height: 8,
                           borderRadius: '50%',
                           backgroundColor: (theme) => new Date(commitment.dateTime) > now
-                            ? theme.palette.success.main // Green for upcoming
-                            : theme.palette.action.disabled, // Grey for past (adjust if needed)
-                          mr: 1, // Margin right for spacing
+                            ? theme.palette.success.main
+                            : theme.palette.action.disabled,
+                          mr: 1,
                         }}
                       />
-                      {/* Match text color to dot color */}
                       <AccessibleTypography
                         variant="body2"
                         sx={{
                           color: (theme) => new Date(commitment.dateTime) > now
                             ? theme.palette.success.main
                             : theme.palette.action.disabled,
-                          overflow: 'hidden', 
-                          textOverflow: 'ellipsis', 
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap'
                         }}
                       >
@@ -290,29 +269,16 @@ const CommitmentList: React.FC = () => {
                       </AccessibleTypography>
                     </Box>
                   </TableCell>
-                  {/* Participants Cell using AvatarGroup */}
+                  {/* Participants & Details Button */}
                   <TableCell>
                     <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      {/* Check if participants exist and render AvatarGroup */}
                       <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
                         {commitment.participants && commitment.participants.length > 0 ? (
                           <AvatarGroup
-                            max={3} // Show max 3 avatars, rest become +X
+                            max={3}
                             sx={{
-                              '.MuiAvatar-root': {
-                                width: 28,
-                                height: 28,
-                                fontSize: '0.75rem',
-                                backgroundColor: '#666',
-                                color: '#fff'
-                              },
-                              '.MuiAvatarGroup-avatar': {
-                                border: '2px solid #2D2D2D',
-                                marginLeft: '-8px',
-                                '&:first-of-type': {
-                                  marginLeft: 0
-                                }
-                              }
+                              '.MuiAvatar-root': { width: 28, height: 28, fontSize: '0.75rem', backgroundColor: '#666', color: '#fff' },
+                              '.MuiAvatarGroup-avatar': { border: '2px solid #2D2D2D', marginLeft: '-8px', '&:first-of-type': { marginLeft: 0 } }
                             }}
                           >
                             {commitment.participants.map((participant) => (
@@ -320,34 +286,23 @@ const CommitmentList: React.FC = () => {
                                 <Avatar
                                   alt={participant.displayName}
                                   src={participant.profilePicture || undefined}
-                                  sx={{ 
-                                    backgroundColor: participant.profilePicture ? 'transparent' : '#666',
-                                    cursor: 'pointer' 
-                                  }}
-                                  onClick={() => navigate(`/people/${participant.username}`)}
+                                  sx={{ backgroundColor: participant.profilePicture ? 'transparent' : '#666', cursor: 'pointer' }}
+                                  onClick={() => navigate(`/people/${participant.username}`)} // Keep navigation for participants
                                 />
                               </Tooltip>
                             ))}
                           </AvatarGroup>
                         ) : (
-                          // Fallback if no participants array (optional)
-                          <AccessibleTypography variant="body2" color="text.secondary">
-                            -
-                          </AccessibleTypography>
+                          <AccessibleTypography variant="body2" color="text.secondary">-</AccessibleTypography>
                         )}
                       </Box>
-                      
-                      {/* Details Button */}
+                      {/* MODIFIED: Button now opens modal */}
                       <Button
                         variant="text"
                         size="small"
-                        onClick={() => handleViewDetails(commitment.id)}
+                        onClick={() => handleViewDetails(commitment.id)} // Call modal handler
                         startIcon={<Info size={16} weight="regular" />}
-                        sx={{ 
-                          flexShrink: 0,
-                          minWidth: 'auto',
-                          ml: 1
-                        }}
+                        sx={{ flexShrink: 0, minWidth: 'auto', ml: 1 }}
                       >
                         {t('common.details', 'Details')}
                       </Button>
@@ -362,7 +317,7 @@ const CommitmentList: React.FC = () => {
 
       {/* Pagination Controls */}
       {!isLoading && !error && totalPages > 1 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}> {/* Increased margin top */}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
           <Pagination
             count={totalPages}
             page={page}
@@ -371,6 +326,48 @@ const CommitmentList: React.FC = () => {
           />
         </Box>
       )}
+
+      {/* --- Modal Dialog --- */}
+      <Dialog
+        open={modalOpen}
+        onClose={handleCloseModal}
+        aria-labelledby="commitment-detail-dialog-title"
+        maxWidth="md" // Adjust size as needed
+        fullWidth
+      >
+        {/* Render title only when an ID is selected to prevent errors during closing animation */}
+        {selectedCommitmentId && (
+          <DialogTitle id="commitment-detail-dialog-title" sx={{ m: 0, p: 2 }}>
+            {/* Placeholder Title - We might fetch the real title inside CommitmentDetail */}
+            {t('breadcrumbs.commitmentDetail', 'Commitment Detail')}
+            <IconButton
+              aria-label="close"
+              onClick={handleCloseModal}
+              sx={{
+                position: 'absolute',
+                right: 8,
+                top: 8,
+                color: (theme) => theme.palette.grey[500],
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </DialogTitle>
+        )}
+        <DialogContent dividers>
+          {/* Render CommitmentDetail only when an ID is selected */}
+          {/* Pass the selected ID as a prop */}
+          {selectedCommitmentId && (
+            <CommitmentDetail commitmentId={selectedCommitmentId} />
+          )}
+        </DialogContent>
+        {/* Optional: Add DialogActions if needed */}
+        {/* <DialogActions>
+          <Button onClick={handleCloseModal}>Close</Button>
+        </DialogActions> */}
+      </Dialog>
+      {/* --- End Modal Dialog --- */}
+
     </Box>
   );
 };

@@ -40,7 +40,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ customItems }) => {
       '/commitments': t('nav.commitments'), // Add mapping for commitments page
     };
   }, [t]);
-  
+
   // Creates breadcrumb route objects from the current location path
   const routes = useMemo(() => {
     // Handle custom items first

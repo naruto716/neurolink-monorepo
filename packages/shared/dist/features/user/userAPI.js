@@ -382,6 +382,7 @@ export const fetchUserCommitments = async (apiClient, username, params = {}) => 
             queryParams.role = params.role;
         queryParams.pageNumber = params.pageNumber || 1; // Default page 1
         queryParams.pageSize = params.pageSize || 10; // Default limit 10
+        queryParams.sortOrder = params.sortOrder || 'desc'; // Add sortOrder, default 'desc'
         const config = { params: queryParams };
         const response = await apiClient.get(`${API_ENDPOINT_COMMITMENTS}/${username}`, config);
         console.log(`Commitments fetched successfully for ${username} with params:`, queryParams, "Response:", response.data);
@@ -393,6 +394,30 @@ export const fetchUserCommitments = async (apiClient, username, params = {}) => 
             throw new Error(`Failed to fetch commitments for ${username}: ${error.response.data.message}`);
         }
         throw new Error(`Failed to fetch commitments for ${username}`);
+    }
+};
+/**
+ * Fetch a single commitment by its ID.
+ * GET /commitment/{id}
+ * @param apiClient The Axios instance to use.
+ * @param id The ID of the commitment to fetch.
+ * @returns Promise with the commitment data.
+ */
+export const fetchCommitmentById = async (apiClient, id // Accept number or string for ID
+) => {
+    try {
+        const response = await apiClient.get(`/commitment/${id}`); // Use lowercase endpoint
+        console.log(`Commitment fetched successfully for ID: ${id}`, response.data);
+        return response.data;
+    }
+    catch (error) {
+        console.error(`Error fetching commitment by ID ${id}:`, error.response?.data || error.message);
+        // Handle 404 specifically
+        if (error.response && error.response.status === 404) {
+            throw new Error(`Commitment not found: ${id}`);
+        }
+        // For network errors or other API failures
+        throw new Error(error.response?.data?.message || `Failed to fetch commitment: ${id}`);
     }
 };
 // End of file

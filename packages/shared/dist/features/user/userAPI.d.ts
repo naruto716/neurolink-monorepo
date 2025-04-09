@@ -1,5 +1,6 @@
 import { AxiosInstance } from 'axios';
-import { User, Tag, PaginatedUsersResponse, UserProfileInput, PaginatedConnectionsResponse, Connection, PaginatedCommitmentsResponse } from './types';
+import { User, Tag, PaginatedUsersResponse, UserProfileInput, PaginatedConnectionsResponse, Connection } from './types';
+import { Commitment, PaginatedCommitmentsResponse } from '../commitments/types';
 /**
  * Get the current user profile
  * @param apiClient The Axios instance to use.
@@ -136,6 +137,7 @@ export interface FetchUserCommitmentsParams {
     role?: string;
     pageNumber?: number;
     pageSize?: number;
+    sortOrder?: 'asc' | 'desc';
 }
 /**
  * Fetch commitments for a specific user with pagination and optional role filtering.
@@ -146,3 +148,11 @@ export interface FetchUserCommitmentsParams {
  * @returns Promise with paginated commitment data
  */
 export declare const fetchUserCommitments: (apiClient: AxiosInstance, username: string, params?: FetchUserCommitmentsParams) => Promise<PaginatedCommitmentsResponse>;
+/**
+ * Fetch a single commitment by its ID.
+ * GET /commitment/{id}
+ * @param apiClient The Axios instance to use.
+ * @param id The ID of the commitment to fetch.
+ * @returns Promise with the commitment data.
+ */
+export declare const fetchCommitmentById: (apiClient: AxiosInstance, id: number | string) => Promise<Commitment>;

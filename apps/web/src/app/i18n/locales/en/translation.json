@@ -331,6 +331,13 @@
       "location": "Location",
       "participants": "Participants",
       "status": "Status"
+    },
+    "detail": {
+      "errorLoading": "Failed to load commitment details.",
+      "notFound": "Commitment not found.",
+      "creator": "Created By",
+      "participants": "Participants",
+      "noParticipants": "No participants listed."
     }
   }
 }

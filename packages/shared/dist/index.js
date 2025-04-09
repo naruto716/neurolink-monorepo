@@ -9,6 +9,7 @@ export { default as paginatedUsersReducer } from './features/user/paginatedUsers
 export { default as feedPostsReducer } from './features/posts/feedPostsSlice'; // Export new reducer
 export { default as chatReducer } from './features/chat/chatSlice'; // Export chat reducer
 export * from './features/posts/types'; // Re-export all types from posts/types.ts
+export * from './features/commitments/types'; // Export commitment types
 export * from './features/user/userAPI';
 export * from './features/posts/postsAPI'; // Export Post API functions
 export * from './features/tokens/tokensSlice'; // Export token actions/selectors if needed directly

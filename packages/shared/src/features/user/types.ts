@@ -82,40 +82,7 @@ export interface UserState {
   currentUser: User | null; // Uses the restored User interface
   status: 'idle' | 'loading' | 'succeeded' | 'failed';
   error: string | null;
-  isOnboarded: boolean; 
-}
-
-// --- Commitment Types ---
-
-export interface CommitmentLocation {
-  description: string;
-}
-
-// Represents a participant in a commitment
-export interface Participant {
-  id: number;
-  username: string;
-  displayName: string;
-  profilePicture?: string;
-  role: 'organizer' | 'participant'; // Define possible roles
-}
-
-export interface Commitment {
-  id: number;
-  title: string;
-  description: string;
-  dateTime: string; // ISO date string
-  location: CommitmentLocation;
-  creatorUsername: string; // Keep creatorUsername if still relevant/provided
-  participants: Participant[]; // Add participants array
-}
-
-export interface PaginatedCommitmentsResponse {
-  pageNumber: number;
-  pageSize: number;
-  totalItems: number;
-  totalPages: number;
-  items: Commitment[];
+  isOnboarded: boolean;
 }
 
 // Represents a connection/friendship status, often used in lists (e.g., pending requests)

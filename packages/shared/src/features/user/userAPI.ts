@@ -1,6 +1,9 @@
 import { AxiosInstance, AxiosRequestConfig } from 'axios';
 import * as qs from 'qs'; // Import qs library
-import { User, Tag, PaginatedUsersResponse, UserProfileInput, PaginatedConnectionsResponse, Connection, PaginatedCommitmentsResponse } from './types'; // Added PaginatedCommitmentsResponse
+// Import user-specific types
+import { User, Tag, PaginatedUsersResponse, UserProfileInput, PaginatedConnectionsResponse, Connection } from './types'; // Removed PaginatedCommitmentsResponse
+// Explicitly import Commitment types from the correct location
+import { Commitment, PaginatedCommitmentsResponse } from '../commitments/types'; // Added PaginatedCommitmentsResponse
 
 const API_ENDPOINT_USER = '/users/me';
 const API_ENDPOINT_USERS = '/users'; // Base endpoint for users
@@ -22,7 +25,7 @@ export const fetchCurrentUser = async (apiClient: AxiosInstance): Promise<User> 
         if (error.response && error.response.status === 404) {
             throw new Error('User not found - needs onboarding');
         }
-        
+
         // For network errors or other API failures
         throw new Error(error.response?.data?.message || 'Failed to fetch user - needs onboarding'); // Pass specific message if available
     }
@@ -37,7 +40,7 @@ export const fetchCurrentUser = async (apiClient: AxiosInstance): Promise<User> 
 export const createUser = async (apiClient: AxiosInstance, userData: UserProfileInput): Promise<User> => {
     try {
         // Ensure UserProfileInput is compatible with CreateUserDto if they differ significantly
-        const response = await apiClient.post<User>(API_ENDPOINT_USERS, userData); 
+        const response = await apiClient.post<User>(API_ENDPOINT_USERS, userData);
         return response.data;
     } catch (error: any) {
         console.error("Error creating user:", error.response?.data || error.message);
@@ -45,7 +48,7 @@ export const createUser = async (apiClient: AxiosInstance, userData: UserProfile
         if (error.response?.data?.message) {
             throw new Error(`Failed to create user: ${error.response.data.message}`);
         }
-        
+
         // For network errors or other API failures
         throw new Error('Failed to create user profile');
     }
@@ -506,5 +509,30 @@ export const fetchUserCommitments = async (
     }
 };
 
-// End of file
+/**
+ * Fetch a single commitment by its ID.
+ * GET /commitment/{id}
+ * @param apiClient The Axios instance to use.
+ * @param id The ID of the commitment to fetch.
+ * @returns Promise with the commitment data.
+ */
+export const fetchCommitmentById = async (
+    apiClient: AxiosInstance,
+    id: number | string // Accept number or string for ID
+): Promise<Commitment> => { // Use Commitment type from correct import
+    try {
+        const response = await apiClient.get<Commitment>(`/commitment/${id}`); // Use lowercase endpoint
+        console.log(`Commitment fetched successfully for ID: ${id}`, response.data);
+        return response.data;
+    } catch (error: any) {
+        console.error(`Error fetching commitment by ID ${id}:`, error.response?.data || error.message);
+        // Handle 404 specifically
+        if (error.response && error.response.status === 404) {
+            throw new Error(`Commitment not found: ${id}`);
+        }
+        // For network errors or other API failures
+        throw new Error(error.response?.data?.message || `Failed to fetch commitment: ${id}`);
+    }
+};
 
+// End of file

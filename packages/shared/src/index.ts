@@ -19,6 +19,8 @@ export type { ChatState, ConnectionStatus } from './features/chat/chatSlice'; //
 // Make sure to export ALL necessary types from types.ts
 export type { Tag, UserPreferences, User, UserProfileInput, ListedUser, PaginatedUsersResponse, Connection, PaginatedConnectionsResponse } from './features/user/types';
 export * from './features/posts/types'; // Re-export all types from posts/types.ts
+export * from './features/commitments/types'; // Export commitment types
+export type { PaginatedCommitmentsResponse } from './features/commitments/types'; // Explicitly export PaginatedCommitmentsResponse
 export * from './features/user/userAPI';
 export * from './features/posts/postsAPI'; // Export Post API functions
 export * from './features/tokens/tokensSlice'; // Export token actions/selectors if needed directly

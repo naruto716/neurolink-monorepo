@@ -85,7 +85,7 @@ const SocialPage = () => {
   const { t } = useTranslation();
   const dispatch = useAppDispatch();
   const [connectingUsernames, setConnectingUsernames] = useState<Set<string>>(new Set()); // State to track connecting status per user
-  
+
   // --- Use Redux State for Suggestions ---
   const SUGGESTIONS_PAGE_SIZE = 10;
   const suggestedUsers = useAppSelector(selectPaginatedUsers);
@@ -104,10 +104,10 @@ const SocialPage = () => {
   // Fetch initial suggestions on component mount
   useEffect(() => {
     if (suggestionsStatus === 'idle') {
-      dispatch(fetchPaginatedUsers({ 
-        apiClient, 
+      dispatch(fetchPaginatedUsers({
+        apiClient,
         limit: SUGGESTIONS_PAGE_SIZE,
-        page: 1 
+        page: 1
       }));
     }
   }, [suggestionsStatus, dispatch]);
@@ -120,12 +120,12 @@ const SocialPage = () => {
     });
 
     const nextPage = suggestionsCurrentPage >= suggestionsTotalPages
-      ? 1 
+      ? 1
       : suggestionsCurrentPage + 1;
-    dispatch(fetchPaginatedUsers({ 
-      apiClient, 
-      limit: SUGGESTIONS_PAGE_SIZE, 
-      page: nextPage 
+    dispatch(fetchPaginatedUsers({
+      apiClient,
+      limit: SUGGESTIONS_PAGE_SIZE,
+      page: nextPage
     }));
   };
 
@@ -135,20 +135,20 @@ const SocialPage = () => {
 
     setConnectingUsernames(prev => new Set(prev).add(username)); // Add username to connecting set
     try {
-        await sendFriendRequest(apiClient, username);
-        toast.success(t('people.toast.requestSent', 'Friend request sent to {displayName}!', { displayName }));
-        // Optionally, you might want to update the UI further (e.g., change button state permanently)
-        // For now, we just remove it from the loading state upon completion/error.
+      await sendFriendRequest(apiClient, username);
+      toast.success(t('people.toast.requestSent', 'Friend request sent to {displayName}!', { displayName }));
+      // Optionally, you might want to update the UI further (e.g., change button state permanently)
+      // For now, we just remove it from the loading state upon completion/error.
     } catch (err) {
-        const message = err instanceof Error ? err.message : t('people.error.sendRequestFailed', 'Failed to send friend request.');
-        toast.error(message);
-        console.error("Error sending friend request from SocialPage sidebar:", err);
+      const message = err instanceof Error ? err.message : t('people.error.sendRequestFailed', 'Failed to send friend request.');
+      toast.error(message);
+      console.error("Error sending friend request from SocialPage sidebar:", err);
     } finally {
-        setConnectingUsernames(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(username);
-            return newSet;
-        }); // Remove username from connecting set
+      setConnectingUsernames(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(username);
+        return newSet;
+      }); // Remove username from connecting set
     }
   };
 
@@ -171,7 +171,7 @@ const SocialPage = () => {
               variant="text"
               onClick={handleMoreSuggestions}
               disabled={suggestionsStatus === 'loading'}
-              endIcon={<CaretRight size={16}/>}
+              endIcon={<CaretRight size={16} />}
             >
               {t('common.more', 'More')} {t('social.suggestionsTitle', 'People You Might Like')}
             </Button>
@@ -190,11 +190,11 @@ const SocialPage = () => {
 
       {/* --- Right Sidebar Column (People You Might Like) --- */}
       <Grid item md={4} lg={5} sx={{ display: { xs: 'none', md: 'block' } }}>
-        <Paper sx={theme => ({ 
+        <Paper sx={theme => ({
           p: 2, // Slightly reduced padding
-          position: 'sticky', 
-          top: NAVBAR_HEIGHT + 24, 
-          borderRadius: '12px', 
+          position: 'sticky',
+          top: NAVBAR_HEIGHT + 24,
+          borderRadius: '12px',
           border: `1px solid ${theme.palette.divider}`,
           boxShadow: 'none', // Remove shadow for subtlety
           bgcolor: theme.palette.background.paper,
@@ -216,10 +216,10 @@ const SocialPage = () => {
             <Typography variant="subtitle1" sx={{ fontWeight: 500 }}>
               {t('social.suggestionsTitle', 'People You Might Like')}
             </Typography>
-            {/* Add Refresh IconButton here */} 
+            {/* Add Refresh IconButton here */}
             {suggestionsTotalPages > 0 && (
               <Tooltip title={t('social.refreshSuggestions', 'Refresh Suggestions')}>
-                <span> {/* Span needed for tooltip when button is disabled */} 
+                <span> {/* Span needed for tooltip when button is disabled */}
                   <IconButton
                     size="small"
                     onClick={handleMoreSuggestions}
@@ -232,11 +232,11 @@ const SocialPage = () => {
               </Tooltip>
             )}
           </Stack>
-          
+
           {suggestionsStatus === 'loading' && (
             <Box sx={{ p: 1 }}>
               {/* Show multiple skeletons during loading */}
-              {[...Array(5)].map((_, index) => <SuggestionSkeleton key={index} />)} 
+              {[...Array(5)].map((_, index) => <SuggestionSkeleton key={index} />)}
             </Box>
           )}
           {suggestionsStatus === 'failed' && (
@@ -252,8 +252,8 @@ const SocialPage = () => {
 
                   // Filter and limit tags (prioritize skills/interests/program)
                   const prioritizedTags = [
-                      ...(user.tags?.filter(tag => ['skill', 'interest', 'programOfStudy'].includes(tag.type)) || []),
-                      ...(user.tags?.filter(tag => !['skill', 'interest', 'programOfStudy'].includes(tag.type)) || []),
+                    ...(user.tags?.filter(tag => ['skill', 'interest', 'programOfStudy'].includes(tag.type)) || []),
+                    ...(user.tags?.filter(tag => !['skill', 'interest', 'programOfStudy'].includes(tag.type)) || []),
                   ].slice(0, MAX_TAGS_DISPLAYED_SIDEBAR);
 
                   return (
@@ -261,15 +261,15 @@ const SocialPage = () => {
                       <Box sx={{ py: 1 }}> {/* Reduced padding */}
                         {/* User header with avatar and name */}
                         <Stack direction="row" spacing={1.5} sx={{ alignItems: 'flex-start', mb: 1 }}>
-                          <Avatar 
+                          <Avatar
                             component={RouterLink}
                             to={`/people/${user.username}`}
                             src={user.profilePicture || undefined} // Use undefined for default MUI avatar if no picture
-                            sx={{ width: 40, height: 40, cursor: 'pointer' }} 
+                            sx={{ width: 40, height: 40, cursor: 'pointer' }}
                           /> {/* Smaller avatar */}
                           <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-                            <Link 
-                              component={RouterLink} 
+                            <Link
+                              component={RouterLink}
                               to={`/people/${user.username}`}
                               color="inherit"
                               underline="hover"
@@ -290,22 +290,22 @@ const SocialPage = () => {
                             variant="outlined"
                             onClick={() => handleConnectClick(user.username, user.displayName)}
                             disabled={isConnecting} // Disable button while connecting
-                            startIcon={isConnecting ? <CircularProgress size={16} color="inherit" /> : <UserPlus size={16}/>} // Show spinner or icon
-                            sx={{ 
-                              borderRadius: '20px', 
+                            startIcon={isConnecting ? <CircularProgress size={16} color="inherit" /> : <UserPlus size={16} />} // Show spinner or icon
+                            sx={{
+                              borderRadius: '20px',
                               px: 1.5,
                               py: 0.3,
                               fontSize: '0.75rem',
-                              alignSelf: 'flex-start', 
-                              flexShrink: 0 
+                              alignSelf: 'flex-start',
+                              flexShrink: 0
                             }}
                           >
                             {/* Update button text based on state */}
                             {isConnecting ? t('common.sending', 'Sending...') : t('common.connect', 'Connect')}
                           </Button>
                         </Stack>
-                        
-                        {/* Tags Section (Added) */} 
+
+                        {/* Tags Section (Added) */}
                         {prioritizedTags.length > 0 && (
                           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1, mb: user.bio ? 1 : 0 }}> {/* Add margin top and conditionally bottom */}
                             {prioritizedTags.map((tag) => (
@@ -319,13 +319,13 @@ const SocialPage = () => {
                             ))}
                           </Box>
                         )}
-                        
+
                         {/* Bio in card */}
                         {user.bio && (
-                          <Paper 
-                            elevation={0} 
-                            sx={(theme) => ({ 
-                              p: 1.2, 
+                          <Paper
+                            elevation={0}
+                            sx={(theme) => ({
+                              p: 1.2,
                               bgcolor: theme.palette.background.default,
                               borderRadius: '8px',
                               mb: 1,
@@ -337,10 +337,10 @@ const SocialPage = () => {
                             </Typography>
                           </Paper>
                         )}
-                        
+
                         {/* View Full Profile button */}
-                        <Button 
-                          variant="text" 
+                        <Button
+                          variant="text"
                           fullWidth
                           component={RouterLink}
                           to={`/people/${user.username}`}
@@ -357,7 +357,7 @@ const SocialPage = () => {
                         >
                           {t('people.viewFullProfile', 'View Full Profile')}
                         </Button>
-                        
+
                         {/* Divider between users */}
                         {index < arr.length - 1 && (
                           <Divider sx={{ mt: 4, mb: 2 }} />
@@ -372,29 +372,30 @@ const SocialPage = () => {
                 </Typography>
               )}
 
-              {/* Refresh Button at the bottom (Re-added) */}
-              {suggestionsTotalPages > 0 && (
-                 <Box sx={{ mt: 1, textAlign: 'center' }}>
-                    <Button
-                       variant="text"
-                       size="small"
-                       onClick={handleMoreSuggestions}
-                       // @ts-expect-error - Linter incorrectly flags this valid comparison (needed here)
-                       disabled={suggestionsStatus === 'loading'}
-                       startIcon={<ArrowClockwise size={16} />}
-                       sx={(theme) => ({
-                          fontSize: '0.8rem',
-                          color: theme.palette.text.secondary,
-                           '&:hover': { bgcolor: alpha(theme.palette.action.active, 0.04) }
-                       })}
-                    >
-                       {t('social.refreshSuggestions', 'Refresh Suggestions')}
-                    </Button>
-                 </Box>
-              )}
             </>
           )}
         </Paper>
+
+        {/* Refresh Button at the bottom (Re-added) */}
+        {suggestionsTotalPages > 0 && (
+          <Box sx={{ mt: 1, textAlign: 'center' }}>
+            <Button
+              variant="text"
+              size="small"
+              onClick={handleMoreSuggestions}
+              disabled={suggestionsStatus === 'loading'}
+              startIcon={<ArrowClockwise size={16} />}
+              sx={(theme) => ({
+                fontSize: '0.8rem',
+                color: theme.palette.text.secondary,
+                '&:hover': { bgcolor: alpha(theme.palette.action.active, 0.04) },
+                mt: 2
+              })}
+            >
+              {t('social.refreshSuggestions', 'Refresh Suggestions')}
+            </Button>
+          </Box>
+        )}
       </Grid>
 
     </Grid>
