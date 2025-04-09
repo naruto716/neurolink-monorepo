@@ -4,6 +4,7 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import {
   feedPostsReducer, // Import the new feed posts reducer
   paginatedUsersReducer, // Renamed from SuggestedUsersState
+  forumReducer, // Import forum reducer
   tokensReducer,
   userReducer,
   chatReducer // Import chat reducer
@@ -18,6 +19,7 @@ const webRootReducer = combineReducers({
   user: userReducer,
   paginatedUsers: paginatedUsersReducer, // Use the correct name
   feedPosts: feedPostsReducer, // Add the feed posts reducer
+  forum: forumReducer, // Add forum reducer
   chat: chatReducer, // Add chat reducer
   // Web-specific reducers
   theme: themeReducer,

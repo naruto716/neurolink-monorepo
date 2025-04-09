@@ -1,0 +1,1110 @@
+{
+    "openapi": "3.1.0",
+    "info": {
+        "title": "FastAPI",
+        "version": "0.1.0"
+    },
+    "paths": {
+        "/api/v1/forum/health": {
+            "get": {
+                "tags": [
+                    "Health"
+                ],
+                "summary": "Health Check",
+                "description": "Simple health check endpoint.\nReturns a status message indicating the service is running.",
+                "operationId": "health_check_api_v1_forum_health_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/forum/posts": {
+            "post": {
+                "summary": "Create Forum Post",
+                "description": "Create a new forum post.\n\nThe user identity is determined from the X-User-Name header.",
+                "operationId": "create_forum_post_api_v1_forum_posts_post",
+                "parameters": [
+                    {
+                        "name": "x-user-name",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-User-Name"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PostCreateDTO"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PostResponseDTO"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "summary": "Get All Forum Posts",
+                "description": "Retrieve a paginated list of forum posts, including total posts and total pages.",
+                "operationId": "get_all_forum_posts_api_v1_forum_posts_get",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Page number (1-based)",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number (1-based)"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 10,
+                            "minimum": 1,
+                            "description": "Number of posts per page (max 10)",
+                            "default": 10,
+                            "title": "Size"
+                        },
+                        "description": "Number of posts per page (max 10)"
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Search term for post title and content",
+                            "title": "Search"
+                        },
+                        "description": "Search term for post title and content"
+                    },
+                    {
+                        "name": "tags",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "string"
+                                    }
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "List of tags to filter by (match any)",
+                            "title": "Tags"
+                        },
+                        "description": "List of tags to filter by (match any)"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedPostsResponseDTO"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/forum/posts/{post_id}": {
+            "get": {
+                "summary": "Get Forum Post By Id",
+                "description": "Retrieve a specific forum post by its ID, including comments.",
+                "operationId": "get_forum_post_by_id_api_v1_forum_posts__post_id__get",
+                "parameters": [
+                    {
+                        "name": "post_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Post Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PostDetailResponseDTO"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "summary": "Update Forum Post",
+                "description": "Update an existing forum post.\n\nOnly the creator of the post can update it.\nThe user identity is determined from the X-User-Name header.",
+                "operationId": "update_forum_post_api_v1_forum_posts__post_id__put",
+                "parameters": [
+                    {
+                        "name": "post_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Post Id"
+                        }
+                    },
+                    {
+                        "name": "x-user-name",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-User-Name"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PostUpdateDTO"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/forum/posts/{post_id}/like": {
+            "post": {
+                "summary": "Like Forum Post",
+                "description": "Like a specific forum post.\n\nThe user identity is determined from the X-User-Name header.",
+                "operationId": "like_forum_post_api_v1_forum_posts__post_id__like_post",
+                "parameters": [
+                    {
+                        "name": "post_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Post Id"
+                        }
+                    },
+                    {
+                        "name": "x-user-name",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-User-Name"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LikeResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/forum/posts/{post_id}/report": {
+            "post": {
+                "summary": "Report Forum Post",
+                "description": "Report a specific forum post.\n\nThe user identity is determined from the X-User-Name header.\nRequires a reason in the request body.",
+                "operationId": "report_forum_post_api_v1_forum_posts__post_id__report_post",
+                "parameters": [
+                    {
+                        "name": "post_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Post Id"
+                        }
+                    },
+                    {
+                        "name": "x-user-name",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-User-Name"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PostReportDTO"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MessageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/forum/posts/{post_id}/comments": {
+            "post": {
+                "summary": "Create Comment For Post",
+                "description": "Add a new comment to a specific forum post.\n\nThe user identity is determined from the X-User-Name header.",
+                "operationId": "create_comment_for_post_api_v1_forum_posts__post_id__comments_post",
+                "parameters": [
+                    {
+                        "name": "post_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Post Id"
+                        }
+                    },
+                    {
+                        "name": "x-user-name",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-User-Name"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/CommentCreateDTO"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CommentResponseDTO"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "summary": "Get Comments For Post",
+                "description": "Retrieve a paginated list of comments for a specific forum post.",
+                "operationId": "get_comments_for_post_api_v1_forum_posts__post_id__comments_get",
+                "parameters": [
+                    {
+                        "name": "post_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Post Id"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Page number (1-based)",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number (1-based)"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 50,
+                            "minimum": 1,
+                            "description": "Number of comments per page (max 50)",
+                            "default": 10,
+                            "title": "Size"
+                        },
+                        "description": "Number of comments per page (max 50)"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedCommentsResponseDTO"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/forum/tags": {
+            "get": {
+                "summary": "Get All Tags",
+                "description": "Retrieve a paginated list of all available tags, optionally filtered by search term.",
+                "operationId": "get_all_tags_api_v1_forum_tags_get",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "description": "Page number (1-based)",
+                            "default": 1,
+                            "title": "Page"
+                        },
+                        "description": "Page number (1-based)"
+                    },
+                    {
+                        "name": "size",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "minimum": 1,
+                            "description": "Number of tags per page (max 100)",
+                            "default": 20,
+                            "title": "Size"
+                        },
+                        "description": "Number of tags per page (max 100)"
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Search term for tag name",
+                            "title": "Search"
+                        },
+                        "description": "Search term for tag name"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedTagsResponseDTO"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "CommentCreateDTO": {
+                "properties": {
+                    "content": {
+                        "type": "string",
+                        "minLength": 1,
+                        "title": "Content",
+                        "description": "Content of the comment."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "content"
+                ],
+                "title": "CommentCreateDTO",
+                "description": "DTO for creating a new comment "
+            },
+            "CommentResponseDTO": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "Id"
+                    },
+                    "username": {
+                        "type": "string",
+                        "title": "Username"
+                    },
+                    "post_id": {
+                        "type": "string",
+                        "title": "Post Id"
+                    },
+                    "content": {
+                        "type": "string",
+                        "title": "Content"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "username",
+                    "post_id",
+                    "content",
+                    "created_at"
+                ],
+                "title": "CommentResponseDTO",
+                "description": "DTO for comment response"
+            },
+            "HTTPValidationError": {
+                "properties": {
+                    "detail": {
+                        "items": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        },
+                        "type": "array",
+                        "title": "Detail"
+                    }
+                },
+                "type": "object",
+                "title": "HTTPValidationError"
+            },
+            "LikeResponse": {
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "title": "Message",
+                        "default": "Post liked successfully.",
+                        "example": "Post liked successfully."
+                    }
+                },
+                "type": "object",
+                "title": "LikeResponse"
+            },
+            "MessageResponse": {
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "title": "Message"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "message"
+                ],
+                "title": "MessageResponse"
+            },
+            "PaginatedCommentsResponseDTO": {
+                "properties": {
+                    "comments": {
+                        "items": {
+                            "$ref": "#/components/schemas/CommentResponseDTO"
+                        },
+                        "type": "array",
+                        "title": "Comments"
+                    },
+                    "total_comments": {
+                        "type": "integer",
+                        "title": "Total Comments"
+                    },
+                    "total_pages": {
+                        "type": "integer",
+                        "title": "Total Pages"
+                    },
+                    "next_page_url": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Next Page Url"
+                    },
+                    "prev_page_url": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Prev Page Url"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "comments",
+                    "total_comments",
+                    "total_pages"
+                ],
+                "title": "PaginatedCommentsResponseDTO",
+                "description": "DTO for paginated comments response "
+            },
+            "PaginatedPostsResponseDTO": {
+                "properties": {
+                    "posts": {
+                        "items": {
+                            "$ref": "#/components/schemas/PostResponseDTO"
+                        },
+                        "type": "array",
+                        "title": "Posts"
+                    },
+                    "total_posts": {
+                        "type": "integer",
+                        "title": "Total Posts"
+                    },
+                    "total_pages": {
+                        "type": "integer",
+                        "title": "Total Pages"
+                    },
+                    "next_page_url": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Next Page Url"
+                    },
+                    "prev_page_url": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Prev Page Url"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "posts",
+                    "total_posts",
+                    "total_pages"
+                ],
+                "title": "PaginatedPostsResponseDTO",
+                "description": "DTO for paginated posts response "
+            },
+            "PaginatedTagsResponseDTO": {
+                "properties": {
+                    "tags": {
+                        "items": {
+                            "$ref": "#/components/schemas/TagResponseDTO"
+                        },
+                        "type": "array",
+                        "title": "Tags"
+                    },
+                    "total_tags": {
+                        "type": "integer",
+                        "title": "Total Tags"
+                    },
+                    "total_pages": {
+                        "type": "integer",
+                        "title": "Total Pages"
+                    },
+                    "next_page_url": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Next Page Url"
+                    },
+                    "prev_page_url": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Prev Page Url"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "tags",
+                    "total_tags",
+                    "total_pages"
+                ],
+                "title": "PaginatedTagsResponseDTO",
+                "description": "DTO for paginated tags response "
+            },
+            "PostCreateDTO": {
+                "properties": {
+                    "title": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "minLength": 1,
+                        "title": "Title"
+                    },
+                    "content": {
+                        "type": "string",
+                        "minLength": 1,
+                        "title": "Content"
+                    },
+                    "tags": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Tags"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "title",
+                    "content"
+                ],
+                "title": "PostCreateDTO",
+                "description": "DTO for creating a new post "
+            },
+            "PostDetailResponseDTO": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "Id"
+                    },
+                    "username": {
+                        "type": "string",
+                        "title": "Username"
+                    },
+                    "title": {
+                        "type": "string",
+                        "title": "Title"
+                    },
+                    "content": {
+                        "type": "string",
+                        "title": "Content"
+                    },
+                    "tags": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Tags"
+                    },
+                    "likes": {
+                        "type": "integer",
+                        "title": "Likes"
+                    },
+                    "comments_count": {
+                        "type": "integer",
+                        "title": "Comments Count"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "comments": {
+                        "items": {
+                            "$ref": "#/components/schemas/CommentResponseDTO"
+                        },
+                        "type": "array",
+                        "title": "Comments"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "username",
+                    "title",
+                    "content",
+                    "tags",
+                    "likes",
+                    "comments_count",
+                    "created_at",
+                    "comments"
+                ],
+                "title": "PostDetailResponseDTO",
+                "description": "DTO for detailed post response with comments"
+            },
+            "PostReportDTO": {
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "maxLength": 1000,
+                        "minLength": 1,
+                        "title": "Reason",
+                        "description": "Reason for reporting the post."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "reason"
+                ],
+                "title": "PostReportDTO",
+                "description": "DTO for reporting a post "
+            },
+            "PostResponseDTO": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "title": "Id"
+                    },
+                    "username": {
+                        "type": "string",
+                        "title": "Username"
+                    },
+                    "title": {
+                        "type": "string",
+                        "title": "Title"
+                    },
+                    "content": {
+                        "type": "string",
+                        "title": "Content"
+                    },
+                    "tags": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "title": "Tags"
+                    },
+                    "likes": {
+                        "type": "integer",
+                        "title": "Likes"
+                    },
+                    "comments_count": {
+                        "type": "integer",
+                        "title": "Comments Count"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "username",
+                    "title",
+                    "content",
+                    "tags",
+                    "likes",
+                    "comments_count",
+                    "created_at"
+                ],
+                "title": "PostResponseDTO",
+                "description": "DTO for the post response "
+            },
+            "PostUpdateDTO": {
+                "properties": {
+                    "title": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 255,
+                                "minLength": 1
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Title"
+                    },
+                    "content": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "minLength": 1
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Content"
+                    },
+                    "tags": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Tags"
+                    }
+                },
+                "type": "object",
+                "title": "PostUpdateDTO",
+                "description": "DTO for updating a post "
+            },
+            "TagResponseDTO": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "name"
+                ],
+                "title": "TagResponseDTO",
+                "description": "DTO for tag response "
+            },
+            "ValidationError": {
+                "properties": {
+                    "loc": {
+                        "items": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "integer"
+                                }
+                            ]
+                        },
+                        "type": "array",
+                        "title": "Location"
+                    },
+                    "msg": {
+                        "type": "string",
+                        "title": "Message"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Error Type"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "loc",
+                    "msg",
+                    "type"
+                ],
+                "title": "ValidationError"
+            }
+        }
+    }
+}

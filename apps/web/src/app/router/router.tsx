@@ -12,6 +12,7 @@ import UserProfilePage from '../../pages/people/UserProfilePage';
 import EditProfilePage from '../../pages/profile/EditProfilePage'; // Import the new page
 import ChatPage from '../../pages/chat/ChatPage'; // Import ChatPage
 import CommitmentPage from '../../pages/commitments/CommitmentPage'; // Import CommitmentPage
+import ForumPage from '../../pages/forum/ForumPage'; // Import ForumPage
 // Removed CommitmentDetail import as it will be a modal
 // import CommitmentDetail from '../../pages/commitments/components/CommitmentDetail';
 // import FriendListPage from '../../pages/people/FriendListPage'; // Removed old page import
@@ -45,6 +46,8 @@ const routes: RouteObject[] = [
                   { path: 'people/:username', element: <UserProfilePage /> },
                   { path: 'profile/edit', element: <EditProfilePage /> },
                   { path: 'chat', element: <ChatPage /> },
+                  { path: 'forum', element: <ForumPage /> }, // Use ForumPage component
+                  { path: 'forum/posts/:postId', element: <div>Forum Post Detail Page Placeholder</div> }, // Add Forum Post Detail route
                   { path: 'commitments', element: <CommitmentPage /> },
                   { path: 'commitments/:subpage', element: <CommitmentPage /> },
                   // Removed Commitment Detail route

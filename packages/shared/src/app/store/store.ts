@@ -6,6 +6,7 @@ import { UserState } from '../../features/user/types';
 import paginatedUsersReducer, { PaginatedUsersState } from '../../features/user/paginatedUsersSlice';
 import feedPostsReducer, { FeedPostsState } from '../../features/posts/feedPostsSlice'; // Import the new feed posts slice
 import chatReducer, { ChatState } from '../../features/chat/chatSlice'; // Import chat slice
+import forumReducer, { ForumState } from '../../features/forum/forumSlice'; // Import forum slice
 
 // Define the shape of the shared root state
 export interface SharedRootState {
@@ -14,6 +15,7 @@ export interface SharedRootState {
   paginatedUsers: PaginatedUsersState; // Use the correct state type name
   feedPosts: FeedPostsState; // Add the feed posts state
   chat: ChatState; // Add chat state
+  forum: ForumState; // Add forum state
 }
 
 // Export individual reducers for apps to combine
@@ -23,6 +25,7 @@ export const sharedReducers = {
   paginatedUsers: paginatedUsersReducer,
   feedPosts: feedPostsReducer, // Add the feed posts reducer
   chat: chatReducer, // Add chat reducer
+  forum: forumReducer, // Add forum reducer
 };
 
 // Combine reducers *only* for defining the SharedRootState type and example store

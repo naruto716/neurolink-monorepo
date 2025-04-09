@@ -5,6 +5,7 @@ import userReducer from '../../features/user/userSlice';
 import paginatedUsersReducer from '../../features/user/paginatedUsersSlice';
 import feedPostsReducer from '../../features/posts/feedPostsSlice'; // Import the new feed posts slice
 import chatReducer from '../../features/chat/chatSlice'; // Import chat slice
+import forumReducer from '../../features/forum/forumSlice'; // Import forum slice
 // Export individual reducers for apps to combine
 export const sharedReducers = {
     tokens: tokensReducer,
@@ -12,6 +13,7 @@ export const sharedReducers = {
     paginatedUsers: paginatedUsersReducer,
     feedPosts: feedPostsReducer, // Add the feed posts reducer
     chat: chatReducer, // Add chat reducer
+    forum: forumReducer, // Add forum reducer
 };
 // Combine reducers *only* for defining the SharedRootState type and example store
 const rootReducer = combineReducers(sharedReducers);

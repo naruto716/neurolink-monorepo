@@ -13,7 +13,8 @@
     "onboarding": "Onboarding",
     "people": "People",
     "chat": "Chat",
-    "commitments": "Commitments"
+    "commitments": "Commitments",
+    "forum": "Forum"
   },
   "theme": {
     "light": "Light Mode",
@@ -249,7 +250,8 @@
     "reject": "Reject",
     "create": "Create",
     "errorApiClient": "API client is not available. Please try again later.",
-    "errorRequired": "This field is required."
+    "errorRequired": "This field is required.",
+    "loadMore": "Load More"
   },
   "editProfile": {
     "title": "Edit Your Profile",
@@ -408,5 +410,14 @@
       "title": "Commitment Calendar",
       "placeholder": "Calendar view will be implemented here."
     }
-  }
+  },
+ "forum": {
+   "title": "Community Forum",
+   "description": "Discuss topics, ask questions, and connect with others.",
+   "postsLoading": "Forum posts will be displayed here...",
+   "sidebar.title": "Forum Tools",
+   "noPosts": "No forum posts found yet.",
+   "endOfPosts": "You've reached the end.",
+   "viewPost": "View post"
+ }
 }
