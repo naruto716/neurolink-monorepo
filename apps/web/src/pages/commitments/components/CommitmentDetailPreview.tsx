@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { 
-  Box, 
-  CircularProgress, 
-  Alert, 
-  Chip, 
-  Avatar, 
-  Stack, 
+import { useNavigate } from 'react-router-dom'; // Added
+import { useChatContext } from 'stream-chat-react'; // Added
+import {
+  Box,
+  CircularProgress,
+  Alert,
+  Chip,
+  Avatar,
+  Stack,
   // Divider removed
   Paper,
   IconButton,
@@ -29,12 +31,15 @@ import {
   // Warning removed (unused)
   // CalendarPlus removed (top button)
   Download,
-  ArrowRight
+  ArrowRight,
+  ChatCircleDots // Added
 } from '@phosphor-icons/react';
 import { AccessibleTypography } from '../../../app/components/AccessibleTypography'; // Corrected import path
-import { Commitment, fetchCommitmentById, fetchUserByUsername, User as UserType } from '@neurolink/shared';
+import { Commitment, fetchCommitmentById, fetchUserByUsername, User as UserType, selectCurrentUser } from '@neurolink/shared'; // Added selectCurrentUser
 import apiClient from '../../../app/api/apiClient';
 import { Link as RouterLink } from 'react-router-dom';
+import { useSelector } from 'react-redux'; // Added
+import { toast } from 'react-toastify'; // Added for error feedback
 // alpha removed (unused)
 
 // Define props interface (same as Detail)
@@ -82,6 +87,9 @@ const CommitmentDetailPreview: React.FC<CommitmentDetailPreviewProps> = ({ commi
   const { t } = useTranslation();
   const id = commitmentId;
   const { data: commitment, isLoading, error } = useGetCommitmentByIdQuery(id);
+  const { client: chatClient } = useChatContext(); // Added: Get chat client
+  const navigate = useNavigate(); // Added: Get navigate function
+  const currentUser = useSelector(selectCurrentUser); // Added: Get current user
   const [mapExpanded, setMapExpanded] = useState(true); // Keep map state
   const [participantDetails, setParticipantDetails] = useState<UserType[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
@@ -89,6 +97,7 @@ const CommitmentDetailPreview: React.FC<CommitmentDetailPreviewProps> = ({ commi
   const [creatorDetails, setCreatorDetails] = useState<UserType | null>(null);
   const [loadingCreator, setLoadingCreator] = useState(false);
   const [creatorError, setCreatorError] = useState<string | null>(null);
+  const [isStartingChat, setIsStartingChat] = useState(false); // Added: State for chat button loading
 
   // Fetching logic remains the same
   useEffect(() => {
@@ -211,6 +220,53 @@ const CommitmentDetailPreview: React.FC<CommitmentDetailPreviewProps> = ({ commi
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // --- Start Group Chat Handler ---
+  const handleStartChat = async () => {
+    if (!chatClient || !currentUser?.username || !commitment?.participants) {
+      console.error("Chat client, current user, or participants not available.");
+      toast.error(t('chat.error.initiateFailed', 'Failed to initiate chat.'));
+      return;
+    }
+
+    setIsStartingChat(true);
+    try {
+      // Ensure current user is included, remove duplicates just in case
+      const participantUsernames = commitment.participants.map(p => p.username);
+      const memberIds = Array.from(new Set([currentUser.username, ...participantUsernames]));
+
+      if (memberIds.length < 2) {
+        toast.info("Cannot start a group chat with only yourself."); // Or handle 1-1 chat differently
+        setIsStartingChat(false);
+        return;
+      }
+
+      console.log(`Creating/getting channel for members: ${memberIds.join(', ')}`);
+
+      // Create a unique channel ID based on members if needed, or let Stream handle it
+      // const channelId = memberIds.sort().join('-'); // Example deterministic ID
+
+      const channel = chatClient.channel('messaging', {
+        members: memberIds,
+        name: `Commitment: ${commitment.title}` // Optional: Set a channel name based on commitment
+        // created_by_id: currentUser.username // Optional: Track creator if needed
+      });
+
+      // Watch the channel to ensure it's initialized and ready
+      await channel.watch();
+      console.log(`Channel ${channel.id} watched successfully.`);
+
+      // Navigate to the chat page, passing the channel ID
+      navigate('/chat', { state: { channelId: channel.id } });
+
+    } catch (err) {
+      console.error("Failed to start group chat:", err);
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      toast.error(`${t('chat.error.initiateFailed', 'Failed to initiate chat.')}: ${errorMessage}`);
+    } finally {
+      setIsStartingChat(false);
+    }
   };
 
   return (
@@ -614,6 +670,23 @@ const CommitmentDetailPreview: React.FC<CommitmentDetailPreviewProps> = ({ commi
               <AccessibleTypography variant="caption" sx={{ color: 'text.secondary', fontStyle: 'italic' }}> {/* Smaller variant */}
                 {t('commitments.detail.noParticipants', 'No participants listed.')}
               </AccessibleTypography>
+            </Box>
+          )}
+
+          {/* Start Group Chat Button */}
+          {commitment.participants.length > 0 && chatClient && currentUser && (
+            <Box sx={{ mt: 2, display: 'flex', justifyContent: 'center' }}>
+              <Button
+                variant="contained"
+                color="primary"
+                size="small"
+                startIcon={<ChatCircleDots size={16} />}
+                onClick={handleStartChat}
+                disabled={isStartingChat || loadingParticipants}
+                sx={{ borderRadius: '16px', px: 2 }}
+              >
+                {isStartingChat ? t('common.loading', 'Loading...') : t('commitments.detail.startGroupChat', 'Start Group Chat')}
+              </Button>
             </Box>
           )}
         </Box>
