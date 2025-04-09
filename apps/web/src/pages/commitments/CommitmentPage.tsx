@@ -5,6 +5,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import CommitmentOverview from './components/CommitmentOverview';
 import CommitmentListInfiniteScroll from './components/CommitmentListInfiniteScroll'; // Import the new component
 import CommitmentInvitations from './components/CommitmentInvitations';
+import CommitmentCalendar from './components/CommitmentCalendar'; // Import the new calendar component
 
 // Define the structure for tabs
 interface TabPanelProps {
@@ -51,7 +52,7 @@ const CommitmentPage: React.FC = () => {
     { label: t('commitments.tabs.overview', 'Overview'), component: <CommitmentOverview />, key: 'overview' },
     { label: t('commitments.tabs.myCommitments', 'My Commitments'), component: <CommitmentListInfiniteScroll />, key: 'my-commitments' }, // Use the new component
     { label: t('commitments.tabs.invitations', 'Invitations'), component: <CommitmentInvitations />, key: 'invitations' },
-    // Add other tabs here later...
+    { label: t('commitments.tabs.calendar', 'Calendar'), component: <CommitmentCalendar />, key: 'calendar' } // Add the new Calendar tab
   ], [t]);
 
   // Effect to set initial tab based on URL subpage

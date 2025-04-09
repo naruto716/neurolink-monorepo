@@ -326,7 +326,7 @@
       "errorLoadingNext": "Failed to load the upcoming commitment."
     },
     "noUpcomingCommitments": "You have no upcoming commitments.",
-    "invitations": "Invitations",
+    "invitation": "Invitations",
     "noPendingInvitations": "You have no pending invitations.",
     "yourCommitments": "Your Commitments",
     "errorLoading": "Failed to load commitments.",
@@ -334,7 +334,8 @@
     "tabs": {
       "overview": "Overview",
       "myCommitments": "My Commitments",
-      "invitations": "Invitations"
+      "invitations": "Invitations",
+      "calendar": "Calendar"
     },
     "filter": {
       "roleLabel": "Filter by role",
@@ -401,6 +402,10 @@
       "successMessage": "Commitment created successfully!",
       "errorMessage": "Failed to create commitment. Please try again.",
       "errorRequiredFields": "Please fill in all required fields (Title, Date & Time, Location)."
+    },
+    "calendar": {
+      "title": "Commitment Calendar",
+      "placeholder": "Calendar view will be implemented here."
     }
   }
 }
