@@ -12,7 +12,8 @@
     "signOut": "Sign Out",
     "onboarding": "Onboarding",
     "people": "People",
-    "chat": "Chat"
+    "chat": "Chat",
+    "commitments": "Commitments"
   },
   "theme": {
     "light": "Light Mode",
@@ -235,7 +236,14 @@
     "cancel": "Cancel",
     "scrollLeft": "Scroll left",
     "scrollRight": "Scroll right",
-    "appName": "Neurolink"
+    "appName": "Neurolink",
+    "user": "User",
+    "location": "Location",
+    "dateTime": "Date & Time",
+    "createdBy": "Created by",
+    "from": "From",
+    "upcoming": "Upcoming",
+    "past": "Past"
   },
   "editProfile": {
     "title": "Edit Your Profile",
@@ -299,6 +307,30 @@
       "clientNotReady": "Chat client is not ready.",
       "currentUserNotReady": "Current user not identified.",
       "initiateFailed": "Failed to initiate chat."
+    }
+  },
+  "commitments": {
+    "welcome": "Welcome back, {{name}}!",
+    "userSubtitle": "Here's an overview of your commitments.",
+    "totalCommitments": "Total Commitments",
+    "pendingInvitations": "Pending Invitations",
+    "nextCommitment": "Next Commitment",
+    "noUpcomingCommitments": "You have no upcoming commitments.",
+    "invitations": "Invitations",
+    "noPendingInvitations": "You have no pending invitations.",
+    "yourCommitments": "Your Commitments",
+    "errorLoading": "Failed to load commitments.",
+    "noCommitmentsFound": "You don't have any commitments yet.",
+    "tabs": {
+      "overview": "Overview",
+      "commitments": "Commitments"
+    },
+    "table": {
+      "title": "Title",
+      "date": "Date",
+      "location": "Location",
+      "participants": "Participants",
+      "status": "Status"
     }
   }
 }

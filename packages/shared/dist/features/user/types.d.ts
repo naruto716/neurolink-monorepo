@@ -62,6 +62,24 @@ export interface UserState {
     error: string | null;
     isOnboarded: boolean;
 }
+export interface CommitmentLocation {
+    description: string;
+}
+export interface Commitment {
+    id: number;
+    title: string;
+    description: string;
+    dateTime: string;
+    location: CommitmentLocation;
+    creatorUsername: string;
+}
+export interface PaginatedCommitmentsResponse {
+    pageNumber: number;
+    pageSize: number;
+    totalItems: number;
+    totalPages: number;
+    items: Commitment[];
+}
 export interface Connection {
     friendId: number;
     username: string;

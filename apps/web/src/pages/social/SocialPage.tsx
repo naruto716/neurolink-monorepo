@@ -16,7 +16,7 @@ import {
   Tooltip, // Add Tooltip import
   Typography,
   Link,
-  // Skeleton // No longer used
+  Skeleton, // Import Skeleton
   Chip, // Add Chip import
 } from '@mui/material';
 import {
@@ -50,73 +50,28 @@ import FeedPosts from '../../features/posts/components/FeedPosts'; // Import the
 import CreatePostInput from '../../features/posts/components/CreatePostInput'; // Import the new CreatePostInput component
 import { toast } from 'react-toastify'; // Import toast
 
-// Placeholder data and inline PostCard removed
-
-// SuggestionCard removed as it's replaced by the inline implementation in the sidebar
-/*
-const SuggestionCard: React.FC<{ user: User }> = ({ user }) => {
-  const { t } = useTranslation();
-  const profileUrl = `/people/${user.username}`;
-
-  return (
-    <Stack direction="row" spacing={2} sx={{ mb: 2.5, alignItems: 'center' }}>
-      <RouterLink to={profileUrl} style={{ textDecoration: 'none' }}>
-        <Avatar src={user.profilePicture || undefined} sx={{ width: 48, height: 48 }} />
-      </RouterLink>
-      <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-        <Link 
-          component={RouterLink} 
-          to={profileUrl}
-          color="inherit"
-          underline="none"
-          sx={{ 
-             display: 'block', 
-          }}
-        >
-          <AccessibleTypography 
-            variant="subtitle2" 
-            sx={{ 
-              fontWeight: 600, 
-              whiteSpace: 'nowrap', 
-              overflow: 'hidden', 
-              textOverflow: 'ellipsis' 
-            }}
-          >
-            {user.displayName}
-          </AccessibleTypography>
-        </Link>
-        {user.bio && (
-          <Typography 
-            variant="caption" 
-            color="text.secondary" 
-            sx={{
-              display: '-webkit-box', 
-              WebkitBoxOrient: 'vertical',
-              WebkitLineClamp: 2,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              mt: 0.5
-            }}
-          >
-            {user.bio}
-          </Typography>
-        )}
+// --- Suggestion Skeleton Component ---
+const SuggestionSkeleton = () => (
+  <Box sx={{ py: 1 }}>
+    <Stack direction="row" spacing={1.5} sx={{ alignItems: 'flex-start', mb: 1 }}>
+      <Skeleton variant="circular" width={40} height={40} />
+      <Box sx={{ flexGrow: 1 }}>
+        <Skeleton variant="text" width="60%" sx={{ fontSize: '0.875rem' }} />
+        <Skeleton variant="text" width="40%" sx={{ fontSize: '0.75rem' }} />
       </Box>
-      <Tooltip title={t('people.viewProfileButton', 'View Profile')}>
-        <IconButton 
-          component={RouterLink} 
-          to={profileUrl} 
-          size="small" 
-          sx={{ alignSelf: 'center', flexShrink: 0 }} 
-          aria-label={t('people.viewProfileButton', 'View Profile')}
-        >
-          <ArrowSquareOut size={20} />
-        </IconButton>
-      </Tooltip>
+      <Skeleton variant="rounded" width={80} height={30} sx={{ borderRadius: '20px', alignSelf: 'flex-start' }} />
     </Stack>
-  );
-};
-*/
+    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1, mb: 1 }}>
+      <Skeleton variant="rounded" width={60} height={20} />
+      <Skeleton variant="rounded" width={50} height={20} />
+      <Skeleton variant="rounded" width={70} height={20} />
+    </Box>
+    <Skeleton variant="rounded" width="100%" height={40} sx={{ mb: 1 }} />
+    <Skeleton variant="rounded" width="100%" height={30} />
+    <Divider sx={{ mt: 4, mb: 2 }} />
+  </Box>
+);
+// --- End Suggestion Skeleton ---
 
 // --- Wrapper Selectors ---
 const selectPaginatedUsers = (state: RootState) => selectSharedPaginatedUsers(state);
@@ -279,8 +234,9 @@ const SocialPage = () => {
           </Stack>
           
           {suggestionsStatus === 'loading' && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 1 }}>
-              <CircularProgress size={24} />
+            <Box sx={{ p: 1 }}>
+              {/* Show multiple skeletons during loading */}
+              {[...Array(5)].map((_, index) => <SuggestionSkeleton key={index} />)} 
             </Box>
           )}
           {suggestionsStatus === 'failed' && (
@@ -404,7 +360,7 @@ const SocialPage = () => {
                         
                         {/* Divider between users */}
                         {index < arr.length - 1 && (
-                          <Divider sx={{ mt: 1.5, mb: 0.5 }} />
+                          <Divider sx={{ mt: 4, mb: 2 }} />
                         )}
                       </Box>
                     </React.Fragment>
@@ -414,6 +370,27 @@ const SocialPage = () => {
                 <Typography variant="body2" color="text.secondary" align="center">
                   {t('social.noSuggestions', 'No suggestions available right now.')}
                 </Typography>
+              )}
+
+              {/* Refresh Button at the bottom (Re-added) */}
+              {suggestionsTotalPages > 0 && (
+                 <Box sx={{ mt: 1, textAlign: 'center' }}>
+                    <Button
+                       variant="text"
+                       size="small"
+                       onClick={handleMoreSuggestions}
+                       // @ts-expect-error - Linter incorrectly flags this valid comparison (needed here)
+                       disabled={suggestionsStatus === 'loading'}
+                       startIcon={<ArrowClockwise size={16} />}
+                       sx={(theme) => ({
+                          fontSize: '0.8rem',
+                          color: theme.palette.text.secondary,
+                           '&:hover': { bgcolor: alpha(theme.palette.action.active, 0.04) }
+                       })}
+                    >
+                       {t('social.refreshSuggestions', 'Refresh Suggestions')}
+                    </Button>
+                 </Box>
               )}
             </>
           )}

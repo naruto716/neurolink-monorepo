@@ -1,6 +1,6 @@
 import { AxiosInstance, AxiosRequestConfig } from 'axios';
 import * as qs from 'qs'; // Import qs library
-import { User, Tag, PaginatedUsersResponse, UserProfileInput, PaginatedConnectionsResponse, Connection } from './types';
+import { User, Tag, PaginatedUsersResponse, UserProfileInput, PaginatedConnectionsResponse, Connection, PaginatedCommitmentsResponse } from './types'; // Added PaginatedCommitmentsResponse
 
 const API_ENDPOINT_USER = '/users/me';
 const API_ENDPOINT_USERS = '/users'; // Base endpoint for users
@@ -458,4 +458,53 @@ export const fetchSentRequests = async (
     }
 };
 
+// --- Commitment API Functions ---
+
+const API_ENDPOINT_COMMITMENTS = '/commitment/users'; // Base endpoint for user commitments
+
+export interface FetchUserCommitmentsParams {
+    role?: string;
+    pageNumber?: number;
+    pageSize?: number;
+    sortOrder?: 'asc' | 'desc'; // Add sortOrder parameter
+}
+
+/**
+ * Fetch commitments for a specific user with pagination and optional role filtering.
+ * GET /Commitment/users/{username}
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user whose commitments to fetch.
+ * @param params Query parameters for filtering and pagination (role, pageNumber, pageSize)
+ * @returns Promise with paginated commitment data
+ */
+export const fetchUserCommitments = async (
+    apiClient: AxiosInstance,
+    username: string,
+    params: FetchUserCommitmentsParams = {}
+): Promise<PaginatedCommitmentsResponse> => {
+    try {
+        const queryParams: Record<string, string | number> = {};
+        if (params.role !== undefined) queryParams.role = params.role;
+        queryParams.pageNumber = params.pageNumber || 1; // Default page 1
+        queryParams.pageSize = params.pageSize || 10; // Default limit 10
+        queryParams.sortOrder = params.sortOrder || 'desc'; // Add sortOrder, default 'desc'
+
+        const config: AxiosRequestConfig = { params: queryParams };
+
+        const response = await apiClient.get<PaginatedCommitmentsResponse>(
+            `${API_ENDPOINT_COMMITMENTS}/${username}`,
+            config
+        );
+        console.log(`Commitments fetched successfully for ${username} with params:`, queryParams, "Response:", response.data);
+        return response.data;
+    } catch (error: any) {
+        console.error(`Error fetching commitments for ${username}:`, error.response?.data || error.message);
+        if (error.response?.data?.message) {
+            throw new Error(`Failed to fetch commitments for ${username}: ${error.response.data.message}`);
+        }
+        throw new Error(`Failed to fetch commitments for ${username}`);
+    }
+};
+
 // End of file
+

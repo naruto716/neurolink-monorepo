@@ -56,7 +56,7 @@ export const LeftSidebar: React.FC<LeftSidebarProps> = ({ open, onClose }) => {
     { key: 'social', label: 'Social', path: '/', icon: <House weight="regular" size={20} /> },
     { key: 'people', label: 'People', path: '/people', icon: <Users weight="regular" size={20} /> },
     { key: 'chat', label: 'Chat', path: '/chat', icon: <ChatCircleDots weight="regular" size={20} /> },
-    { key: 'commitment', label: 'Commitment', path: '/courses', icon: <BookOpen weight="regular" size={20} /> },
+    { key: 'commitment', label: 'Commitment', path: '/commitments', icon: <BookOpen weight="regular" size={20} /> },
     { key: 'about', label: 'About', path: 'https://www.auckland.ac.nz/en/students/student-support/academic-support/inclusive-learning.html', isExternal: true, icon: <Info weight="regular" size={20} /> },
   ];
 

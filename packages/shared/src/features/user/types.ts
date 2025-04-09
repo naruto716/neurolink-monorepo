@@ -85,6 +85,39 @@ export interface UserState {
   isOnboarded: boolean; 
 }
 
+// --- Commitment Types ---
+
+export interface CommitmentLocation {
+  description: string;
+}
+
+// Represents a participant in a commitment
+export interface Participant {
+  id: number;
+  username: string;
+  displayName: string;
+  profilePicture?: string;
+  role: 'organizer' | 'participant'; // Define possible roles
+}
+
+export interface Commitment {
+  id: number;
+  title: string;
+  description: string;
+  dateTime: string; // ISO date string
+  location: CommitmentLocation;
+  creatorUsername: string; // Keep creatorUsername if still relevant/provided
+  participants: Participant[]; // Add participants array
+}
+
+export interface PaginatedCommitmentsResponse {
+  pageNumber: number;
+  pageSize: number;
+  totalItems: number;
+  totalPages: number;
+  items: Commitment[];
+}
+
 // Represents a connection/friendship status, often used in lists (e.g., pending requests)
 export interface Connection {
   friendId: number;

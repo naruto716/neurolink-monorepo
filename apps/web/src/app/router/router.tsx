@@ -11,6 +11,7 @@ import PeoplePage from '../../pages/people/PeoplePage';
 import UserProfilePage from '../../pages/people/UserProfilePage';
 import EditProfilePage from '../../pages/profile/EditProfilePage'; // Import the new page
 import ChatPage from '../../pages/chat/ChatPage'; // Import ChatPage
+import CommitmentPage from '../../pages/commitments/CommitmentPage'; // Import CommitmentPage
 // import FriendListPage from '../../pages/people/FriendListPage'; // Removed old page import
 // import NotFoundPage from '../../pages/notFound/NotFoundPage'; // Removed non-existent import
 import { RequireAuth } from './requireAuth';
@@ -42,6 +43,7 @@ const routes: RouteObject[] = [
                   { path: 'people/:username', element: <UserProfilePage /> },
                   { path: 'profile/edit', element: <EditProfilePage /> },
                   { path: 'chat', element: <ChatPage /> },
+                  { path: 'commitments', element: <CommitmentPage /> }, // Add CommitmentPage route
                   // Add other routes needing standard Layout here
                 ]
               },

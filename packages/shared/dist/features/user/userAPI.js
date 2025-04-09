@@ -365,4 +365,34 @@ export const fetchSentRequests = async (apiClient, username, params = {}) => {
         throw new Error(`Failed to fetch sent requests for ${username}`);
     }
 };
+// --- Commitment API Functions ---
+const API_ENDPOINT_COMMITMENTS = '/commitment/users'; // Base endpoint for user commitments
+/**
+ * Fetch commitments for a specific user with pagination and optional role filtering.
+ * GET /Commitment/users/{username}
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user whose commitments to fetch.
+ * @param params Query parameters for filtering and pagination (role, pageNumber, pageSize)
+ * @returns Promise with paginated commitment data
+ */
+export const fetchUserCommitments = async (apiClient, username, params = {}) => {
+    try {
+        const queryParams = {};
+        if (params.role !== undefined)
+            queryParams.role = params.role;
+        queryParams.pageNumber = params.pageNumber || 1; // Default page 1
+        queryParams.pageSize = params.pageSize || 10; // Default limit 10
+        const config = { params: queryParams };
+        const response = await apiClient.get(`${API_ENDPOINT_COMMITMENTS}/${username}`, config);
+        console.log(`Commitments fetched successfully for ${username} with params:`, queryParams, "Response:", response.data);
+        return response.data;
+    }
+    catch (error) {
+        console.error(`Error fetching commitments for ${username}:`, error.response?.data || error.message);
+        if (error.response?.data?.message) {
+            throw new Error(`Failed to fetch commitments for ${username}: ${error.response.data.message}`);
+        }
+        throw new Error(`Failed to fetch commitments for ${username}`);
+    }
+};
 // End of file
