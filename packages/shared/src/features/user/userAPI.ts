@@ -8,8 +8,9 @@ import {
     PaginatedCommitmentsResponse,
     PaginatedSentInvitationsResponse,
     PaginatedReceivedInvitationsResponse,
-    ReceivedInvitation, // Added
-    CreateCommitmentRequest // Added for creating commitments
+    ReceivedInvitation,
+    CreateCommitmentRequest,
+    PaginatedSentInvitationsDetailResponse // Add new type import
 } from '../commitments/types';
 
 const API_ENDPOINT_USER = '/users/me';
@@ -587,6 +588,41 @@ export const fetchSentInvitations = async (
             throw new Error(`Failed to fetch sent invitations for ${username}: ${error.response.data.message}`);
         }
         throw new Error(`Failed to fetch sent invitations for ${username}`);
+    }
+};
+
+/**
+ * Fetch detailed sent invitations for a specific user with pagination.
+ * GET /Commitment/invitations/detail/sent/{username}
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user whose sent invitations to fetch.
+ * @param params Query parameters for pagination (pageNumber, pageSize)
+ * @returns Promise with paginated detailed sent invitation data
+ */
+export const fetchSentInvitationsDetail = async (
+    apiClient: AxiosInstance,
+    username: string,
+    params: FetchInvitationsParams = {} // Reuse FetchInvitationsParams
+): Promise<PaginatedSentInvitationsDetailResponse> => {
+    try {
+        const queryParams: Record<string, string | number> = {};
+        queryParams.pageNumber = params.pageNumber || 1; // Default page 1
+        queryParams.pageSize = params.pageSize || 10; // Default page 10
+
+        const config: AxiosRequestConfig = { params: queryParams };
+
+        const response = await apiClient.get<PaginatedSentInvitationsDetailResponse>(
+            `/commitment/invitations/detail/sent/${username}`, // New endpoint
+            config
+        );
+        console.log(`Detailed sent invitations fetched successfully for ${username}:`, response.data);
+        return response.data;
+    } catch (error: any) {
+        console.error(`Error fetching detailed sent invitations for ${username}:`, error.response?.data || error.message);
+        if (error.response?.data?.message) {
+            throw new Error(`Failed to fetch detailed sent invitations for ${username}: ${error.response.data.message}`);
+        }
+        throw new Error(`Failed to fetch detailed sent invitations for ${username}`);
     }
 };
 

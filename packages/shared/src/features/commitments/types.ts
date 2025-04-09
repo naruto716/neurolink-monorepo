@@ -1,3 +1,5 @@
+import { User } from '../user/types';
+
 // Define the Participant type based on the API response schema
 export interface CommitmentParticipant {
   id: number;
@@ -80,3 +82,33 @@ export interface CreateCommitmentRequest {
 
 // You might also want types for API requests if needed, e.g., for creating/updating commitments
 // export interface UpdateCommitmentRequest { ... }
+
+// Define the SentInvitationDetail type based on the new API response schema
+// GET /api/v1/Commitment/invitations/detail/sent/{username}
+export interface SentInvitationDetail {
+  id: number;
+  invitor: User; // Reusing the User type
+  invitee: User; // Reusing the User type
+  commitment: { // Using a subset of Commitment or defining inline
+    id: number;
+    title: string;
+    description: string;
+    dateTime: string; // ISO date string
+    location: {
+      description: string;
+    };
+    creatorUsername: string; // Keep this? API shows it, might be redundant if invitor is always creator
+  };
+  status: string; // e.g., "pending", "accepted", "rejected"
+  createdAt: string; // ISO date string
+  respondedAt: string | null; // ISO date string or null
+}
+
+// Interface for the paginated response of detailed sent invitations
+export interface PaginatedSentInvitationsDetailResponse {
+  items: SentInvitationDetail[];
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+  totalItems: number;
+}

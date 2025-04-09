@@ -322,7 +322,8 @@
     "pendingInvitations": "Pending Invitations",
     "nextCommitment": {
       "title": "Next Commitment",
-      "errorLoading": "Failed to load next commitment."
+      "errorLoading": "Failed to load next commitment.",
+      "errorLoadingNext": "Failed to load the upcoming commitment."
     },
     "noUpcomingCommitments": "You have no upcoming commitments.",
     "invitations": "Invitations",
@@ -348,6 +349,7 @@
       "noReceived": "No received invitations found.",
       "noSent": "No sent invitations found.",
       "from": "From",
+      "to": "To",
       "errorLoadingReceived": "Failed to load received invitations.",
       "errorLoadingSent": "Failed to load sent invitations.",
       "errorResponding": "Failed to respond to invitation.",
@@ -375,7 +377,17 @@
       "modalTitle": "Commitment Details",
       "addToCalendar": "Add to your calendar",
       "viewCampusMap": "View University of Auckland Campus Map",
-      "viewProfile": "View"
+      "viewProfile": "View",
+      "inviteTitle": "Invite Participants",
+      "inviteLabel": "Search username to invite",
+      "inviteButton": "Send Invite",
+      "inviteButtonShort": "Invite",
+      "invitingButton": "Inviting...",
+      "inviteSuccess": "Successfully invited {{username}}.",
+      "inviteError": "Failed to invite user: {{error}}",
+      "inviteErrorUnexpected": "Received an unexpected response from the server.",
+      "inviteKeepTyping": "", 
+      "inviteNoUsersFound": "No users found matching your search."
     },
     "organizeButton": "Organize",
     "create": {

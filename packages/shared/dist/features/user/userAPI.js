@@ -451,6 +451,34 @@ export const fetchSentInvitations = async (apiClient, username, params = {}) => 
     }
 };
 /**
+ * Fetch detailed sent invitations for a specific user with pagination.
+ * GET /Commitment/invitations/detail/sent/{username}
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user whose sent invitations to fetch.
+ * @param params Query parameters for pagination (pageNumber, pageSize)
+ * @returns Promise with paginated detailed sent invitation data
+ */
+export const fetchSentInvitationsDetail = async (apiClient, username, params = {} // Reuse FetchInvitationsParams
+) => {
+    try {
+        const queryParams = {};
+        queryParams.pageNumber = params.pageNumber || 1; // Default page 1
+        queryParams.pageSize = params.pageSize || 10; // Default page 10
+        const config = { params: queryParams };
+        const response = await apiClient.get(`/commitment/invitations/detail/sent/${username}`, // New endpoint
+        config);
+        console.log(`Detailed sent invitations fetched successfully for ${username}:`, response.data);
+        return response.data;
+    }
+    catch (error) {
+        console.error(`Error fetching detailed sent invitations for ${username}:`, error.response?.data || error.message);
+        if (error.response?.data?.message) {
+            throw new Error(`Failed to fetch detailed sent invitations for ${username}: ${error.response.data.message}`);
+        }
+        throw new Error(`Failed to fetch detailed sent invitations for ${username}`);
+    }
+};
+/**
  * Fetch received commitment invitations for a specific user.
  * GET /commitment/invitations/received/{username}
  * @param apiClient The Axios instance to use.

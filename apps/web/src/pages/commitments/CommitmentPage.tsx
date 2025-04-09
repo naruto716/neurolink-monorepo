@@ -3,7 +3,7 @@ import { Container, Box, Tabs, Tab } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import { useParams, useNavigate } from 'react-router-dom';
 import CommitmentOverview from './components/CommitmentOverview';
-import CommitmentList from './components/CommitmentList';
+import CommitmentListInfiniteScroll from './components/CommitmentListInfiniteScroll'; // Import the new component
 import CommitmentInvitations from './components/CommitmentInvitations';
 
 // Define the structure for tabs
@@ -49,7 +49,7 @@ const CommitmentPage: React.FC = () => {
   // Memoize the tabs array
   const tabs = useMemo(() => [
     { label: t('commitments.tabs.overview', 'Overview'), component: <CommitmentOverview />, key: 'overview' },
-    { label: t('commitments.tabs.myCommitments', 'My Commitments'), component: <CommitmentList />, key: 'my-commitments' },
+    { label: t('commitments.tabs.myCommitments', 'My Commitments'), component: <CommitmentListInfiniteScroll />, key: 'my-commitments' }, // Use the new component
     { label: t('commitments.tabs.invitations', 'Invitations'), component: <CommitmentInvitations />, key: 'invitations' },
     // Add other tabs here later...
   ], [t]);

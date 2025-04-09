@@ -1,3 +1,4 @@
+import { User } from '../user/types';
 export interface CommitmentParticipant {
     id: number;
     username: string;
@@ -57,4 +58,29 @@ export interface CreateCommitmentRequest {
     location: {
         description: string;
     };
+}
+export interface SentInvitationDetail {
+    id: number;
+    invitor: User;
+    invitee: User;
+    commitment: {
+        id: number;
+        title: string;
+        description: string;
+        dateTime: string;
+        location: {
+            description: string;
+        };
+        creatorUsername: string;
+    };
+    status: string;
+    createdAt: string;
+    respondedAt: string | null;
+}
+export interface PaginatedSentInvitationsDetailResponse {
+    items: SentInvitationDetail[];
+    pageNumber: number;
+    pageSize: number;
+    totalPages: number;
+    totalItems: number;
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import axios from 'axios'; // Import axios for error checking
 import { useSelector } from 'react-redux';
 import {
   Grid,
@@ -25,7 +26,7 @@ import {
   User as UserType, 
   fetchUserByUsername,
   Commitment, // Added Commitment type
-  fetchUserCommitments, // Added fetch function for user's commitments
+  // fetchUserCommitments, // Removed as it's no longer used directly here
   fetchPendingInvitationCount, 
   fetchAcceptedCommitmentCount 
 } from '@neurolink/shared';
@@ -162,26 +163,31 @@ const CommitmentOverview: React.FC = () => {
 
   // >> NEW: Fetch Next Commitment Logic <<
   const loadNextCommitment = useCallback(async () => {
-    if (!username || !apiClient) return;
+    // No username needed for this specific endpoint
+    if (!apiClient) return;
     setNextCommitmentLoading(true);
     setNextCommitmentError(null);
     try {
-      const params = { pageNumber: 1, pageSize: 1, sortOrder: 'desc' as const }; // Fetch newest one
-      const response = await fetchUserCommitments(apiClient, username, params);
-      if (response.items.length > 0) {
-        setNextCommitment(response.items[0]);
-      } else {
-        setNextCommitment(null); // No commitments found
-      }
+      // Call the new endpoint directly
+      const response = await apiClient.get<Commitment>('/commitment/my/next'); // Corrected path
+      // The endpoint returns the commitment directly, or potentially 404/error if none exists
+      setNextCommitment(response.data);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      // Use the correct translation key for the error message
-      setNextCommitmentError(msg || t('commitments.nextCommitment.errorLoading')); 
-      setNextCommitment(null);
+      // Handle potential 404 (no next commitment) or other errors
+      if (axios.isAxiosError(err) && err.response?.status === 404) {
+         setNextCommitment(null); // No next commitment found is not an error state here
+         console.log('No upcoming commitment found.');
+      } else {
+        const msg = err instanceof Error ? err.message : String(err);
+        // Use a more specific translation key for the error message
+        setNextCommitmentError(msg || t('commitments.nextCommitment.errorLoadingNext'));
+        setNextCommitment(null);
+        console.error('Failed to fetch next commitment:', err);
+      }
     } finally {
       setNextCommitmentLoading(false);
     }
-  }, [apiClient, username, t]);
+  }, [apiClient, t]); // Removed username dependency
   // >> END NEW FETCH LOGIC <<
 
   useEffect(() => {

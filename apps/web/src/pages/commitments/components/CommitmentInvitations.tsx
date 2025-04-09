@@ -26,12 +26,14 @@ import { useTranslation } from 'react-i18next';
 import { selectCurrentUser } from '@neurolink/shared/src/features/user/userSlice';
 import {
   ReceivedInvitation,
-  Commitment,
+  // Commitment, // No longer needed directly for sent invites state
   User as UserType,
+  SentInvitationDetail, // Import the new type
 } from '@neurolink/shared';
 import {
   fetchReceivedInvitations,
-  fetchSentInvitations,
+  // fetchSentInvitations, // No longer needed
+  fetchSentInvitationsDetail, // Import the new fetch function
   respondToCommitmentInvitation,
   fetchUserByUsername,
 } from '@neurolink/shared/src/features/user/userAPI';
@@ -94,7 +96,7 @@ const CommitmentInvitations: React.FC = () => {
   const [responseError, setResponseError] = useState<Record<number, string | null>>({}); // Error state per invitation ID
 
   // State for Sent Invitations
-  const [sentInvites, setSentInvites] = useState<Commitment[]>([]); // Sent invites are Commitments
+  const [sentInvites, setSentInvites] = useState<SentInvitationDetail[]>([]); // Use the new type
   const [sentLoading, setSentLoading] = useState<boolean>(false);
   const [sentError, setSentError] = useState<string | null>(null);
   const [sentNextPage, setSentNextPage] = useState<number>(1);
@@ -189,7 +191,8 @@ const CommitmentInvitations: React.FC = () => {
 
     try {
       const params = { pageNumber: page, pageSize: ITEMS_PER_PAGE };
-      const response = await fetchSentInvitations(apiClient, username, params);
+      // Use the new fetch function
+      const response = await fetchSentInvitationsDetail(apiClient, username, params);
 
       setSentInvites(prev => isInitialLoad ? response.items : [...prev, ...response.items]);
       setSentNextPage(page + 1);
@@ -470,25 +473,39 @@ const CommitmentInvitations: React.FC = () => {
       {/* Sent Invitations Panel */}
       <TabPanel value={tabValue} index={1}>
          {/* Initial Loading Skeleton */}
+         {/* Initial Loading Skeleton for Sent Tab (Updated Structure) */}
          {sentLoading && (
-            <Grid container spacing={2} sx={{ width: '100%', m: 0 }}>
-                {/* Provide type for index */} 
-                {Array.from(new Array(ITEMS_PER_PAGE)).map((_: unknown, index: number) => (
-                  <Grid item xs={12} sm={6} md={6} key={`skel-sent-${index}`} sx={{ display: 'flex' }}>
-                     {/* Copy the FULL Skeleton structure here for a single sent card */}
-                     <Paper elevation={0} sx={(theme) => ({ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}`, height: '100%', width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' })}> 
-                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'nowrap', gap: 1 }}>
-                         <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-                             <Skeleton variant="text" width="70%" sx={{ fontSize: '1rem' }} />
-                             <Skeleton variant="text" width="60%" sx={{ fontSize: '0.8rem' }} />
-                             <Skeleton variant="text" width="80%" sx={{ fontSize: '0.8rem' }} />
-                         </Box>
-                         <Skeleton variant="rounded" width={70} height={24} sx={{ flexShrink: 0 }} />
+           <Grid container spacing={2} sx={{ width: '100%', m: 0 }}>
+             {Array.from(new Array(ITEMS_PER_PAGE)).map((_: unknown, index: number) => (
+               <Grid item xs={12} sm={6} md={6} key={`skel-sent-${index}`} sx={{ display: 'flex' }}>
+                 <Paper elevation={0} sx={(theme) => ({ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}`, height: '100%', width: '100%', display: 'flex', flexDirection: 'column', gap: 1.5 })}>
+                   {/* Top section skeleton */}
+                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'nowrap', gap: 1 }}>
+                     {/* Left: Title, Invitee, Date, Location */}
+                     <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                       <Skeleton variant="text" width="70%" sx={{ fontSize: '1rem' }} />
+                       {/* Invitee Skeleton */}
+                       <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center' }}>
+                         <Skeleton variant="text" width="30px" sx={{ mr: 0.5, fontSize: '0.8rem' }} />
+                         <Skeleton variant="circular" width={26} height={26} sx={{ mr: 1 }} />
+                         <Skeleton variant="text" width="40%" sx={{ fontSize: '0.8rem' }} />
                        </Box>
-                     </Paper>
-                  </Grid>
-                ))}
-            </Grid>
+                       {/* Date/Location Skeleton */}
+                       <Skeleton variant="text" width="50%" sx={{ fontSize: '0.8rem', mt: 0.5 }} />
+                       <Skeleton variant="text" width="60%" sx={{ fontSize: '0.8rem' }} />
+                     </Box>
+                     {/* Right: Status Tag, Details Button */}
+                     <Stack direction="column" spacing={1} alignItems="flex-end" sx={{ flexShrink: 0 }}>
+                       <Skeleton variant="rounded" width={60} height={22} />
+                       <Skeleton variant="rounded" width={70} height={24} />
+                     </Stack>
+                   </Box>
+                   {/* Bottom section skeleton (if needed, e.g., for actions) */}
+                   {/* <Box sx={{ mt: 'auto', width: '100%' }}> ... </Box> */}
+                 </Paper>
+               </Grid>
+             ))}
+           </Grid>
          )}
          {/* Error Display */}
          {!sentLoading && sentError && sentInvites.length === 0 && (
@@ -504,26 +521,48 @@ const CommitmentInvitations: React.FC = () => {
          {sentInvites.length > 0 && (
             <Box>
                 <Grid container spacing={2} sx={{ width: '100%', m: 0 }}>
-                  {sentInvites.map((invite, index) => {
+                  {sentInvites.map((inviteDetail, index) => {
                       const attachObserver = index === sentInvites.length - 3;
+                      const invitee = inviteDetail.invitee; // Get invitee details
+                      const commitment = inviteDetail.commitment; // Get commitment details
+
                       return (
-                          <Grid item xs={12} sm={6} md={6} key={invite.id} sx={{ display: 'flex' }} ref={attachObserver ? lastSentInviteElementRef : undefined}>
+                          <Grid item xs={12} sm={6} md={6} key={inviteDetail.id} sx={{ display: 'flex' }} ref={attachObserver ? lastSentInviteElementRef : undefined}>
                               <Paper
-                                elevation={0}
-                                sx={(theme) => ({ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}`, height: '100%', width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' })}
+                                  elevation={0}
+                                  sx={(theme) => ({ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}`, height: '100%', width: '100%', display: 'flex', flexDirection: 'column', gap: 1.5 })}
                               >
-                                {/* Top part: Details */} 
+                                {/* Top section */}
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'nowrap', gap: 1 }}>
+                                  {/* Left: Title, Invitee, Date, Location */}
                                   <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-                                      <AccessibleTypography variant="subtitle1" fontWeight="medium" noWrap title={invite.title}>{invite.title}</AccessibleTypography>
-                                      <AccessibleTypography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{t('common.date')}: {formatDate(invite.dateTime)}</AccessibleTypography>
-                                      <AccessibleTypography variant="body2" color="text.secondary" noWrap title={invite.location.description}>{t('commitments.table.location')}: {invite.location.description}</AccessibleTypography>
+                                    <AccessibleTypography variant="subtitle1" fontWeight="medium" noWrap title={commitment.title}>{commitment.title}</AccessibleTypography>
+                                    {/* Invitee Chip */}
+                                    <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center' }}>
+                                      <Typography variant="body2" color="text.secondary" sx={{ mr: 0.5 }}>{t('commitments.invitations.to', 'To')}:</Typography>
+                                      {invitee ? (
+                                        <Chip component={RouterLink} to={`/people/${invitee.username}`} clickable
+                                          avatar={<Avatar src={invitee.profilePicture || undefined} sx={{ width: 26, height: 26 }}>{!invitee.profilePicture && invitee.username.charAt(0).toUpperCase()}</Avatar>}
+                                          label={invitee.displayName || invitee.username} size="small"
+                                          sx={(theme) => ({ height: 'auto', maxWidth: 'calc(100% - 50px)', backgroundColor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, color: theme.palette.text.primary, borderRadius: '16px', '& .MuiChip-avatar': { margin: '1px -2px 1px 3px' }, '& .MuiChip-label': { py: 0.2, px: 0.6, fontSize: '0.75rem' } })} />
+                                      ) : (<Typography variant="body2" color="text.secondary">{t('common.unknown', 'Unknown')}</Typography>)}
+                                    </Box>
+                                    {/* Date/Location */}
+                                    <AccessibleTypography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{t('common.date')}: {formatDate(commitment.dateTime)}</AccessibleTypography>
+                                    <AccessibleTypography variant="body2" color="text.secondary" noWrap title={commitment.location.description}>{t('commitments.table.location')}: {commitment.location.description}</AccessibleTypography>
                                   </Box>
-                                  {/* Details Button */} 
-                                  <Button variant="text" size="small" onClick={() => handleViewDetails(invite.id)} startIcon={<Info size={16} weight="regular" />} sx={{ flexShrink: 0, minWidth: 'auto', p: '4px 8px' }}>{t('common.details', 'Details')}</Button>
+                                  {/* Right: Status Tag, Details Button */}
+                                  <Stack direction="column" spacing={1} alignItems="flex-end" sx={{ flexShrink: 0 }}>
+                                    {/* Status Tag */}
+                                    <Box sx={(theme) => { const statusLower = inviteDetail.status.toLowerCase(); let statusColor = theme.palette.warning.main; if (statusLower === 'accepted') statusColor = theme.palette.success.main; else if (statusLower === 'rejected') statusColor = theme.palette.error.main; return { display: 'inline-block', px: 1.2, py: 0.4, borderRadius: '16px', backgroundColor: theme.palette.background.paper, border: `1px solid ${statusColor}`, color: statusColor, fontSize: '0.75rem', fontWeight: 500, textTransform: 'capitalize', whiteSpace: 'nowrap' }; }}>
+                                      {t(`commitments.invitations.status.${inviteDetail.status.toLowerCase()}`, inviteDetail.status)}
+                                    </Box>
+                                    {/* Details Button */}
+                                    <Button variant="text" size="small" onClick={() => handleViewDetails(commitment.id)} startIcon={<Info size={16} weight="regular" />} sx={{ flexShrink: 0, minWidth: 'auto', lineHeight: 1 }}>{t('common.details', 'Details')}</Button>
+                                  </Stack>
                                 </Box>
-                                {/* Optional: Bottom part */} 
-                                {/* <Box sx={{ mt: 'auto' }}>...</Box> */} 
+                                {/* Optional: Bottom section (e.g., for cancel button if needed) */}
+                                {/* <Box sx={{ mt: 'auto', width: '100%' }}> ... </Box> */}
                               </Paper>
                           </Grid>
                       );
@@ -531,22 +570,36 @@ const CommitmentInvitations: React.FC = () => {
                 </Grid>
                 
                 {/* Loading More Indicator - Corrected Structure */}
+                {/* Loading More Indicator for Sent Tab (Updated Structure) */}
                 {isLoadingMoreSent.current && (
                   <Grid container spacing={2} sx={{ width: '100%', m: 0, justifyContent: 'center', mt: 1, py: 3 }}>
-                     {/* Show 1 Skeleton Card when loading more */} 
-                      <Grid item xs={12} sm={6} md={6} sx={{ display: 'flex' }}>
-                          {/* Single Sent Skeleton Card */} 
-                          <Paper elevation={0} sx={(theme) => ({ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}`, height: '100%', width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' })}> 
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'nowrap', gap: 1 }}>
-                              <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-                                  <Skeleton variant="text" width="70%" sx={{ fontSize: '1rem' }} />
-                                  <Skeleton variant="text" width="60%" sx={{ fontSize: '0.8rem' }} />
-                                  <Skeleton variant="text" width="80%" sx={{ fontSize: '0.8rem' }} />
-                              </Box>
-                              <Skeleton variant="rounded" width={70} height={24} sx={{ flexShrink: 0 }} />
+                    {/* Show 1 Skeleton Card when loading more */}
+                    <Grid item xs={12} sm={6} md={6} sx={{ display: 'flex' }}>
+                      {/* Single Sent Skeleton Card (Updated) */}
+                      <Paper elevation={0} sx={(theme) => ({ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}`, height: '100%', width: '100%', display: 'flex', flexDirection: 'column', gap: 1.5 })}>
+                        {/* Top section skeleton */}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'nowrap', gap: 1 }}>
+                          {/* Left: Title, Invitee, Date, Location */}
+                          <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                            <Skeleton variant="text" width="70%" sx={{ fontSize: '1rem' }} />
+                            {/* Invitee Skeleton */}
+                            <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center' }}>
+                              <Skeleton variant="text" width="30px" sx={{ mr: 0.5, fontSize: '0.8rem' }} />
+                              <Skeleton variant="circular" width={26} height={26} sx={{ mr: 1 }} />
+                              <Skeleton variant="text" width="40%" sx={{ fontSize: '0.8rem' }} />
                             </Box>
-                          </Paper>
-                      </Grid>
+                            {/* Date/Location Skeleton */}
+                            <Skeleton variant="text" width="50%" sx={{ fontSize: '0.8rem', mt: 0.5 }} />
+                            <Skeleton variant="text" width="60%" sx={{ fontSize: '0.8rem' }} />
+                          </Box>
+                          {/* Right: Status Tag, Details Button */}
+                          <Stack direction="column" spacing={1} alignItems="flex-end" sx={{ flexShrink: 0 }}>
+                            <Skeleton variant="rounded" width={60} height={22} />
+                            <Skeleton variant="rounded" width={70} height={24} />
+                          </Stack>
+                        </Box>
+                      </Paper>
+                    </Grid>
                   </Grid>
                 )}
 

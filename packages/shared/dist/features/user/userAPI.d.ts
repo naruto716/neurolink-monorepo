@@ -1,7 +1,6 @@
 import { AxiosInstance } from 'axios';
 import { User, Tag, PaginatedUsersResponse, UserProfileInput, PaginatedConnectionsResponse, Connection } from './types';
-import { Commitment, PaginatedCommitmentsResponse, PaginatedSentInvitationsResponse, PaginatedReceivedInvitationsResponse, ReceivedInvitation, // Added
-CreateCommitmentRequest } from '../commitments/types';
+import { Commitment, PaginatedCommitmentsResponse, PaginatedSentInvitationsResponse, PaginatedReceivedInvitationsResponse, ReceivedInvitation, CreateCommitmentRequest, PaginatedSentInvitationsDetailResponse } from '../commitments/types';
 /**
  * Get the current user profile
  * @param apiClient The Axios instance to use.
@@ -170,6 +169,15 @@ export interface FetchInvitationsParams {
  * @returns Promise with paginated sent invitation data (which are Commitments)
  */
 export declare const fetchSentInvitations: (apiClient: AxiosInstance, username: string, params?: FetchInvitationsParams) => Promise<PaginatedSentInvitationsResponse>;
+/**
+ * Fetch detailed sent invitations for a specific user with pagination.
+ * GET /Commitment/invitations/detail/sent/{username}
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user whose sent invitations to fetch.
+ * @param params Query parameters for pagination (pageNumber, pageSize)
+ * @returns Promise with paginated detailed sent invitation data
+ */
+export declare const fetchSentInvitationsDetail: (apiClient: AxiosInstance, username: string, params?: FetchInvitationsParams) => Promise<PaginatedSentInvitationsDetailResponse>;
 /**
  * Fetch received commitment invitations for a specific user.
  * GET /commitment/invitations/received/{username}
