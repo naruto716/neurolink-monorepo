@@ -100,8 +100,27 @@ const CommitmentDetail: React.FC<CommitmentDetailProps> = ({ commitmentId }) => 
   const [participantDetails, setParticipantDetails] = useState<UserType[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
   const [participantError, setParticipantError] = useState<string | null>(null);
+  const [creatorDetails, setCreatorDetails] = useState<UserType | null>(null);
+  const [loadingCreator, setLoadingCreator] = useState(false);
+  const [creatorError, setCreatorError] = useState<string | null>(null);
 
   useEffect(() => {
+    const fetchCreatorDetails = async () => {
+      if (!commitment?.creatorUsername) return;
+
+      setLoadingCreator(true);
+      setCreatorError(null);
+      try {
+        const creator = await fetchUserByUsername(apiClient, commitment.creatorUsername);
+        setCreatorDetails(creator);
+      } catch (err) {
+        console.error(`Failed to load details for creator ${commitment.creatorUsername}:`, err);
+        setCreatorError(t('commitments.detail.creatorLoadError', 'Failed to load creator details.'));
+      } finally {
+        setLoadingCreator(false);
+      }
+    };
+
     const fetchParticipantDetails = async () => {
       if (!commitment?.participants?.length) return;
       
@@ -133,10 +152,13 @@ const CommitmentDetail: React.FC<CommitmentDetailProps> = ({ commitmentId }) => 
       }
     };
     
-    fetchParticipantDetails();
-  }, [commitment?.participants, t]);
+    if (commitment) {
+      fetchCreatorDetails();
+      fetchParticipantDetails();
+    }
+  }, [commitment, t]);
 
-  if (isLoading) {
+  if (isLoading || loadingCreator) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" sx={{ p: 3, minHeight: 200 }}>
         <CircularProgress size={40} />
@@ -464,25 +486,49 @@ const CommitmentDetail: React.FC<CommitmentDetailProps> = ({ commitmentId }) => 
           </Box>
           
           <Box sx={{ ml: 2 }}>
-            <Chip
-              avatar={
-                <Avatar sx={{ width: 28, height: 28 }}>
-                  {commitment.creatorUsername.charAt(0).toUpperCase()}
+            {loadingCreator ? (
+              <CircularProgress size={24} />
+            ) : creatorError ? (
+              <Alert severity="error" sx={{ maxWidth: 'fit-content' }}>
+                {creatorError}
+              </Alert>
+            ) : creatorDetails ? (
+              <Stack 
+                direction="row" 
+                spacing={1.5} 
+                alignItems="center" 
+                component={RouterLink} 
+                to={`/people/${creatorDetails.username}`}
+                sx={{ 
+                  textDecoration: 'none', 
+                  color: 'inherit', 
+                  display: 'inline-flex'
+                }}
+              >
+                <Avatar 
+                  src={creatorDetails.profilePicture || undefined}
+                  sx={{ width: 32, height: 32 }}
+                >
+                  {!creatorDetails.profilePicture && creatorDetails.username.charAt(0).toUpperCase()} 
                 </Avatar>
-              }
-              label={commitment.creatorUsername}
-              variant="outlined"
-              sx={{ 
-                height: 36,
-                borderRadius: '18px',
-                backgroundColor: 'transparent',
-                border: 'none',
-                '& .MuiChip-label': {
-                  px: 1,
-                  fontWeight: 500
-                }
-              }}
-            />
+                <Box>
+                  <AccessibleTypography 
+                    variant="body1" 
+                    sx={{ 
+                      fontWeight: 500,
+                      lineHeight: 1.2
+                    }}
+                  >
+                    {creatorDetails.displayName || creatorDetails.username}
+                  </AccessibleTypography>
+                   <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.2 }}>
+                      @{creatorDetails.username}
+                  </Typography>
+                </Box>
+              </Stack>
+            ) : (
+              <Typography variant="body1">{commitment.creatorUsername}</Typography> 
+            )}
           </Box>
         </Box>
 
@@ -508,7 +554,7 @@ const CommitmentDetail: React.FC<CommitmentDetailProps> = ({ commitmentId }) => 
               {participantError}
             </Alert>
           ) : commitment.participants.length > 0 ? (
-            <Grid container spacing={2} sx={{ mt: 0.5 }}>
+            <Grid container spacing={2} sx={{ width: '100%', m: 0 }}>
               {participantDetails.map((user) => {
                 const MAX_TAGS_DISPLAYED = 3;
                 
@@ -518,14 +564,17 @@ const CommitmentDetail: React.FC<CommitmentDetailProps> = ({ commitmentId }) => 
                 ].slice(0, MAX_TAGS_DISPLAYED) : [];
                 
                 return (
-                  <Grid item xs={12} sm={12} md={6} key={user.id || user.username}>
+                  <Grid item xs={12} sm={12} md={6} key={user.id || user.username} sx={{ display: 'flex' }}>
                     <Paper
                       elevation={0}
-                      sx={(theme) => ({
+                      sx={(theme) => ({ 
                         p: 2.5,
                         borderRadius: 3,
                         border: `1px solid ${theme.palette.divider}`,
-                        height: '100%'
+                        height: '100%',
+                        width: '100%',
+                        display: 'flex',
+                        flexDirection: 'column'
                       })}
                     >
                       {/* User header with avatar and name */}
@@ -602,7 +651,8 @@ const CommitmentDetail: React.FC<CommitmentDetailProps> = ({ commitmentId }) => 
                           elevation={0} 
                           sx={(theme) => ({ 
                             p: 1.2, 
-                            bgcolor: theme.palette.mode === 'light' ? '#E5ECF6' : '#2a2a32',
+                            bgcolor: theme.palette.background.paper,
+                            border: `1px solid ${theme.palette.divider}`,
                             borderRadius: '8px',
                             mb: 1,
                             fontSize: '0.8rem'

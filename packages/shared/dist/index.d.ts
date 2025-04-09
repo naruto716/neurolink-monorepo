@@ -14,7 +14,7 @@ export type { ChatState, ConnectionStatus } from './features/chat/chatSlice';
 export type { Tag, UserPreferences, User, UserProfileInput, ListedUser, PaginatedUsersResponse, Connection, PaginatedConnectionsResponse } from './features/user/types';
 export * from './features/posts/types';
 export * from './features/commitments/types';
-export type { PaginatedCommitmentsResponse } from './features/commitments/types';
+export type { Commitment, CommitmentParticipant, PaginatedCommitmentsResponse, ReceivedInvitation, ReceivedInvitationCommitment, PaginatedReceivedInvitationsResponse, PaginatedSentInvitationsResponse } from './features/commitments/types';
 export * from './features/user/userAPI';
 export * from './features/posts/postsAPI';
 export * from './features/tokens/tokensSlice';

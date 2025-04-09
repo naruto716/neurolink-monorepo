@@ -239,11 +239,14 @@
     "appName": "Neurolink",
     "user": "User",
     "location": "Location",
+    "date": "Date",
     "dateTime": "Date & Time",
     "createdBy": "Created by",
     "from": "From",
     "upcoming": "Upcoming",
-    "past": "Past"
+    "past": "Past",
+    "accept": "Accept",
+    "reject": "Reject"
   },
   "editProfile": {
     "title": "Edit Your Profile",
@@ -323,7 +326,24 @@
     "noCommitmentsFound": "You don't have any commitments yet.",
     "tabs": {
       "overview": "Overview",
-      "commitments": "Commitments"
+      "myCommitments": "My Commitments",
+      "invitations": "Invitations"
+    },
+    "invitations": {
+      "title": "Commitment Invitations",
+      "receivedTab": "Received",
+      "sentTab": "Sent",
+      "noReceived": "No received invitations found.",
+      "noSent": "No sent invitations found.",
+      "from": "From",
+      "errorLoadingReceived": "Failed to load received invitations.",
+      "errorLoadingSent": "Failed to load sent invitations.",
+      "errorResponding": "Failed to respond to invitation.",
+      "status": {
+        "pending": "Pending",
+        "accepted": "Accepted",
+        "rejected": "Rejected"
+      }
     },
     "table": {
       "title": "Title",
@@ -336,8 +356,14 @@
       "errorLoading": "Failed to load commitment details.",
       "notFound": "Commitment not found.",
       "creator": "Created By",
+      "creatorLoadError": "Failed to load creator details.",
       "participants": "Participants",
-      "noParticipants": "No participants listed."
+      "participantsLoadError": "Failed to load participant details.",
+      "noParticipants": "No participants listed.",
+      "modalTitle": "Commitment Details",
+      "addToCalendar": "Add to your calendar",
+      "viewCampusMap": "View University of Auckland Campus Map",
+      "viewProfile": "View"
     }
   }
 }

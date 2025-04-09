@@ -1,6 +1,6 @@
 import { AxiosInstance } from 'axios';
 import { User, Tag, PaginatedUsersResponse, UserProfileInput, PaginatedConnectionsResponse, Connection } from './types';
-import { Commitment, PaginatedCommitmentsResponse } from '../commitments/types';
+import { Commitment, PaginatedCommitmentsResponse, PaginatedSentInvitationsResponse, PaginatedReceivedInvitationsResponse, ReceivedInvitation } from '../commitments/types';
 /**
  * Get the current user profile
  * @param apiClient The Axios instance to use.
@@ -156,3 +156,34 @@ export declare const fetchUserCommitments: (apiClient: AxiosInstance, username: 
  * @returns Promise with the commitment data.
  */
 export declare const fetchCommitmentById: (apiClient: AxiosInstance, id: number | string) => Promise<Commitment>;
+export interface FetchInvitationsParams {
+    pageNumber?: number;
+    pageSize?: number;
+}
+/**
+ * Fetch sent commitment invitations for a specific user.
+ * GET /commitment/invitations/sent/{username}
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user whose sent invitations to fetch.
+ * @param params Query parameters for pagination (pageNumber, pageSize)
+ * @returns Promise with paginated sent invitation data (which are Commitments)
+ */
+export declare const fetchSentInvitations: (apiClient: AxiosInstance, username: string, params?: FetchInvitationsParams) => Promise<PaginatedSentInvitationsResponse>;
+/**
+ * Fetch received commitment invitations for a specific user.
+ * GET /commitment/invitations/received/{username}
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user whose received invitations to fetch.
+ * @param params Query parameters for pagination (pageNumber, pageSize)
+ * @returns Promise with paginated received invitation data
+ */
+export declare const fetchReceivedInvitations: (apiClient: AxiosInstance, username: string, params?: FetchInvitationsParams) => Promise<PaginatedReceivedInvitationsResponse>;
+/**
+ * Respond to a received commitment invitation.
+ * PUT /commitment/invitations/{id}
+ * @param apiClient The Axios instance to use.
+ * @param invitationId The ID of the invitation to respond to.
+ * @param status The new status ('accepted' or 'rejected').
+ * @returns Promise with the updated invitation data.
+ */
+export declare const respondToCommitmentInvitation: (apiClient: AxiosInstance, invitationId: number, status: "accepted" | "rejected") => Promise<ReceivedInvitation>;

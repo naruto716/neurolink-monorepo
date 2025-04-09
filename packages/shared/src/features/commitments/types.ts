@@ -29,6 +29,45 @@ export interface PaginatedCommitmentsResponse {
   totalItems: number; // Or totalCount, check API consistency
 }
 
+// --- Invitation Types ---
+
+// Sent Invitations are essentially Commitments from the perspective of the sender
+// So we can reuse the PaginatedCommitmentsResponse for sent invitations
+export type PaginatedSentInvitationsResponse = PaginatedCommitmentsResponse;
+
+// Type for the nested commitment object within a ReceivedInvitation
+export interface ReceivedInvitationCommitment {
+    id: number;
+    title: string;
+    description: string;
+    dateTime: string;
+    location: {
+        description: string;
+    };
+    creatorUsername: string;
+}
+
+// Define the ReceivedInvitation type based on the API response schema
+export interface ReceivedInvitation {
+    id: number;
+    commitmentId: number;
+    invitedUserId: number; // Assuming this refers to the recipient's user ID
+    status: string; // e.g., "pending", "accepted", "declined"
+    createdAt: string;
+    respondedAt: string | null; // Can be null if not yet responded
+    commitment: ReceivedInvitationCommitment;
+}
+
+// Interface for paginated received invitations response
+export interface PaginatedReceivedInvitationsResponse {
+    items: ReceivedInvitation[];
+    pageNumber: number;
+    pageSize: number;
+    totalPages: number;
+    totalItems: number;
+}
+
+
 // You might also want types for API requests if needed, e.g., for creating/updating commitments
 // export interface CreateCommitmentRequest { ... }
 // export interface UpdateCommitmentRequest { ... }

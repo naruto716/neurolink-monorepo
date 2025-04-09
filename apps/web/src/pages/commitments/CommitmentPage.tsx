@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Container, Box, Tabs, Tab } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import CommitmentOverview from './components/CommitmentOverview'; // Import the overview component
+import CommitmentOverview from './components/CommitmentOverview';
+import CommitmentList from './components/CommitmentList'; // Import CommitmentList
+import CommitmentInvitations from './components/CommitmentInvitations'; // Import CommitmentInvitations
 
 // Define the structure for tabs
 interface TabPanelProps {
@@ -47,11 +49,12 @@ const CommitmentPage: React.FC = () => {
 
   // Define tabs
   const tabs = [
-    { label: t('commitments.tabs.overview'), component: <CommitmentOverview /> },
-    { label: t('commitments.tabs.commitments'), component: <div>Commitments List/Management Content Goes Here</div> },
+    { label: t('commitments.tabs.overview', 'Overview'), component: <CommitmentOverview /> },
+    { label: t('commitments.tabs.myCommitments', 'My Commitments'), component: <CommitmentList /> },
+    { label: t('commitments.tabs.invitations', 'Invitations'), component: <CommitmentInvitations /> },
     // Add other tabs here later, e.g.:
-    // { label: t('commitments.tabs.targets'), component: <div>Targets Content</div> },
-    // { label: t('commitments.tabs.budget'), component: <div>Budget Content</div> },
+    // { label: t('commitments.tabs.targets', 'Targets'), component: <div>Targets Content</div> },
+    // { label: t('commitments.tabs.budget', 'Budget'), component: <div>Budget Content</div> },
   ];
 
   return (

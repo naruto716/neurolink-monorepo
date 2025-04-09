@@ -420,4 +420,81 @@ export const fetchCommitmentById = async (apiClient, id // Accept number or stri
         throw new Error(error.response?.data?.message || `Failed to fetch commitment: ${id}`);
     }
 };
+// --- Commitment Invitation API Functions ---
+const API_ENDPOINT_COMMITMENT_INVITATIONS = '/commitment/invitations'; // Base endpoint
+/**
+ * Fetch sent commitment invitations for a specific user.
+ * GET /commitment/invitations/sent/{username}
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user whose sent invitations to fetch.
+ * @param params Query parameters for pagination (pageNumber, pageSize)
+ * @returns Promise with paginated sent invitation data (which are Commitments)
+ */
+export const fetchSentInvitations = async (apiClient, username, params = {}) => {
+    try {
+        const queryParams = {};
+        queryParams.pageNumber = params.pageNumber || 1; // Default page 1
+        queryParams.pageSize = params.pageSize || 10; // Default limit 10
+        const config = { params: queryParams };
+        const response = await apiClient.get(`${API_ENDPOINT_COMMITMENT_INVITATIONS}/sent/${username}`, config);
+        console.log(`Sent invitations fetched successfully for ${username} with params:`, queryParams, "Response:", response.data);
+        return response.data;
+    }
+    catch (error) {
+        console.error(`Error fetching sent invitations for ${username}:`, error.response?.data || error.message);
+        if (error.response?.data?.message) {
+            throw new Error(`Failed to fetch sent invitations for ${username}: ${error.response.data.message}`);
+        }
+        throw new Error(`Failed to fetch sent invitations for ${username}`);
+    }
+};
+/**
+ * Fetch received commitment invitations for a specific user.
+ * GET /commitment/invitations/received/{username}
+ * @param apiClient The Axios instance to use.
+ * @param username The username of the user whose received invitations to fetch.
+ * @param params Query parameters for pagination (pageNumber, pageSize)
+ * @returns Promise with paginated received invitation data
+ */
+export const fetchReceivedInvitations = async (apiClient, username, params = {}) => {
+    try {
+        const queryParams = {};
+        queryParams.pageNumber = params.pageNumber || 1; // Default page 1
+        queryParams.pageSize = params.pageSize || 10; // Default limit 10
+        const config = { params: queryParams };
+        const response = await apiClient.get(`${API_ENDPOINT_COMMITMENT_INVITATIONS}/received/${username}`, config);
+        console.log(`Received invitations fetched successfully for ${username} with params:`, queryParams, "Response:", response.data);
+        return response.data;
+    }
+    catch (error) {
+        console.error(`Error fetching received invitations for ${username}:`, error.response?.data || error.message);
+        if (error.response?.data?.message) {
+            throw new Error(`Failed to fetch received invitations for ${username}: ${error.response.data.message}`);
+        }
+        throw new Error(`Failed to fetch received invitations for ${username}`);
+    }
+};
+/**
+ * Respond to a received commitment invitation.
+ * PUT /commitment/invitations/{id}
+ * @param apiClient The Axios instance to use.
+ * @param invitationId The ID of the invitation to respond to.
+ * @param status The new status ('accepted' or 'rejected').
+ * @returns Promise with the updated invitation data.
+ */
+export const respondToCommitmentInvitation = async (apiClient, invitationId, status) => {
+    try {
+        const response = await apiClient.put(`${API_ENDPOINT_COMMITMENT_INVITATIONS}/${invitationId}`, { status } // Request body contains the new status
+        );
+        console.log(`Invitation ${invitationId} response set to ${status} successfully:`, response.data);
+        return response.data;
+    }
+    catch (error) {
+        console.error(`Error responding to invitation ${invitationId}:`, error.response?.data || error.message);
+        if (error.response?.data?.message) {
+            throw new Error(`Failed to respond to invitation ${invitationId}: ${error.response.data.message}`);
+        }
+        throw new Error(`Failed to respond to invitation ${invitationId}`);
+    }
+};
 // End of file
