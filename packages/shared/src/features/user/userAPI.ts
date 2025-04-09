@@ -8,7 +8,8 @@ import {
     PaginatedCommitmentsResponse,
     PaginatedSentInvitationsResponse,
     PaginatedReceivedInvitationsResponse,
-    ReceivedInvitation // Added
+    ReceivedInvitation, // Added
+    CreateCommitmentRequest // Added for creating commitments
 } from '../commitments/types';
 
 const API_ENDPOINT_USER = '/users/me';
@@ -679,6 +680,32 @@ export const fetchAcceptedCommitmentCount = async (apiClient: AxiosInstance): Pr
      // Re-throw or handle error as appropriate for your app's error handling strategy
     throw error;
   }
+};
+
+
+/**
+ * Create a new commitment.
+ * POST /commitment
+ * @param apiClient The Axios instance to use.
+ * @param commitmentData The data for the new commitment.
+ * @returns Promise with the created commitment data.
+ */
+export const createCommitment = async (
+    apiClient: AxiosInstance,
+    commitmentData: CreateCommitmentRequest
+): Promise<Commitment> => { // Returns the created Commitment
+    try {
+        // The API endpoint is /api/v1/Commitment, so just /commitment relative to base URL
+        const response = await apiClient.post<Commitment>(`/commitment`, commitmentData);
+        console.log(`Commitment created successfully:`, response.data);
+        return response.data;
+    } catch (error: any) {
+        console.error(`Error creating commitment:`, error.response?.data || error.message);
+        if (error.response?.data?.message) {
+            throw new Error(`Failed to create commitment: ${error.response.data.message}`);
+        }
+        throw new Error(`Failed to create commitment`);
+    }
 };
 
 

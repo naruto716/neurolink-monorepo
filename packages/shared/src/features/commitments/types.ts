@@ -68,6 +68,15 @@ export interface PaginatedReceivedInvitationsResponse {
 }
 
 
+// Input type for creating a new commitment
+export interface CreateCommitmentRequest {
+  title: string;
+  description: string;
+  dateTime: string; // ISO date string
+  location: {
+    description: string;
+  };
+}
+
 // You might also want types for API requests if needed, e.g., for creating/updating commitments
-// export interface CreateCommitmentRequest { ... }
 // export interface UpdateCommitmentRequest { ... }

@@ -246,7 +246,10 @@
     "upcoming": "Upcoming",
     "past": "Past",
     "accept": "Accept",
-    "reject": "Reject"
+    "reject": "Reject",
+    "create": "Create",
+    "errorApiClient": "API client is not available. Please try again later.",
+    "errorRequired": "This field is required."
   },
   "editProfile": {
     "title": "Edit Your Profile",
@@ -373,6 +376,19 @@
       "addToCalendar": "Add to your calendar",
       "viewCampusMap": "View University of Auckland Campus Map",
       "viewProfile": "View"
+    },
+    "organizeButton": "Organize",
+    "create": {
+      "modalTitle": "Organize a New Commitment",
+      "titleLabel": "Title",
+      "descriptionLabel": "Description",
+      "dateTimeLabel": "Date & Time",
+      "locationLabel": "Location",
+      "locationHelp": "Enter address or place name. Map will preview below.",
+      "mapPreviewLabel": "Map Preview",
+      "successMessage": "Commitment created successfully!",
+      "errorMessage": "Failed to create commitment. Please try again.",
+      "errorRequiredFields": "Please fill in all required fields (Title, Date & Time, Location)."
     }
   }
 }

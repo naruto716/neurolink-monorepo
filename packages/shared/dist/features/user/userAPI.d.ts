@@ -1,6 +1,7 @@
 import { AxiosInstance } from 'axios';
 import { User, Tag, PaginatedUsersResponse, UserProfileInput, PaginatedConnectionsResponse, Connection } from './types';
-import { Commitment, PaginatedCommitmentsResponse, PaginatedSentInvitationsResponse, PaginatedReceivedInvitationsResponse, ReceivedInvitation } from '../commitments/types';
+import { Commitment, PaginatedCommitmentsResponse, PaginatedSentInvitationsResponse, PaginatedReceivedInvitationsResponse, ReceivedInvitation, // Added
+CreateCommitmentRequest } from '../commitments/types';
 /**
  * Get the current user profile
  * @param apiClient The Axios instance to use.
@@ -189,3 +190,11 @@ export declare const fetchReceivedInvitations: (apiClient: AxiosInstance, userna
 export declare const respondToCommitmentInvitation: (apiClient: AxiosInstance, invitationId: number, status: "accepted" | "rejected") => Promise<ReceivedInvitation>;
 export declare const fetchPendingInvitationCount: (apiClient: AxiosInstance) => Promise<number>;
 export declare const fetchAcceptedCommitmentCount: (apiClient: AxiosInstance) => Promise<number>;
+/**
+ * Create a new commitment.
+ * POST /commitment
+ * @param apiClient The Axios instance to use.
+ * @param commitmentData The data for the new commitment.
+ * @returns Promise with the created commitment data.
+ */
+export declare const createCommitment: (apiClient: AxiosInstance, commitmentData: CreateCommitmentRequest) => Promise<Commitment>;

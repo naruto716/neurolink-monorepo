@@ -192,17 +192,7 @@ const CommitmentDetail: React.FC<CommitmentDetailProps> = ({ commitmentId }) => 
 
   // Generate a specific Google Maps URL for University of Auckland
   const getGoogleMapUrl = (location: string) => {
-    // Check if the location is related to the University of Auckland
-    const lowerCaseLocation = location.toLowerCase();
-    
-    // If location mentions Auckland university or campus, use a specific query for University of Auckland
-    if (lowerCaseLocation.includes('auckland') || 
-        lowerCaseLocation.includes('university') || 
-        lowerCaseLocation.includes('campus')) {
-      return 'https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=University+of+Auckland,Auckland,New+Zealand&zoom=15';
-    }
-    
-    // Otherwise, use the provided location description
+    // Always use the provided location description
     const query = encodeURIComponent(location);
     return `https://www.google.com/maps/embed/v1/place?key=AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8&q=${query}`;
   };

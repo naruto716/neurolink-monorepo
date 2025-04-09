@@ -50,3 +50,11 @@ export interface PaginatedReceivedInvitationsResponse {
     totalPages: number;
     totalItems: number;
 }
+export interface CreateCommitmentRequest {
+    title: string;
+    description: string;
+    dateTime: string;
+    location: {
+        description: string;
+    };
+}

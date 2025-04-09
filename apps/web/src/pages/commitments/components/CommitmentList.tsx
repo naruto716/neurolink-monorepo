@@ -17,28 +17,52 @@ import {
   TableCell,
   TableBody,
   TableSortLabel,
+  TextField, // Added for form
   Tooltip,
   Button,
-  Dialog, // Import Dialog components
+  Dialog,
+  DialogActions, // Added for modal buttons
   DialogTitle,
   DialogContent,
   IconButton,
-  ToggleButton, // Added
-  ToggleButtonGroup, // Added
+  ToggleButton,
+  ToggleButtonGroup,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close'; // Import CloseIcon
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'; // Added for date picker
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFnsV3'; // Added date adapter
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker'; // Added date time picker
+import AddIcon from '@mui/icons-material/Add'; // Added for button icon
+import CloseIcon from '@mui/icons-material/Close';
 import { useTranslation } from 'react-i18next';
 import { selectCurrentUser } from '@neurolink/shared/src/features/user/userSlice';
-// Commitment type is needed here, PaginatedCommitmentsResponse might not be if we only use items
-import { Commitment, PaginatedCommitmentsResponse } from '@neurolink/shared';
-import { fetchUserCommitments } from '@neurolink/shared/src/features/user/userAPI';
+import {
+  Commitment,
+  PaginatedCommitmentsResponse,
+  CreateCommitmentRequest, // Added
+} from '@neurolink/shared'; // Adjusted import
+import {
+  fetchUserCommitments,
+  createCommitment, // Added
+} from '@neurolink/shared/src/features/user/userAPI';
 import { SharedRootState } from '@neurolink/shared/src/app/store/store';
 import { AccessibleTypography } from '../../../app/components/AccessibleTypography';
 import apiClientInstance from '../../../app/api/apiClient';
-import { Info } from '@phosphor-icons/react';
-import CommitmentDetail from './CommitmentDetail'; // Import the detail component
+import { Info, MapPin } from '@phosphor-icons/react'; // Added MapPin
+import CommitmentDetail from './CommitmentDetail';
+import { toast } from 'react-toastify';
+import debounce from 'lodash/debounce'; // Added for map preview debouncing
 
 const ITEMS_PER_PAGE = 5;
+// Note: Using the hardcoded API key found in CommitmentDetail.tsx. Ideally, move this to config.
+const GOOGLE_MAPS_API_KEY = 'AIzaSyBFw0Qbyq9zTFTd-tUY6dZWTgaQzuU17R8'; 
+
+// Initial state for the new commitment form
+const initialNewCommitmentState: CreateCommitmentRequest = {
+  title: '',
+  description: '',
+  dateTime: new Date().toISOString(), // Default to now, will be updated by picker
+  location: { description: '' },
+};
 
 const CommitmentList: React.FC = () => {
   const { t } = useTranslation();
@@ -54,15 +78,42 @@ const CommitmentList: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedRole, setSelectedRole] = useState<'all' | 'organizer' | 'participant'>('all'); // State for role filter
 
-  // State for the modal
-  const [modalOpen, setModalOpen] = useState<boolean>(false);
+  // State for the details modal
+  const [detailModalOpen, setDetailModalOpen] = useState<boolean>(false);
   const [selectedCommitmentId, setSelectedCommitmentId] = useState<number | null>(null);
+
+  // State for the create modal
+  const [createModalOpen, setCreateModalOpen] = useState<boolean>(false);
+  const [newCommitmentData, setNewCommitmentData] = useState<CreateCommitmentRequest>(initialNewCommitmentState);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [mapUrl, setMapUrl] = useState<string>(''); // State for map preview URL
+
+
+  // Function to generate Google Maps embed URL
+  const generateMapUrl = (location: string): string => {
+    if (!location.trim()) {
+      return ''; // Return empty if location is empty
+    }
+    const query = encodeURIComponent(location);
+    // Use the same embed URL structure as CommitmentDetail
+    return `https://www.google.com/maps/embed/v1/place?key=${GOOGLE_MAPS_API_KEY}&q=${query}`;
+  };
+
+  // Debounced function to update the map URL state
+  const updateMapUrlDebounced = useCallback(
+    debounce((locationDescription: string) => {
+      setMapUrl(generateMapUrl(locationDescription));
+    }, 500), // Debounce time: 500ms
+    [] // Empty dependency array ensures the debounced function is created only once
+  );
 
   // Update fetchCommitments to accept and use the role filter
   const fetchCommitments = useCallback(async (
-    currentPage: number, 
+    currentPage: number,
     currentSortOrder: 'asc' | 'desc',
-    currentRole: 'all' | 'organizer' | 'participant' // Add role parameter
+    currentRole: 'all' | 'organizer' | 'participant'
   ) => {
     const username = currentUser?.username;
     if (!username || !apiClient) {
@@ -138,110 +189,193 @@ const CommitmentList: React.FC = () => {
 
   const now = new Date();
 
-  // --- Modal Handlers ---
+  // --- Detail Modal Handlers ---
   const handleViewDetails = (commitmentId: number) => {
     setSelectedCommitmentId(commitmentId);
-    setModalOpen(true);
+    setDetailModalOpen(true);
   };
 
-  const handleCloseModal = () => {
-    setModalOpen(false);
-    setSelectedCommitmentId(null); // Clear selection on close
+  const handleCloseDetailModal = () => {
+    setDetailModalOpen(false);
+    setSelectedCommitmentId(null);
   };
-  // --- End Modal Handlers ---
+  // --- End Detail Modal Handlers ---
+
+  // --- Create Modal Handlers ---
+  const handleOpenCreateModal = () => {
+    setNewCommitmentData(initialNewCommitmentState); // Reset form
+    setSelectedDate(new Date()); // Reset date picker
+    setSubmitError(null); // Clear previous errors
+    setMapUrl(''); // Clear map URL when opening modal
+    setCreateModalOpen(true);
+  };
+
+  const handleCloseCreateModal = () => {
+    if (isSubmitting) return; // Prevent closing while submitting
+    setCreateModalOpen(false);
+  };
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = event.target;
+    if (name === 'location') {
+      const newDescription = value;
+      setNewCommitmentData(prev => ({
+        ...prev,
+        location: { description: newDescription },
+      }));
+      // Call the debounced function to update the map preview
+      updateMapUrlDebounced(newDescription);
+    } else {
+      setNewCommitmentData(prev => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+  };
+
+  const handleDateChange = (newValue: Date | null) => {
+    setSelectedDate(newValue);
+    if (newValue) {
+      setNewCommitmentData(prev => ({
+        ...prev,
+        dateTime: newValue.toISOString(), // Update dateTime in ISO format
+      }));
+    }
+  };
+
+  const handleCreateCommitmentSubmit = async () => {
+    if (!apiClient) {
+      setSubmitError(t('common.errorApiClient'));
+      return;
+    }
+    if (!newCommitmentData.title || !newCommitmentData.dateTime || !newCommitmentData.location.description) {
+        setSubmitError(t('commitments.create.errorRequiredFields'));
+        return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    try {
+      await createCommitment(apiClient, newCommitmentData);
+      toast.success(t('commitments.create.successMessage'));
+      handleCloseCreateModal();
+      // Refresh the list by calling fetchCommitments with current settings
+      fetchCommitments(page, sortOrder, selectedRole);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setSubmitError(errorMessage || t('commitments.create.errorMessage'));
+      toast.error(errorMessage || t('commitments.create.errorMessage'));
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  // --- End Create Modal Handlers ---
+
 
   return (
     <Box>
-      {/* Header and Filter Section */}
+      {/* Header, Filter, and Create Button Section */}
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
         <AccessibleTypography variant="h6" component="h2">
           {t('commitments.yourCommitments')}
         </AccessibleTypography>
-        
-        {/* Role Filter Toggle Buttons */}
-        <ToggleButtonGroup
-          value={selectedRole}
-          exclusive
-          onChange={handleRoleChange}
-          aria-label={t('commitments.filter.roleLabel', "Filter by role")}
-          size="small"
-          // Removed sx from group, styling individual buttons now
-        >
-          {/* Style individual buttons for better theme integration */}
-          <ToggleButton 
-            value="all" 
-            aria-label={t('commitments.filter.all', "All")} 
-            sx={{ 
-              flex: 1, 
-              minWidth: '80px',
-              textTransform: 'none', // Prevent uppercase text
-              color: 'text.secondary', // Revert to secondary color for non-selected
-              borderColor: 'divider', // Explicitly set border color
-              '&.Mui-selected': { // Styles for selected state
-                color: (theme) => theme.palette.primary.contrastText, // Ensure contrast text is used
-                backgroundColor: 'primary.main',
-                '&:hover': {
-                  backgroundColor: 'primary.dark', // Darken on hover when selected
-                },
-              },
-              '&:not(.Mui-selected):hover': { // Style for hover on non-selected
-                 backgroundColor: 'action.hover', // Use theme's hover background
-              }
-            }}
-          >
-            {t('commitments.filter.all', "All")}
-          </ToggleButton>
-          <ToggleButton 
-            value="organizer" 
-            aria-label={t('commitments.filter.organizer', "Organizer")} 
-            sx={{ 
-              flex: 1, 
-              minWidth: '80px',
-              textTransform: 'none',
-              color: 'text.secondary', // Revert to secondary color
-              borderColor: 'divider', // Explicitly set border color
-              '&.Mui-selected': {
-                color: (theme) => theme.palette.primary.contrastText, // Ensure contrast text is used
-                backgroundColor: 'primary.main',
-                 '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-              },
-               '&:not(.Mui-selected):hover': {
-                 backgroundColor: 'action.hover',
-              }
-            }}
-          >
-            {t('commitments.filter.organizer', "Organizer")}
-          </ToggleButton>
-          <ToggleButton 
-            value="participant" 
-            aria-label={t('commitments.filter.participant', "Participant")} 
-            sx={{ 
-              flex: 1, 
-              minWidth: '80px',
-              textTransform: 'none',
-              color: 'text.secondary', // Revert to secondary color
-              borderColor: 'divider', // Explicitly set border color
-               '&.Mui-selected': {
-                color: (theme) => theme.palette.primary.contrastText, // Ensure contrast text is used
-                backgroundColor: 'primary.main',
-                 '&:hover': {
-                  backgroundColor: 'primary.dark',
-                },
-              },
-               '&:not(.Mui-selected):hover': {
-                 backgroundColor: 'action.hover',
-              }
-            }}
-          >
-            {t('commitments.filter.participant', "Participant")}
-          </ToggleButton>
-        </ToggleButtonGroup>
-      </Box>
 
+        <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+          {/* Role Filter Toggle Buttons */}
+          <ToggleButtonGroup
+              value={selectedRole}
+              exclusive
+              onChange={handleRoleChange}
+              aria-label={t('commitments.filter.roleLabel', "Filter by role")}
+              size="small"
+              sx={{ flexGrow: 1 }} // Add flexGrow to the group
+            >
+              <ToggleButton 
+                value="all" 
+                aria-label={t('commitments.filter.all', "All")} 
+                sx={{ 
+                  flex: 1, 
+                  minWidth: '80px', // Restore minWidth
+                  textTransform: 'none', 
+                  color: 'text.secondary', 
+                  borderColor: 'divider', 
+                  '&.Mui-selected': { 
+                    color: (theme) => theme.palette.primary.contrastText, 
+                    backgroundColor: 'primary.main',
+                    '&:hover': {
+                      backgroundColor: 'primary.dark', 
+                    },
+                  },
+                  '&:not(.Mui-selected):hover': { 
+                     backgroundColor: 'action.hover', 
+                  }
+                }}
+              >
+                {t('commitments.filter.all', "All")}
+              </ToggleButton>
+              <ToggleButton 
+                value="organizer" 
+                aria-label={t('commitments.filter.organizer', "Organizer")} 
+                sx={{ 
+                  flex: 1, 
+                  minWidth: '80px', // Restore minWidth
+                  textTransform: 'none',
+                  color: 'text.secondary', 
+                  borderColor: 'divider', 
+                  '&.Mui-selected': {
+                    color: (theme) => theme.palette.primary.contrastText, 
+                    backgroundColor: 'primary.main',
+                     '&:hover': {
+                      backgroundColor: 'primary.dark',
+                    },
+                  },
+                   '&:not(.Mui-selected):hover': {
+                     backgroundColor: 'action.hover',
+                  }
+                }}
+              >
+                {t('commitments.filter.organizer', "Organizer")}
+              </ToggleButton>
+              <ToggleButton 
+                value="participant" 
+                aria-label={t('commitments.filter.participant', "Participant")} 
+                sx={{ 
+                  flex: 1, 
+                  minWidth: '80px', // Restore minWidth
+                  textTransform: 'none',
+                  color: 'text.secondary', 
+                  borderColor: 'divider', 
+                   '&.Mui-selected': {
+                    color: (theme) => theme.palette.primary.contrastText, 
+                    backgroundColor: 'primary.main',
+                     '&:hover': {
+                      backgroundColor: 'primary.dark',
+                    },
+                  },
+                   '&:not(.Mui-selected):hover': {
+                     backgroundColor: 'action.hover',
+                  }
+                }}
+              >
+                {t('commitments.filter.participant', "Participant")}
+              </ToggleButton>
+            </ToggleButtonGroup>
+
+            {/* Organize Commitment Button */}
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleOpenCreateModal}
+              size="small"
+              sx={{ textTransform: 'none' }}
+            >
+              {t('commitments.organizeButton', 'Organize')}
+            </Button>
+          </Box>
+        </Box>
       {/* Loading/Error/Empty States */}
-      {isLoading && (
+      {isLoading && !isSubmitting && ( // Don't show main loading during submit
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
           <CircularProgress />
         </Box>
@@ -436,22 +570,20 @@ const CommitmentList: React.FC = () => {
         </Box>
       )}
 
-      {/* --- Modal Dialog --- */}
+      {/* --- Detail Modal Dialog --- */}
       <Dialog
-        open={modalOpen}
-        onClose={handleCloseModal}
+        open={detailModalOpen}
+        onClose={handleCloseDetailModal}
         aria-labelledby="commitment-detail-dialog-title"
-        maxWidth="md" // Adjust size as needed
+        maxWidth="md"
         fullWidth
       >
-        {/* Render title only when an ID is selected to prevent errors during closing animation */}
         {selectedCommitmentId && (
           <DialogTitle id="commitment-detail-dialog-title" sx={{ m: 0, p: 2 }}>
-            {/* Placeholder Title - We might fetch the real title inside CommitmentDetail */}
             {t('breadcrumbs.commitmentDetail', 'Commitment Detail')}
             <IconButton
-              aria-label="close"
-              onClick={handleCloseModal}
+              aria-label={t('common.close', 'Close')}
+              onClick={handleCloseDetailModal}
               sx={{
                 position: 'absolute',
                 right: 8,
@@ -464,18 +596,150 @@ const CommitmentList: React.FC = () => {
           </DialogTitle>
         )}
         <DialogContent dividers>
-          {/* Render CommitmentDetail only when an ID is selected */}
-          {/* Pass the selected ID as a prop */}
           {selectedCommitmentId && (
             <CommitmentDetail commitmentId={selectedCommitmentId} />
           )}
         </DialogContent>
-        {/* Optional: Add DialogActions if needed */}
-        {/* <DialogActions>
-          <Button onClick={handleCloseModal}>Close</Button>
-        </DialogActions> */}
       </Dialog>
-      {/* --- End Modal Dialog --- */}
+      {/* --- End Detail Modal Dialog --- */}
+
+      {/* --- Create Commitment Modal Dialog --- */}
+      <Dialog
+        open={createModalOpen}
+        onClose={handleCloseCreateModal}
+        aria-labelledby="create-commitment-dialog-title"
+        maxWidth="sm" // Smaller modal for creation form
+        fullWidth
+      >
+        <DialogTitle id="create-commitment-dialog-title">
+          {t('commitments.create.modalTitle', 'Organize a New Commitment')}
+          <IconButton
+            aria-label={t('common.close', 'Close')}
+            onClick={handleCloseCreateModal}
+            disabled={isSubmitting}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent dividers>
+          <LocalizationProvider dateAdapter={AdapterDateFns}>
+            <Box component="form" noValidate autoComplete="off" sx={{ mt: 1 }}>
+              <TextField
+                margin="dense"
+                required
+                fullWidth
+                id="title"
+                label={t('commitments.create.titleLabel', 'Title')}
+                name="title"
+                value={newCommitmentData.title}
+                onChange={handleInputChange}
+                disabled={isSubmitting}
+                error={!!submitError && !newCommitmentData.title} // Highlight if error and empty
+                helperText={!!submitError && !newCommitmentData.title ? t('common.errorRequired') : ''}
+              />
+              <TextField
+                margin="dense"
+                fullWidth
+                id="description"
+                label={t('commitments.create.descriptionLabel', 'Description')}
+                name="description"
+                multiline
+                rows={3}
+                value={newCommitmentData.description}
+                onChange={handleInputChange}
+                disabled={isSubmitting}
+              />
+               <DateTimePicker
+                 label={t('commitments.create.dateTimeLabel', 'Date & Time')}
+                 value={selectedDate}
+                 onChange={handleDateChange}
+                 ampm={false} // Use 24-hour format for clarity
+                 disabled={isSubmitting}
+                 sx={{ width: '100%', mt: 2, mb: 1 }}
+               />
+              <TextField
+                margin="normal" // Adjusted margin for spacing
+                required
+                fullWidth
+                id="location"
+                label={t('commitments.create.locationLabel', 'Location')}
+                name="location"
+                value={newCommitmentData.location.description}
+                onChange={handleInputChange}
+                disabled={isSubmitting}
+                error={!!submitError && !newCommitmentData.location.description}
+                helperText={!!submitError && !newCommitmentData.location.description ? t('common.errorRequired') : t('commitments.create.locationHelp', 'Enter address or place name. Map will preview below.')}
+              />
+
+              {/* Map Preview Section */}
+              {newCommitmentData.location.description && ( // Only show if location has text
+                <Box sx={{ mt: 2 }}>
+                   <Box display="flex" alignItems="center" sx={{ mb: 1 }}>
+                     <MapPin size={18} weight="regular" style={{ marginRight: 8, color: 'text.secondary' }} />
+                     <AccessibleTypography variant="subtitle2" sx={{ color: 'text.secondary' }}>
+                       {t('commitments.create.mapPreviewLabel', 'Map Preview')}
+                     </AccessibleTypography>
+                   </Box>
+                  {mapUrl ? (
+                    <Box 
+                      sx={{ 
+                        mt: 1, 
+                        borderRadius: 2, 
+                        overflow: 'hidden',
+                        border: theme => `1px solid ${theme.palette.divider}`,
+                        minHeight: '250px', // Ensure space even while loading
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}
+                    >
+                      <iframe
+                        src={mapUrl}
+                        title="Location Map Preview"
+                        width="100%"
+                        height="250px" // Fixed height for preview
+                        style={{ border: 'none' }}
+                        loading="lazy"
+                        allowFullScreen
+                        referrerPolicy="no-referrer-when-downgrade"
+                        aria-label="Google Map preview for entered location"
+                      />
+                    </Box>
+                  ) : (
+                     <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100px' }}>
+                       <CircularProgress size={24} /> 
+                     </Box>
+                  )}
+                </Box>
+              )}
+              {/* End Map Preview Section */}
+
+              {submitError && (
+                <Alert severity="error" sx={{ mt: 2 }}>{submitError}</Alert>
+              )}
+            </Box>
+          </LocalizationProvider>
+        </DialogContent>
+        <DialogActions sx={{ p: '16px 24px', borderTop: theme => `1px solid ${theme.palette.divider}` }}>
+          <Button onClick={handleCloseCreateModal} disabled={isSubmitting} color="inherit">
+            {t('common.cancel', 'Cancel')}
+          </Button>
+          <Button
+            onClick={handleCreateCommitmentSubmit}
+            variant="contained"
+            disabled={isSubmitting || !newCommitmentData.title || !selectedDate || !newCommitmentData.location.description} // Basic validation for button state
+          >
+            {isSubmitting ? <CircularProgress size={24} /> : t('common.create', 'Create')}
+          </Button>
+        </DialogActions>
+      </Dialog>
+      {/* --- End Create Commitment Modal Dialog --- */}
 
     </Box>
   );

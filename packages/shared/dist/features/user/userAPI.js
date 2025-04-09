@@ -527,4 +527,26 @@ export const fetchAcceptedCommitmentCount = async (apiClient) => {
         throw error;
     }
 };
+/**
+ * Create a new commitment.
+ * POST /commitment
+ * @param apiClient The Axios instance to use.
+ * @param commitmentData The data for the new commitment.
+ * @returns Promise with the created commitment data.
+ */
+export const createCommitment = async (apiClient, commitmentData) => {
+    try {
+        // The API endpoint is /api/v1/Commitment, so just /commitment relative to base URL
+        const response = await apiClient.post(`/commitment`, commitmentData);
+        console.log(`Commitment created successfully:`, response.data);
+        return response.data;
+    }
+    catch (error) {
+        console.error(`Error creating commitment:`, error.response?.data || error.message);
+        if (error.response?.data?.message) {
+            throw new Error(`Failed to create commitment: ${error.response.data.message}`);
+        }
+        throw new Error(`Failed to create commitment`);
+    }
+};
 // End of file
