@@ -332,6 +332,12 @@
       "myCommitments": "My Commitments",
       "invitations": "Invitations"
     },
+    "filter": {
+      "roleLabel": "Filter by role",
+      "all": "All",
+      "organizer": "Organizer",
+      "participant": "Participant"
+    },
     "invitations": {
       "title": "Commitment Invitations",
       "receivedTab": "Received",

@@ -472,7 +472,7 @@ export const fetchSentRequests = async (
 const API_ENDPOINT_COMMITMENTS = '/commitment/users'; // Base endpoint for user commitments
 
 export interface FetchUserCommitmentsParams {
-    role?: string;
+    role?: 'organizer' | 'participant'; // Make role specific or keep string if API accepts others
     pageNumber?: number;
     pageSize?: number;
     sortOrder?: 'asc' | 'desc'; // Add sortOrder parameter
@@ -490,12 +490,15 @@ export const fetchUserCommitments = async (
     apiClient: AxiosInstance,
     username: string,
     params: FetchUserCommitmentsParams = {}
-): Promise<PaginatedCommitmentsResponse> => {
-    try {
-        const queryParams: Record<string, string | number> = {};
-        if (params.role !== undefined) queryParams.role = params.role;
-        queryParams.pageNumber = params.pageNumber || 1; // Default page 1
-        queryParams.pageSize = params.pageSize || 10; // Default limit 10
+ ): Promise<PaginatedCommitmentsResponse> => {
+     try {
+         const queryParams: Record<string, string | number> = {};
+         // Only add role to params if it's 'organizer' or 'participant'
+         if (params.role === 'organizer' || params.role === 'participant') {
+             queryParams.role = params.role;
+         }
+         queryParams.pageNumber = params.pageNumber || 1; // Default page 1
+         queryParams.pageSize = params.pageSize || 10; // Default limit 10
         queryParams.sortOrder = params.sortOrder || 'desc'; // Add sortOrder, default 'desc'
 
         const config: AxiosRequestConfig = { params: queryParams };

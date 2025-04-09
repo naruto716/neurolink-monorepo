@@ -23,6 +23,8 @@ import {
   DialogTitle,
   DialogContent,
   IconButton,
+  ToggleButton, // Added
+  ToggleButtonGroup, // Added
 } from '@mui/material';
 import CloseIcon from '@mui/icons-material/Close'; // Import CloseIcon
 import { useTranslation } from 'react-i18next';
@@ -50,12 +52,18 @@ const CommitmentList: React.FC = () => {
   const [page, setPage] = useState<number>(1);
   const [totalPages, setTotalPages] = useState<number>(0);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [selectedRole, setSelectedRole] = useState<'all' | 'organizer' | 'participant'>('all'); // State for role filter
 
   // State for the modal
   const [modalOpen, setModalOpen] = useState<boolean>(false);
   const [selectedCommitmentId, setSelectedCommitmentId] = useState<number | null>(null);
 
-  const fetchCommitments = useCallback(async (currentPage: number, currentSortOrder: 'asc' | 'desc') => {
+  // Update fetchCommitments to accept and use the role filter
+  const fetchCommitments = useCallback(async (
+    currentPage: number, 
+    currentSortOrder: 'asc' | 'desc',
+    currentRole: 'all' | 'organizer' | 'participant' // Add role parameter
+  ) => {
     const username = currentUser?.username;
     if (!username || !apiClient) {
       return;
@@ -68,6 +76,8 @@ const CommitmentList: React.FC = () => {
         pageNumber: currentPage,
         pageSize: ITEMS_PER_PAGE,
         sortOrder: currentSortOrder,
+        // Conditionally add role if it's not 'all'
+        ...(currentRole !== 'all' && { role: currentRole }), 
       };
       const response: PaginatedCommitmentsResponse = await fetchUserCommitments(
         apiClient,
@@ -85,15 +95,19 @@ const CommitmentList: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [apiClient, currentUser?.username, t]);
+  // Add currentRole to dependencies
+  }, [apiClient, currentUser?.username, t]); 
 
   const usernameForEffect = currentUser?.username;
 
+  // Update useEffect to include selectedRole and reset page on role change
   useEffect(() => {
     if (usernameForEffect) {
-      fetchCommitments(page, sortOrder);
+      // Fetch with current page, sort order, and selected role
+      fetchCommitments(page, sortOrder, selectedRole); 
     }
-  }, [page, usernameForEffect, sortOrder, fetchCommitments]);
+  // Add selectedRole to dependency array
+  }, [page, usernameForEffect, sortOrder, selectedRole, fetchCommitments]); 
 
   const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);
@@ -102,7 +116,18 @@ const CommitmentList: React.FC = () => {
   const handleSortChange = () => {
     const newSortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
     setSortOrder(newSortOrder);
-    setPage(1);
+    setPage(1); // Reset page when sorting changes
+  };
+
+  // Handler for role filter change
+  const handleRoleChange = (
+    event: React.MouseEvent<HTMLElement>,
+    newRole: 'all' | 'organizer' | 'participant' | null, // Can be null if nothing is selected
+  ) => {
+    if (newRole !== null) { // Ensure a value is selected
+      setSelectedRole(newRole);
+      setPage(1); // Reset page when filter changes
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -127,11 +152,95 @@ const CommitmentList: React.FC = () => {
 
   return (
     <Box>
-      <AccessibleTypography variant="h6" gutterBottom sx={{ mb: 2 }}>
-        {t('commitments.yourCommitments')}
-      </AccessibleTypography>
+      {/* Header and Filter Section */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 2 }}>
+        <AccessibleTypography variant="h6" component="h2">
+          {t('commitments.yourCommitments')}
+        </AccessibleTypography>
+        
+        {/* Role Filter Toggle Buttons */}
+        <ToggleButtonGroup
+          value={selectedRole}
+          exclusive
+          onChange={handleRoleChange}
+          aria-label={t('commitments.filter.roleLabel', "Filter by role")}
+          size="small"
+          // Removed sx from group, styling individual buttons now
+        >
+          {/* Style individual buttons for better theme integration */}
+          <ToggleButton 
+            value="all" 
+            aria-label={t('commitments.filter.all', "All")} 
+            sx={{ 
+              flex: 1, 
+              minWidth: '80px',
+              textTransform: 'none', // Prevent uppercase text
+              color: 'text.secondary', // Revert to secondary color for non-selected
+              borderColor: 'divider', // Explicitly set border color
+              '&.Mui-selected': { // Styles for selected state
+                color: (theme) => theme.palette.primary.contrastText, // Ensure contrast text is used
+                backgroundColor: 'primary.main',
+                '&:hover': {
+                  backgroundColor: 'primary.dark', // Darken on hover when selected
+                },
+              },
+              '&:not(.Mui-selected):hover': { // Style for hover on non-selected
+                 backgroundColor: 'action.hover', // Use theme's hover background
+              }
+            }}
+          >
+            {t('commitments.filter.all', "All")}
+          </ToggleButton>
+          <ToggleButton 
+            value="organizer" 
+            aria-label={t('commitments.filter.organizer', "Organizer")} 
+            sx={{ 
+              flex: 1, 
+              minWidth: '80px',
+              textTransform: 'none',
+              color: 'text.secondary', // Revert to secondary color
+              borderColor: 'divider', // Explicitly set border color
+              '&.Mui-selected': {
+                color: (theme) => theme.palette.primary.contrastText, // Ensure contrast text is used
+                backgroundColor: 'primary.main',
+                 '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+              },
+               '&:not(.Mui-selected):hover': {
+                 backgroundColor: 'action.hover',
+              }
+            }}
+          >
+            {t('commitments.filter.organizer', "Organizer")}
+          </ToggleButton>
+          <ToggleButton 
+            value="participant" 
+            aria-label={t('commitments.filter.participant', "Participant")} 
+            sx={{ 
+              flex: 1, 
+              minWidth: '80px',
+              textTransform: 'none',
+              color: 'text.secondary', // Revert to secondary color
+              borderColor: 'divider', // Explicitly set border color
+               '&.Mui-selected': {
+                color: (theme) => theme.palette.primary.contrastText, // Ensure contrast text is used
+                backgroundColor: 'primary.main',
+                 '&:hover': {
+                  backgroundColor: 'primary.dark',
+                },
+              },
+               '&:not(.Mui-selected):hover': {
+                 backgroundColor: 'action.hover',
+              }
+            }}
+          >
+            {t('commitments.filter.participant', "Participant")}
+          </ToggleButton>
+        </ToggleButtonGroup>
+      </Box>
 
-      {/* Loading/Error/Empty States remain the same */}
+      {/* Loading/Error/Empty States */}
       {isLoading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}>
           <CircularProgress />

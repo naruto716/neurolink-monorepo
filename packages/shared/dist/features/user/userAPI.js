@@ -378,8 +378,10 @@ const API_ENDPOINT_COMMITMENTS = '/commitment/users'; // Base endpoint for user 
 export const fetchUserCommitments = async (apiClient, username, params = {}) => {
     try {
         const queryParams = {};
-        if (params.role !== undefined)
+        // Only add role to params if it's 'organizer' or 'participant'
+        if (params.role === 'organizer' || params.role === 'participant') {
             queryParams.role = params.role;
+        }
         queryParams.pageNumber = params.pageNumber || 1; // Default page 1
         queryParams.pageSize = params.pageSize || 10; // Default limit 10
         queryParams.sortOrder = params.sortOrder || 'desc'; // Add sortOrder, default 'desc'

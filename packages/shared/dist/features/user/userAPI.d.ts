@@ -134,7 +134,7 @@ export declare const fetchSentRequests: (apiClient: AxiosInstance, username: str
     limit?: number;
 }) => Promise<PaginatedConnectionsResponse>;
 export interface FetchUserCommitmentsParams {
-    role?: string;
+    role?: 'organizer' | 'participant';
     pageNumber?: number;
     pageSize?: number;
     sortOrder?: 'asc' | 'desc';
