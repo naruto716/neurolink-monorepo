@@ -15,7 +15,6 @@ import {
   SharedRootState
 } from '@neurolink/shared';
 import apiClientInstance from '../../../app/api/apiClient';
-import { AccessibleTypography } from '../../../app/components/AccessibleTypography';
 import CommitmentDetailPreview from './CommitmentDetailPreview';
 
 // Define the structure for calendar events
