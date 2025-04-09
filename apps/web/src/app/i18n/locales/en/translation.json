@@ -317,7 +317,10 @@
     "userSubtitle": "Here's an overview of your commitments.",
     "totalCommitments": "Total Commitments",
     "pendingInvitations": "Pending Invitations",
-    "nextCommitment": "Next Commitment",
+    "nextCommitment": {
+      "title": "Next Commitment",
+      "errorLoading": "Failed to load next commitment."
+    },
     "noUpcomingCommitments": "You have no upcoming commitments.",
     "invitations": "Invitations",
     "noPendingInvitations": "You have no pending invitations.",

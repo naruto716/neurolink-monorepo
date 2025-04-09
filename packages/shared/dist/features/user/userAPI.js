@@ -497,4 +497,32 @@ export const respondToCommitmentInvitation = async (apiClient, invitationId, sta
         throw new Error(`Failed to respond to invitation ${invitationId}`);
     }
 };
+// Fetches the count of pending commitment invitations for the current user
+export const fetchPendingInvitationCount = async (apiClient) => {
+    try {
+        // Assuming the endpoint directly returns the number
+        const response = await apiClient.get('/commitment/my/invitations/pending/count');
+        // Ensure a number is returned, default to 0 if response is unexpected
+        return typeof response.data === 'number' ? response.data : 0;
+    }
+    catch (error) {
+        console.error("API Error fetching pending invitation count:", error);
+        // Re-throw or handle error as appropriate for your app's error handling strategy
+        throw error;
+    }
+};
+// Fetches the count of accepted commitments for the current user
+export const fetchAcceptedCommitmentCount = async (apiClient) => {
+    try {
+        // Assuming the endpoint directly returns the number
+        const response = await apiClient.get('/commitment/my/commitments/accepted/count');
+        // Ensure a number is returned, default to 0 if response is unexpected
+        return typeof response.data === 'number' ? response.data : 0;
+    }
+    catch (error) {
+        console.error("API Error fetching accepted commitment count:", error);
+        // Re-throw or handle error as appropriate for your app's error handling strategy
+        throw error;
+    }
+};
 // End of file

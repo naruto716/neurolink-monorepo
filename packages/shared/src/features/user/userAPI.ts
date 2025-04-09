@@ -650,5 +650,33 @@ export const respondToCommitmentInvitation = async (
     }
 };
 
+// Fetches the count of pending commitment invitations for the current user
+export const fetchPendingInvitationCount = async (apiClient: AxiosInstance): Promise<number> => {
+  try {
+    // Assuming the endpoint directly returns the number
+    const response = await apiClient.get<number>('/commitment/my/invitations/pending/count');
+    // Ensure a number is returned, default to 0 if response is unexpected
+    return typeof response.data === 'number' ? response.data : 0;
+  } catch (error) {
+    console.error("API Error fetching pending invitation count:", error);
+    // Re-throw or handle error as appropriate for your app's error handling strategy
+    throw error; 
+  }
+};
+
+// Fetches the count of accepted commitments for the current user
+export const fetchAcceptedCommitmentCount = async (apiClient: AxiosInstance): Promise<number> => {
+  try {
+    // Assuming the endpoint directly returns the number
+    const response = await apiClient.get<number>('/commitment/my/commitments/accepted/count');
+     // Ensure a number is returned, default to 0 if response is unexpected
+    return typeof response.data === 'number' ? response.data : 0;
+  } catch (error) {
+    console.error("API Error fetching accepted commitment count:", error);
+     // Re-throw or handle error as appropriate for your app's error handling strategy
+    throw error;
+  }
+};
+
 
 // End of file

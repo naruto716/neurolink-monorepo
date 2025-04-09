@@ -187,3 +187,5 @@ export declare const fetchReceivedInvitations: (apiClient: AxiosInstance, userna
  * @returns Promise with the updated invitation data.
  */
 export declare const respondToCommitmentInvitation: (apiClient: AxiosInstance, invitationId: number, status: "accepted" | "rejected") => Promise<ReceivedInvitation>;
+export declare const fetchPendingInvitationCount: (apiClient: AxiosInstance) => Promise<number>;
+export declare const fetchAcceptedCommitmentCount: (apiClient: AxiosInstance) => Promise<number>;

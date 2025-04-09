@@ -46,6 +46,7 @@ const routes: RouteObject[] = [
                   { path: 'profile/edit', element: <EditProfilePage /> },
                   { path: 'chat', element: <ChatPage /> },
                   { path: 'commitments', element: <CommitmentPage /> },
+                  { path: 'commitments/:subpage', element: <CommitmentPage /> },
                   // Removed Commitment Detail route
                   // Add other routes needing standard Layout here
                 ]

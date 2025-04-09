@@ -1,47 +1,45 @@
 // apps/web/src/pages/commitments/components/CommitmentInvitations.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import {
   Box,
   Tabs,
   Tab,
-  CircularProgress,
   Alert,
   Typography,
-  Pagination,
-  Button,
   Stack,
-  Dialog, // Added Dialog components
+  Dialog,
   DialogTitle,
   DialogContent,
   IconButton,
-  Paper, // Added Paper
-  Grid, // Added Grid
-  Avatar, // Added Avatar for the invitor chip
-  Chip, // Ensure Chip is imported for the invitor display
+  Paper,
+  Grid,
+  Avatar,
+  Chip,
+  Skeleton,
+  Button,
+  CircularProgress,
 } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close'; // Added CloseIcon
-import { Info } from '@phosphor-icons/react'; // Added Info icon for details button
+import CloseIcon from '@mui/icons-material/Close';
+import { Info } from '@phosphor-icons/react';
 import { useTranslation } from 'react-i18next';
 import { selectCurrentUser } from '@neurolink/shared/src/features/user/userSlice';
 import {
   ReceivedInvitation,
-  PaginatedReceivedInvitationsResponse,
-  Commitment, // For Sent Invitations (which are Commitments)
-  PaginatedSentInvitationsResponse,
-  User as UserType, // Added UserType import
-} from '@neurolink/shared'; // Import necessary types
+  Commitment,
+  User as UserType,
+} from '@neurolink/shared';
 import {
   fetchReceivedInvitations,
   fetchSentInvitations,
-  respondToCommitmentInvitation, // Import the new API function
-  fetchUserByUsername, // Added fetchUserByUsername import
+  respondToCommitmentInvitation,
+  fetchUserByUsername,
 } from '@neurolink/shared/src/features/user/userAPI';
 import { SharedRootState } from '@neurolink/shared/src/app/store/store';
 import { AccessibleTypography } from '../../../app/components/AccessibleTypography';
 import apiClientInstance from '../../../app/api/apiClient';
-import CommitmentDetail from './CommitmentDetail'; // Import CommitmentDetail
-import { Link as RouterLink } from 'react-router-dom'; // Added RouterLink
+import CommitmentDetail from './CommitmentDetail';
+import { Link as RouterLink } from 'react-router-dom';
 
 const ITEMS_PER_PAGE = 5; // Or a different value if desired
 
@@ -89,8 +87,9 @@ const CommitmentInvitations: React.FC = () => {
   const [receivedInvites, setReceivedInvites] = useState<ReceivedInvitation[]>([]);
   const [receivedLoading, setReceivedLoading] = useState<boolean>(false);
   const [receivedError, setReceivedError] = useState<string | null>(null);
-  const [receivedPage, setReceivedPage] = useState<number>(1);
-  const [receivedTotalPages, setReceivedTotalPages] = useState<number>(0);
+  const [receivedNextPage, setReceivedNextPage] = useState<number>(1);
+  const [hasMoreReceived, setHasMoreReceived] = useState<boolean>(true);
+  const isLoadingMoreReceived = useRef(false);
   const [responseLoading, setResponseLoading] = useState<Record<number, boolean>>({}); // Loading state per invitation ID
   const [responseError, setResponseError] = useState<Record<number, string | null>>({}); // Error state per invitation ID
 
@@ -98,8 +97,9 @@ const CommitmentInvitations: React.FC = () => {
   const [sentInvites, setSentInvites] = useState<Commitment[]>([]); // Sent invites are Commitments
   const [sentLoading, setSentLoading] = useState<boolean>(false);
   const [sentError, setSentError] = useState<string | null>(null);
-  const [sentPage, setSentPage] = useState<number>(1);
-  const [sentTotalPages, setSentTotalPages] = useState<number>(0);
+  const [sentNextPage, setSentNextPage] = useState<number>(1);
+  const [hasMoreSent, setHasMoreSent] = useState<boolean>(true);
+  const isLoadingMoreSent = useRef(false);
 
   // State for the details modal
   const [modalOpen, setModalOpen] = useState<boolean>(false);
@@ -113,88 +113,95 @@ const CommitmentInvitations: React.FC = () => {
 
   const username = currentUser?.username;
 
-  // Fetch Received Invitations
-  const loadReceivedInvitations = useCallback(async (currentPage: number) => {
-    if (!username || !apiClient) return;
-    setReceivedLoading(true);
-    setReceivedError(null);
-    try {
-      const params = { pageNumber: currentPage, pageSize: ITEMS_PER_PAGE };
-      const response: PaginatedReceivedInvitationsResponse = await fetchReceivedInvitations(
-        apiClient,
-        username,
-        params
-      );
-      setReceivedInvites(response.items);
-      setReceivedTotalPages(response.totalPages);
-      setReceivedPage(response.pageNumber);
+  // Fetch Received Invitations (Modified for Infinite Scroll)
+  const loadReceivedInvitations = useCallback(async (page: number, isInitialLoad: boolean = false) => {
+    if (!username || !apiClient || isLoadingMoreReceived.current) return;
 
-      // >> NEW: Trigger fetching invitor details after invites are loaded <<
-      // Extract unique creator usernames
+    if (isInitialLoad) {
+      setReceivedLoading(true);
+      setReceivedInvites([]); // Clear on initial load
+      setReceivedNextPage(1);
+      setHasMoreReceived(true);
+    } else {
+      isLoadingMoreReceived.current = true;
+      // Optionally show a smaller loading indicator at the bottom while loading more
+    }
+    setReceivedError(null);
+    
+    try {
+      const params = { pageNumber: page, pageSize: ITEMS_PER_PAGE };
+      const response = await fetchReceivedInvitations(apiClient, username, params);
+      
+      setReceivedInvites(prev => isInitialLoad ? response.items : [...prev, ...response.items]);
+      setReceivedNextPage(page + 1);
+      setHasMoreReceived(response.items.length === ITEMS_PER_PAGE);
+
+      // Fetch invitor details logic (should still work, maybe optimize later)
       const creatorUsernames = [...new Set(response.items.map(invite => invite.commitment.creatorUsername))];
-      // Fetch details for usernames not already fetched
       const usernamesToFetch = creatorUsernames.filter(uname => !invitorDetails[uname]);
       if (usernamesToFetch.length > 0) {
-        setLoadingInvitors(true);
-        setInvitorError(null);
-        try {
-          const invitorPromises = usernamesToFetch.map(uname => 
-            fetchUserByUsername(apiClient, uname)
-          );
-          const results = await Promise.allSettled(invitorPromises);
-          const newInvitorDetails: Record<string, UserType> = {};
-          results.forEach((result, index) => {
-            if (result.status === 'fulfilled') {
-              newInvitorDetails[usernamesToFetch[index]] = result.value;
-            } else {
-              console.error(`Failed to load invitor details for ${usernamesToFetch[index]}:`, result.reason);
-              // Optionally set a general error, or handle per-user errors if needed
+          setLoadingInvitors(true);
+          setInvitorError(null);
+          try {
+            const invitorPromises = usernamesToFetch.map(uname => fetchUserByUsername(apiClient, uname));
+            const results = await Promise.allSettled(invitorPromises);
+            const newInvitorDetails: Record<string, UserType> = {};
+            results.forEach((result, index) => {
+              if (result.status === 'fulfilled') {
+                newInvitorDetails[usernamesToFetch[index]] = result.value;
+              } else { 
+                console.error(`Failed to load invitor details for ${usernamesToFetch[index]}:`, result.reason);
+                setInvitorError(t('commitments.invitations.errorLoadingInvitors', 'Failed to load some invitor details.'));
+              }
+            });
+            setInvitorDetails(prev => ({ ...prev, ...newInvitorDetails }));
+          } catch (err) {
+              console.error('Error fetching invitor details:', err);
               setInvitorError(t('commitments.invitations.errorLoadingInvitors', 'Failed to load some invitor details.'));
-            }
-          });
-          setInvitorDetails(prev => ({ ...prev, ...newInvitorDetails }));
-        } catch (err) {
-            console.error('Error fetching invitor details:', err);
-            setInvitorError(t('commitments.invitations.errorLoadingInvitors', 'Failed to load some invitor details.'));
-        } finally {
-            setLoadingInvitors(false);
-        }
+          } finally {
+              setLoadingInvitors(false); // This loading state is separate from the list loading
+          }
       }
-      // >> END NEW FETCH LOGIC <<
 
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setReceivedError(msg || t('commitments.invitations.errorLoadingReceived'));
-      setReceivedInvites([]);
-      setReceivedTotalPages(0);
+      setHasMoreReceived(false);
     } finally {
-      setReceivedLoading(false);
+      if (isInitialLoad) setReceivedLoading(false);
+      isLoadingMoreReceived.current = false;
     }
-  }, [apiClient, username, t, invitorDetails]);
+  }, [apiClient, username, t]);
 
-  // Fetch Sent Invitations
-  const loadSentInvitations = useCallback(async (currentPage: number) => {
-    if (!username || !apiClient) return;
-    setSentLoading(true);
+  // Fetch Sent Invitations (Modified for Infinite Scroll)
+  const loadSentInvitations = useCallback(async (page: number, isInitialLoad: boolean = false) => {
+    if (!username || !apiClient || isLoadingMoreSent.current) return;
+
+    if (isInitialLoad) {
+      setSentLoading(true);
+      setSentInvites([]); // Clear on initial load
+      setSentNextPage(1);
+      setHasMoreSent(true);
+    } else {
+      isLoadingMoreSent.current = true;
+    }
     setSentError(null);
+
     try {
-      const params = { pageNumber: currentPage, pageSize: ITEMS_PER_PAGE };
-      // Note: fetchSentInvitations returns PaginatedSentInvitationsResponse which is PaginatedCommitmentsResponse
-      const response: PaginatedSentInvitationsResponse = await fetchSentInvitations(
-        apiClient,
-        username,
-        params
-      );
-      setSentInvites(response.items);
-      setSentTotalPages(response.totalPages);
-      setSentPage(response.pageNumber);
+      const params = { pageNumber: page, pageSize: ITEMS_PER_PAGE };
+      const response = await fetchSentInvitations(apiClient, username, params);
+
+      setSentInvites(prev => isInitialLoad ? response.items : [...prev, ...response.items]);
+      setSentNextPage(page + 1);
+      setHasMoreSent(response.items.length === ITEMS_PER_PAGE);
+
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       setSentError(msg || t('commitments.invitations.errorLoadingSent'));
-      setSentInvites([]);
-      setSentTotalPages(0);
+      setHasMoreSent(false); // Stop trying to load more on error
     } finally {
-      setSentLoading(false);
+      if (isInitialLoad) setSentLoading(false);
+      isLoadingMoreSent.current = false;
     }
   }, [apiClient, username, t]);
 
@@ -234,32 +241,24 @@ const CommitmentInvitations: React.FC = () => {
   // --- End Modal Handlers ---
 
 
-  // Effects to load data when tab or page changes
+  // Effects to load initial data
   useEffect(() => {
     if (username && tabValue === 0) {
-      loadReceivedInvitations(receivedPage);
+      // Reset and load initial received invites
+      loadReceivedInvitations(1, true);
     }
-  }, [username, tabValue, receivedPage, loadReceivedInvitations]);
+  }, [username, tabValue, loadReceivedInvitations]); // Only trigger initial on tab change
 
   useEffect(() => {
     if (username && tabValue === 1) {
-      loadSentInvitations(sentPage);
+      // Reset and load initial sent invites
+      loadSentInvitations(1, true);
     }
-  }, [username, tabValue, sentPage, loadSentInvitations]);
+  }, [username, tabValue, loadSentInvitations]); // Only trigger initial on tab change
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
-    // Reset pages when switching tabs
-    setReceivedPage(1);
-    setSentPage(1);
-  };
-
-  const handleReceivedPageChange = (event: React.ChangeEvent<unknown>, value: number) => {
-    setReceivedPage(value);
-  };
-
-  const handleSentPageChange = (event: React.ChangeEvent<unknown>, value: number) => {
-    setSentPage(value);
+    // Resetting happens in the useEffects above now
   };
 
   // Helper to format date (consider moving to a shared util)
@@ -269,6 +268,38 @@ const CommitmentInvitations: React.FC = () => {
       year: 'numeric', month: 'short', day: 'numeric'
     });
   };
+
+  // --- Intersection Observers --- 
+  const receivedObserver = useRef<IntersectionObserver | null>(null);
+  const sentObserver = useRef<IntersectionObserver | null>(null);
+
+  const lastReceivedInviteElementRef = useCallback((node: HTMLElement | null) => {
+    if (receivedLoading || isLoadingMoreReceived.current) return;
+    if (receivedObserver.current) receivedObserver.current.disconnect();
+
+    receivedObserver.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMoreReceived) {
+        console.log('Received Infinite scroll triggered');
+        loadReceivedInvitations(receivedNextPage);
+      }
+    }, { threshold: 0.8 });
+
+    if (node) receivedObserver.current.observe(node);
+  }, [receivedLoading, isLoadingMoreReceived, hasMoreReceived, receivedNextPage, loadReceivedInvitations]);
+
+  const lastSentInviteElementRef = useCallback((node: HTMLElement | null) => {
+    if (sentLoading || isLoadingMoreSent.current) return;
+    if (sentObserver.current) sentObserver.current.disconnect();
+
+    sentObserver.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMoreSent) {
+        console.log('Sent Infinite scroll triggered');
+        loadSentInvitations(sentNextPage);
+      }
+    }, { threshold: 0.8 });
+
+    if (node) sentObserver.current.observe(node);
+  }, [sentLoading, isLoadingMoreSent, hasMoreSent, sentNextPage, loadSentInvitations]);
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -291,279 +322,244 @@ const CommitmentInvitations: React.FC = () => {
 
       {/* Received Invitations Panel */}
       <TabPanel value={tabValue} index={0}>
-        {receivedLoading && <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}><CircularProgress /></Box>}
-        {receivedError && <Alert severity="error" sx={{ my: 2 }}>{receivedError}</Alert>}
+        {/* Initial Loading Skeleton */}
+        {receivedLoading && (
+          <Grid container spacing={2} sx={{ width: '100%', m: 0 }}>
+             {/* Provide type for index */} 
+            {Array.from(new Array(ITEMS_PER_PAGE)).map((_: unknown, index: number) => (
+              <Grid item xs={12} sm={6} md={6} key={`skel-rec-${index}`} sx={{ display: 'flex' }}>
+                 {/* Copy the FULL Skeleton structure here from previous step for a single card */}
+                 <Paper elevation={0} sx={(theme) => ({ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}`, height: '100%', width: '100%', display: 'flex', flexDirection: 'column', gap: 1.5 })}> 
+                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'nowrap', gap: 1 }}>
+                     <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                       <Skeleton variant="text" width="70%" sx={{ fontSize: '1rem' }} />
+                       <Skeleton variant="text" width="50%" sx={{ fontSize: '0.8rem' }} />
+                       <Skeleton variant="text" width="60%" sx={{ fontSize: '0.8rem' }} />
+                       <Skeleton variant="text" width="80%" sx={{ fontSize: '0.8rem' }} />
+                     </Box>
+                     <Stack direction="column" spacing={1} alignItems="flex-end" sx={{ flexShrink: 0 }}>
+                       <Skeleton variant="rounded" width={60} height={22} />
+                       <Skeleton variant="rounded" width={70} height={24} />
+                     </Stack>
+                   </Box>
+                   <Box sx={{ mt: 'auto', width: '100%' }}>
+                     <Stack direction="row" spacing={1} sx={{ mt: 1 }} alignItems="center" justifyContent="flex-end">
+                        <Skeleton variant="rounded" height={30} sx={{ flexGrow: 1 }} />
+                        <Skeleton variant="rounded" height={30} sx={{ flexGrow: 1 }} />
+                     </Stack>
+                   </Box>
+                 </Paper>
+              </Grid>
+            ))}
+          </Grid>
+        )}
+        {/* Error Display */}
+        {!receivedLoading && receivedError && receivedInvites.length === 0 && (
+            <Alert severity="error" sx={{ my: 2 }}>{receivedError}</Alert>
+        )}
+        {/* Empty State */}
         {!receivedLoading && !receivedError && receivedInvites.length === 0 && (
           <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', my: 3 }}>
             {t('commitments.invitations.noReceived', 'No received invitations found.')}
           </Typography>
         )}
-        {!receivedLoading && !receivedError && receivedInvites.length > 0 && (
+        {/* List Rendering */}
+        {receivedInvites.length > 0 && (
           <Box>
-            {/* Wrap list in Grid container */}
             <Grid container spacing={2} sx={{ width: '100%', m: 0 }}>
-              {receivedInvites.map((invite) => {
-                const isLoading = responseLoading[invite.id];
-                const errorMsg = responseError[invite.id];
-                const isPending = invite.status.toLowerCase() === 'pending';
-                // Get invitor details from state
-                const invitor = invitorDetails[invite.commitment.creatorUsername];
+              {receivedInvites.map((invite, index) => {
+                  const attachObserver = index === receivedInvites.length - 3;
+                  const isLoading = responseLoading[invite.id]; // Needed for buttons
+                  const errorMsg = responseError[invite.id]; // Needed for error display
+                  const isPending = invite.status.toLowerCase() === 'pending';
+                  const invitor = invitorDetails[invite.commitment.creatorUsername];
 
-                return (
-                  // Wrap item in Grid item
-                  <Grid item xs={12} sm={6} md={6} key={invite.id} sx={{ display: 'flex' }}>
-                    {/* Use Paper for the card */}
-                    <Paper
-                      elevation={0}
-                      sx={(theme) => ({
-                        p: 2.5, // Consistent padding
-                        borderRadius: 3, // Consistent radius
-                        border: `1px solid ${theme.palette.divider}`, // Consistent border
-                        height: '100%',
-                        width: '100%', // Ensure paper takes full width of grid item
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: 1.5 // Add gap between content sections
-                      })}
-                    >
-                      {/* Top section: Details, Status Tag, Details Button */}
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'nowrap', gap: 1 }}>
-                        {/* Left side: Title and Invitor Chip */}
-                        <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-                          <AccessibleTypography variant="subtitle1" fontWeight="medium" noWrap title={invite.commitment.title}>
-                            {invite.commitment.title}
-                          </AccessibleTypography>
-                          
-                          {/* Invitor Chip/Loading */}
-                          <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center' }}>
-                            <Typography variant="body2" color="text.secondary" sx={{ mr: 0.5 }}>
-                                {t('commitments.invitations.from', 'From')}:
-                            </Typography>
-                            {loadingInvitors && !invitor ? (
-                              <CircularProgress size={16} sx={{ ml: 1 }} />
-                            ) : invitor ? (
-                              <Chip
-                                component={RouterLink}
-                                to={`/people/${invitor.username}`}
-                                clickable
-                                avatar={
-                                  <Avatar 
-                                    src={invitor.profilePicture || undefined}
-                                    sx={{ width: 26, height: 26 }}
-                                  >
-                                    {!invitor.profilePicture && invitor.username.charAt(0).toUpperCase()}
-                                  </Avatar>
-                                }
-                                label={invitor.displayName || invitor.username}
-                                size="small"
-                                sx={(theme) => ({ 
-                                  height: 'auto', 
-                                  maxWidth: 'calc(100% - 50px)',
-                                  backgroundColor: theme.palette.background.paper, // White background
-                                  border: `1px solid ${theme.palette.divider}`, // Neutral border
-                                  color: theme.palette.text.primary, // Standard text color
-                                  borderRadius: '16px', // Rounded shape
-                                  '& .MuiChip-avatar': { 
-                                      margin: '1px -2px 1px 3px' 
-                                  },
-                                  '& .MuiChip-label': {
-                                    py: 0.2,
-                                    px: 0.6,
-                                    fontSize: '0.75rem' 
-                                  }
-                                })}
-                              />
-                            ) : (
-                               // Fallback if loading failed or user not found
-                              <Typography variant="body2" color="text.secondary">
-                                {invite.commitment.creatorUsername}
-                              </Typography>
-                            )}
-                          </Box>
-                          
-                          {/* Date and Location */}
-                          <AccessibleTypography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                            {t('common.date')}: {formatDate(invite.commitment.dateTime)}
-                          </AccessibleTypography>
-                          <AccessibleTypography variant="body2" color="text.secondary" noWrap title={invite.commitment.location.description}>
-                             {t('commitments.table.location')}: {invite.commitment.location.description}
-                          </AccessibleTypography>
-                        </Box>
-                        {/* Right side: Status Tag and Details Button */}
-                        <Stack direction="column" spacing={1} alignItems="flex-end" sx={{ flexShrink: 0 }}>
-                          {/* Custom Status Tag */}
-                          <Box
-                            sx={(theme) => {
-                              const statusLower = invite.status.toLowerCase();
-                              let statusColor = theme.palette.warning.main;
-
-                              if (statusLower === 'accepted') {
-                                statusColor = theme.palette.success.main;
-                              } else if (statusLower === 'rejected') {
-                                statusColor = theme.palette.error.main;
-                              }
-                              
-                              // New styles for white background, colored border/text
-                              return {
-                                display: 'inline-block',
-                                px: 1.2,
-                                py: 0.4,
-                                borderRadius: '16px', // More rounded corners
-                                backgroundColor: theme.palette.background.paper, // White background
-                                border: `1px solid ${statusColor}`, // Colored border
-                                color: statusColor, // Colored text
-                                fontSize: '0.75rem',
-                                fontWeight: 500,
-                                textTransform: 'capitalize',
-                                whiteSpace: 'nowrap'
-                              };
-                            }}
-                          >
-                            {t(`commitments.invitations.status.${invite.status.toLowerCase()}`, invite.status)}
-                          </Box>
-
-                          {/* Details Button */}
-                          <Button
-                            variant="text"
-                            size="small"
-                            onClick={() => handleViewDetails(invite.commitmentId)}
-                            startIcon={<Info size={16} weight="regular" />}
-                            sx={{ 
-                              flexShrink: 0, 
-                              minWidth: 'auto',
-                              lineHeight: 1 // Adjust line height for better vertical alignment with tag
-                            }}
-                          >
-                            {t('common.details', 'Details')}
-                          </Button>
-                        </Stack>
-                      </Box>
-
-                      {/* Bottom section: Action Buttons (only if pending) */}
-                       {/* Use Box with mt: 'auto' to push buttons to bottom */}
-                      <Box sx={{ mt: 'auto', width: '100%' }}>
-                        {isPending && (
-                          <Stack direction="row" spacing={1} sx={{ mt: 1 }} alignItems="center" justifyContent="flex-end"> {/* Align buttons to right */}
-                            <Button
-                              variant="contained"
-                              size="small"
-                              color="success"
-                              onClick={() => handleInvitationResponse(invite.id, 'accepted')}
-                              disabled={isLoading}
-                              sx={{ flexGrow: 1 }} // Make buttons take equal space if needed, or adjust as preferred
-                            >
-                              {isLoading ? <CircularProgress size={20} color="inherit" /> : t('common.accept', 'Accept')}
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              color="error"
-                              onClick={() => handleInvitationResponse(invite.id, 'rejected')}
-                              disabled={isLoading}
-                              sx={{ flexGrow: 1 }} // Make buttons take equal space
-                            >
-                              {isLoading ? <CircularProgress size={20} color="inherit" /> : t('common.reject', 'Reject')}
-                            </Button>
-                          </Stack>
-                        )}
-                        {/* Display error if response failed */}
-                        {errorMsg && <Alert severity="error" sx={{ mt: 1, p: '0 8px', fontSize: '0.8rem', width: 'fit-content', ml: 'auto' }}>{errorMsg}</Alert>}
-                      </Box>
-                    </Paper>
-                  </Grid>
-                );
+                  return (
+                     <Grid item xs={12} sm={6} md={6} key={invite.id} sx={{ display: 'flex' }} ref={attachObserver ? lastReceivedInviteElementRef : undefined}>
+                         <Paper
+                             elevation={0}
+                             sx={(theme) => ({ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}`, height: '100%', width: '100%', display: 'flex', flexDirection: 'column', gap: 1.5 })}
+                         >
+                           {/* Top section */}
+                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'nowrap', gap: 1 }}>
+                             {/* Left: Title, Invitor, Date, Location */}
+                             <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                               <AccessibleTypography variant="subtitle1" fontWeight="medium" noWrap title={invite.commitment.title}>{invite.commitment.title}</AccessibleTypography>
+                               {/* Invitor Chip */} 
+                               <Box sx={{ mt: 0.5, display: 'flex', alignItems: 'center' }}>
+                                 <Typography variant="body2" color="text.secondary" sx={{ mr: 0.5 }}>{t('commitments.invitations.from', 'From')}:</Typography>
+                                 {loadingInvitors && !invitor ? (<CircularProgress size={16} sx={{ ml: 1 }} />) : invitor ? (
+                                   <Chip component={RouterLink} to={`/people/${invitor.username}`} clickable 
+                                     avatar={<Avatar src={invitor.profilePicture || undefined} sx={{ width: 26, height: 26 }}>{!invitor.profilePicture && invitor.username.charAt(0).toUpperCase()}</Avatar>}
+                                     label={invitor.displayName || invitor.username} size="small"
+                                     sx={(theme) => ({ height: 'auto', maxWidth: 'calc(100% - 50px)', backgroundColor: theme.palette.background.paper, border: `1px solid ${theme.palette.divider}`, color: theme.palette.text.primary, borderRadius: '16px', '& .MuiChip-avatar': { margin: '1px -2px 1px 3px' }, '& .MuiChip-label': { py: 0.2, px: 0.6, fontSize: '0.75rem' } })} />
+                                  ) : (<Typography variant="body2" color="text.secondary">{invite.commitment.creatorUsername}</Typography>)} 
+                                </Box>
+                               {/* Date/Location */}
+                               <AccessibleTypography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{t('common.date')}: {formatDate(invite.commitment.dateTime)}</AccessibleTypography>
+                               <AccessibleTypography variant="body2" color="text.secondary" noWrap title={invite.commitment.location.description}>{t('commitments.table.location')}: {invite.commitment.location.description}</AccessibleTypography>
+                             </Box>
+                             {/* Right: Status Tag, Details Button */}
+                             <Stack direction="column" spacing={1} alignItems="flex-end" sx={{ flexShrink: 0 }}>
+                               {/* Status Tag */} 
+                               <Box sx={(theme) => { const statusLower = invite.status.toLowerCase(); let statusColor = theme.palette.warning.main; if (statusLower === 'accepted') statusColor = theme.palette.success.main; else if (statusLower === 'rejected') statusColor = theme.palette.error.main; return { display: 'inline-block', px: 1.2, py: 0.4, borderRadius: '16px', backgroundColor: theme.palette.background.paper, border: `1px solid ${statusColor}`, color: statusColor, fontSize: '0.75rem', fontWeight: 500, textTransform: 'capitalize', whiteSpace: 'nowrap' }; }}>
+                                 {t(`commitments.invitations.status.${invite.status.toLowerCase()}`, invite.status)}
+                               </Box>
+                               {/* Details Button */} 
+                               <Button variant="text" size="small" onClick={() => handleViewDetails(invite.commitmentId)} startIcon={<Info size={16} weight="regular" />} sx={{ flexShrink: 0, minWidth: 'auto', lineHeight: 1 }}>{t('common.details', 'Details')}</Button>
+                             </Stack>
+                           </Box>
+                           {/* Bottom section: Action Buttons */}
+                           <Box sx={{ mt: 'auto', width: '100%' }}>
+                             {isPending && (
+                               <Stack direction="row" spacing={1} sx={{ mt: 1 }} alignItems="center" justifyContent="flex-end">
+                                 <Button variant="contained" size="small" color="success" onClick={() => handleInvitationResponse(invite.id, 'accepted')} disabled={isLoading} sx={{ flexGrow: 1 }}>{isLoading ? <CircularProgress size={20} color="inherit" /> : t('common.accept', 'Accept')}</Button>
+                                 <Button variant="outlined" size="small" color="error" onClick={() => handleInvitationResponse(invite.id, 'rejected')} disabled={isLoading} sx={{ flexGrow: 1 }}>{isLoading ? <CircularProgress size={20} color="inherit" /> : t('common.reject', 'Reject')}</Button>
+                               </Stack>
+                             )}
+                             {errorMsg && <Alert severity="error" sx={{ mt: 1, p: '0 8px', fontSize: '0.8rem', width: 'fit-content', ml: 'auto' }}>{errorMsg}</Alert>}
+                           </Box>
+                         </Paper>
+                     </Grid>
+                  );
               })}
-            </Grid> {/* Close Grid container */}
-            {receivedTotalPages > 1 && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-                <Pagination
-                  count={receivedTotalPages}
-                  page={receivedPage}
-                  onChange={handleReceivedPageChange}
-                  color="primary"
-                />
-              </Box>
-            )}
+            </Grid>
+            
+             {/* Loading More Indicator - Corrected Structure */}
+             {isLoadingMoreReceived.current && ( 
+                 <Grid container spacing={2} sx={{ width: '100%', m: 0, justifyContent: 'center', mt: 1, py: 3 }}>
+                     {/* Show 1 Skeleton Card when loading more */} 
+                    <Grid item xs={12} sm={6} md={6} sx={{ display: 'flex' }}>
+                         {/* Single Received Skeleton Card */} 
+                         <Paper elevation={0} sx={(theme) => ({ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}`, height: '100%', width: '100%', display: 'flex', flexDirection: 'column', gap: 1.5 })}> 
+                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'nowrap', gap: 1 }}>
+                             <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                               <Skeleton variant="text" width="70%" sx={{ fontSize: '1rem' }} />
+                               <Skeleton variant="text" width="50%" sx={{ fontSize: '0.8rem' }} />
+                               <Skeleton variant="text" width="60%" sx={{ fontSize: '0.8rem' }} />
+                               <Skeleton variant="text" width="80%" sx={{ fontSize: '0.8rem' }} />
+                             </Box>
+                             <Stack direction="column" spacing={1} alignItems="flex-end" sx={{ flexShrink: 0 }}>
+                               <Skeleton variant="rounded" width={60} height={22} />
+                               <Skeleton variant="rounded" width={70} height={24} />
+                             </Stack>
+                           </Box>
+                           <Box sx={{ mt: 'auto', width: '100%' }}>
+                             <Stack direction="row" spacing={1} sx={{ mt: 1 }} alignItems="center" justifyContent="flex-end">
+                                <Skeleton variant="rounded" height={30} sx={{ flexGrow: 1 }} />
+                                <Skeleton variant="rounded" height={30} sx={{ flexGrow: 1 }} />
+                             </Stack>
+                           </Box>
+                         </Paper>
+                    </Grid>
+                 </Grid>
+             )}
+
+             {/* End of Results Message */}
+             {!receivedLoading && !hasMoreReceived && receivedInvites.length > 0 && (
+                <Box sx={{ textAlign: 'center', p: 3, mt: 1 }}>
+                   <Typography color="text.secondary">
+                      {t('people.endOfResults', "You've reached the end of the results")} 
+                   </Typography>
+                </Box>
+             )}
           </Box>
         )}
       </TabPanel>
 
       {/* Sent Invitations Panel */}
       <TabPanel value={tabValue} index={1}>
-        {sentLoading && <Box sx={{ display: 'flex', justifyContent: 'center', my: 3 }}><CircularProgress /></Box>}
-        {sentError && <Alert severity="error" sx={{ my: 2 }}>{sentError}</Alert>}
-        {!sentLoading && !sentError && sentInvites.length === 0 && (
-          <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', my: 3 }}>
-            {t('commitments.invitations.noSent', 'No sent invitations found.')}
-          </Typography>
-        )}
-        {!sentLoading && !sentError && sentInvites.length > 0 && (
-          <Box>
-            {/* Wrap list in Grid container */}
+         {/* Initial Loading Skeleton */}
+         {sentLoading && (
             <Grid container spacing={2} sx={{ width: '100%', m: 0 }}>
-              {sentInvites.map((invite) => (
-                // Wrap item in Grid item
-                <Grid item xs={12} sm={6} md={6} key={invite.id} sx={{ display: 'flex' }}>
-                  {/* Use Paper for the card */}
-                  <Paper
-                    elevation={0}
-                    sx={(theme) => ({
-                      p: 2.5, // Consistent padding
-                      borderRadius: 3, // Consistent radius
-                      border: `1px solid ${theme.palette.divider}`, // Consistent border
-                      height: '100%',
-                      width: '100%', // Ensure paper takes full width of grid item
-                      display: 'flex',
-                      flexDirection: 'column', // Stack content vertically
-                      justifyContent: 'space-between' // Push button to bottom
-                    })}
-                  >
-                    {/* Top part: Details */}
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'nowrap', gap: 1 }}>
-                       <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
-                         <AccessibleTypography variant="subtitle1" fontWeight="medium" noWrap title={invite.title}>
-                           {invite.title}
-                         </AccessibleTypography>
-                         <AccessibleTypography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-                           {t('common.date')}: {formatDate(invite.dateTime)}
-                         </AccessibleTypography>
-                         <AccessibleTypography variant="body2" color="text.secondary" noWrap title={invite.location.description}>
-                           {t('commitments.table.location')}: {invite.location.description}
-                         </AccessibleTypography>
+                {/* Provide type for index */} 
+                {Array.from(new Array(ITEMS_PER_PAGE)).map((_: unknown, index: number) => (
+                  <Grid item xs={12} sm={6} md={6} key={`skel-sent-${index}`} sx={{ display: 'flex' }}>
+                     {/* Copy the FULL Skeleton structure here for a single sent card */}
+                     <Paper elevation={0} sx={(theme) => ({ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}`, height: '100%', width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' })}> 
+                       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'nowrap', gap: 1 }}>
+                         <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                             <Skeleton variant="text" width="70%" sx={{ fontSize: '1rem' }} />
+                             <Skeleton variant="text" width="60%" sx={{ fontSize: '0.8rem' }} />
+                             <Skeleton variant="text" width="80%" sx={{ fontSize: '0.8rem' }} />
+                         </Box>
+                         <Skeleton variant="rounded" width={70} height={24} sx={{ flexShrink: 0 }} />
                        </Box>
-                       {/* Button aligned top-right */}
-                       <Button
-                         variant="text"
-                         size="small"
-                         onClick={() => handleViewDetails(invite.id)}
-                         startIcon={<Info size={16} weight="regular" />}
-                         sx={{ flexShrink: 0, minWidth: 'auto', p: '4px 8px' }}
-                       >
-                         {t('common.details', 'Details')}
-                       </Button>
-                    </Box>
-                     {/* Bottom part: Maybe display participants invited? */}
-                     {/* <Box sx={{ mt: 'auto' }}> // Pushes this section down if needed
-                       <AccessibleTypography variant="caption" color="text.secondary">
-                         Invited: {invite.participants?.map(p => p.username).join(', ') || 'None'}
-                       </AccessibleTypography>
-                     </Box> */}
-                  </Paper>
+                     </Paper>
+                  </Grid>
+                ))}
+            </Grid>
+         )}
+         {/* Error Display */}
+         {!sentLoading && sentError && sentInvites.length === 0 && (
+            <Alert severity="error" sx={{ my: 2 }}>{sentError}</Alert>
+         )}
+         {/* Empty State */} 
+         {!sentLoading && !sentError && sentInvites.length === 0 && (
+            <Typography variant="body1" color="text.secondary" sx={{ textAlign: 'center', my: 3 }}>
+                {t('commitments.invitations.noSent', 'No sent invitations found.')}
+            </Typography>
+         )}
+         {/* List Rendering */}
+         {sentInvites.length > 0 && (
+            <Box>
+                <Grid container spacing={2} sx={{ width: '100%', m: 0 }}>
+                  {sentInvites.map((invite, index) => {
+                      const attachObserver = index === sentInvites.length - 3;
+                      return (
+                          <Grid item xs={12} sm={6} md={6} key={invite.id} sx={{ display: 'flex' }} ref={attachObserver ? lastSentInviteElementRef : undefined}>
+                              <Paper
+                                elevation={0}
+                                sx={(theme) => ({ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}`, height: '100%', width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' })}
+                              >
+                                {/* Top part: Details */} 
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'nowrap', gap: 1 }}>
+                                  <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                                      <AccessibleTypography variant="subtitle1" fontWeight="medium" noWrap title={invite.title}>{invite.title}</AccessibleTypography>
+                                      <AccessibleTypography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>{t('common.date')}: {formatDate(invite.dateTime)}</AccessibleTypography>
+                                      <AccessibleTypography variant="body2" color="text.secondary" noWrap title={invite.location.description}>{t('commitments.table.location')}: {invite.location.description}</AccessibleTypography>
+                                  </Box>
+                                  {/* Details Button */} 
+                                  <Button variant="text" size="small" onClick={() => handleViewDetails(invite.id)} startIcon={<Info size={16} weight="regular" />} sx={{ flexShrink: 0, minWidth: 'auto', p: '4px 8px' }}>{t('common.details', 'Details')}</Button>
+                                </Box>
+                                {/* Optional: Bottom part */} 
+                                {/* <Box sx={{ mt: 'auto' }}>...</Box> */} 
+                              </Paper>
+                          </Grid>
+                      );
+                  })}
                 </Grid>
-              ))}
-            </Grid> {/* Close Grid container */}
-            {sentTotalPages > 1 && (
-              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
-                <Pagination
-                  count={sentTotalPages}
-                  page={sentPage}
-                  onChange={handleSentPageChange}
-                  color="primary"
-                />
-              </Box>
-            )}
-          </Box>
-        )}
+                
+                {/* Loading More Indicator - Corrected Structure */}
+                {isLoadingMoreSent.current && (
+                  <Grid container spacing={2} sx={{ width: '100%', m: 0, justifyContent: 'center', mt: 1, py: 3 }}>
+                     {/* Show 1 Skeleton Card when loading more */} 
+                      <Grid item xs={12} sm={6} md={6} sx={{ display: 'flex' }}>
+                          {/* Single Sent Skeleton Card */} 
+                          <Paper elevation={0} sx={(theme) => ({ p: 2.5, borderRadius: 3, border: `1px solid ${theme.palette.divider}`, height: '100%', width: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' })}> 
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'nowrap', gap: 1 }}>
+                              <Box sx={{ flexGrow: 1, overflow: 'hidden' }}>
+                                  <Skeleton variant="text" width="70%" sx={{ fontSize: '1rem' }} />
+                                  <Skeleton variant="text" width="60%" sx={{ fontSize: '0.8rem' }} />
+                                  <Skeleton variant="text" width="80%" sx={{ fontSize: '0.8rem' }} />
+                              </Box>
+                              <Skeleton variant="rounded" width={70} height={24} sx={{ flexShrink: 0 }} />
+                            </Box>
+                          </Paper>
+                      </Grid>
+                  </Grid>
+                )}
+
+                {/* End of Results Message */} 
+                {!sentLoading && !hasMoreSent && sentInvites.length > 0 && (
+                    <Box sx={{ textAlign: 'center', p: 3, mt: 1 }}>
+                       <Typography color="text.secondary">
+                         {t('people.endOfResults', "You've reached the end of the results")} 
+                       </Typography>
+                    </Box>
+                 )}
+            </Box>
+         )}
       </TabPanel>
 
       {/* --- Modal Dialog --- */}

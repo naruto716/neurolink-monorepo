@@ -1,4 +1,3 @@
-import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './app/layout/index.css'
 import 'react-toastify/dist/ReactToastify.css'
@@ -22,13 +21,11 @@ const root = createRoot(rootElement);
 
 // Render the app
 root.render(
-  <StrictMode>
-    <AuthProvider {...cognitoAuthConfig}>
-      <Provider store={store}>
-        <ThemeProvider>
-          <RouterProvider router={router} />
-        </ThemeProvider>
-      </Provider>
-    </AuthProvider>
-  </StrictMode>,
+  <AuthProvider {...cognitoAuthConfig}>
+    <Provider store={store}>
+      <ThemeProvider>
+        <RouterProvider router={router} />
+      </ThemeProvider>
+    </Provider>
+  </AuthProvider>,
 )

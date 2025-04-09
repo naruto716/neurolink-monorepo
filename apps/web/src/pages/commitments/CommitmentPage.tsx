@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Container, Box, Tabs, Tab } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useParams, useNavigate } from 'react-router-dom';
 import CommitmentOverview from './components/CommitmentOverview';
-import CommitmentList from './components/CommitmentList'; // Import CommitmentList
-import CommitmentInvitations from './components/CommitmentInvitations'; // Import CommitmentInvitations
+import CommitmentList from './components/CommitmentList';
+import CommitmentInvitations from './components/CommitmentInvitations';
 
 // Define the structure for tabs
 interface TabPanelProps {
@@ -41,21 +42,46 @@ function a11yProps(index: number) {
 
 const CommitmentPage: React.FC = () => {
   const { t } = useTranslation();
-  const [value, setValue] = useState(0); // State for active tab index
+  const { subpage } = useParams<{ subpage?: string }>();
+  const navigate = useNavigate();
+  const [value, setValue] = useState(0);
+
+  // Memoize the tabs array
+  const tabs = useMemo(() => [
+    { label: t('commitments.tabs.overview', 'Overview'), component: <CommitmentOverview />, key: 'overview' },
+    { label: t('commitments.tabs.myCommitments', 'My Commitments'), component: <CommitmentList />, key: 'my-commitments' },
+    { label: t('commitments.tabs.invitations', 'Invitations'), component: <CommitmentInvitations />, key: 'invitations' },
+    // Add other tabs here later...
+  ], [t]);
+
+  // Effect to set initial tab based on URL subpage
+  useEffect(() => {
+    let initialIndex = 0;
+    if (subpage) {
+      // Find index matching the key from the URL subpage
+      const foundIndex = tabs.findIndex(tab => tab.key === subpage.toLowerCase());
+      if (foundIndex !== -1) {
+        initialIndex = foundIndex;
+      }
+    }
+    // Only update state if it's different to avoid unnecessary re-renders
+    if (value !== initialIndex) {
+        setValue(initialIndex);
+    }
+  // Add `value` to dependency array to handle browser back/forward potentially
+  }, [subpage, value, tabs]); // tabs is stable
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setValue(newValue);
+    // Update URL when tab changes
+    const newSubpageKey = tabs[newValue]?.key;
+    if (newSubpageKey && newSubpageKey !== 'overview') {
+      navigate(`/commitments/${newSubpageKey}`, { replace: true });
+    } else {
+      // Navigate back to the base /commitments for the overview tab
+      navigate('/commitments', { replace: true });
+    }
   };
-
-  // Define tabs
-  const tabs = [
-    { label: t('commitments.tabs.overview', 'Overview'), component: <CommitmentOverview /> },
-    { label: t('commitments.tabs.myCommitments', 'My Commitments'), component: <CommitmentList /> },
-    { label: t('commitments.tabs.invitations', 'Invitations'), component: <CommitmentInvitations /> },
-    // Add other tabs here later, e.g.:
-    // { label: t('commitments.tabs.targets', 'Targets'), component: <div>Targets Content</div> },
-    // { label: t('commitments.tabs.budget', 'Budget'), component: <div>Budget Content</div> },
-  ];
 
   return (
     // Reduce margin top from 4 (32px) to 2 (16px)
