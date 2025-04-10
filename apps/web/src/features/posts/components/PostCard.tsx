@@ -17,7 +17,9 @@ import {
   Link, 
   Skeleton 
 } from '@mui/material'; 
-import { Post, Comment, fetchComments, PaginatedCommentsResponse, togglePostLike, createComment } from '@neurolink/shared';
+import { Post, Comment, PaginatedCommentsResponse, togglePostLike } from '@neurolink/shared'; // Keep Post, Comment, PaginatedCommentsResponse, togglePostLike
+// Import comment functions directly from postsAPI to avoid conflict
+import { fetchComments, createComment } from '@neurolink/shared/src/features/posts/postsAPI';
 import { AccessibleTypography } from '../../../app/components/AccessibleTypography';
 import { formatDistanceToNow } from 'date-fns';
 import { ChatDots, Heart, DotsThree, PaperPlaneTilt } from '@phosphor-icons/react';
