@@ -19,9 +19,9 @@ export * from './features/commitments/types';
 export * from './features/forum/types';
 export type { PostCreateDTO, TagResponseDTO } from './features/forum/types';
 export type { Commitment, CommitmentParticipant, PaginatedCommitmentsResponse, ReceivedInvitation, ReceivedInvitationCommitment, PaginatedReceivedInvitationsResponse, PaginatedSentInvitationsResponse } from './features/commitments/types';
-export { fetchCurrentUser, createUser, fetchUserByUsername, uploadProfilePicture, fetchUsers, fetchUserFriends, fetchUserFriendCount, fetchPendingRequests, acceptFriendRequest, declineFriendRequest, sendFriendRequest, fetchConnectionStatus, fetchSentRequests, fetchUserCommitments, fetchCommitmentById, fetchSentInvitations, fetchSentInvitationsDetail, fetchReceivedInvitations, respondToCommitmentInvitation, fetchPendingInvitationCount, fetchAcceptedCommitmentCount, createCommitment } from './features/user/userAPI';
+export { fetchCurrentUser, createUser, fetchUserByUsername, uploadProfilePicture, fetchUsers, fetchUserFriends, fetchUserFriendCount, fetchPendingRequests, acceptFriendRequest, declineFriendRequest, sendFriendRequest, fetchConnectionStatus, fetchSentRequests, fetchUserCommitments, fetchCommitmentById, fetchSentInvitations, fetchSentInvitationsDetail, fetchReceivedInvitations, respondToCommitmentInvitation, fetchPendingInvitationCount, fetchAcceptedCommitmentCount, createCommitment, fetchUserTags, // Export renamed function
+FetchTagsParams as FetchUserTagsParams } from './features/user/userAPI';
 export * from './features/posts/postsAPI';
-export * from './features/forum/forumAPI';
 export * from './features/tokens/tokensSlice';
 export * from './features/user/userSlice';
 export * from './features/user/paginatedUsersSlice';
@@ -31,5 +31,6 @@ export * from './features/chat/types';
 export { // Export chat slice actions and selectors explicitly
 setChatConnecting, setChatConnected, setChatDisconnected, setChatError, setTotalUnreadCount, selectChatConnectionStatus, selectTotalUnreadCount, selectChatUserId, selectChatError } from './features/chat/chatSlice';
 export { // Export forum slice actions and selectors explicitly
-fetchForumPosts, createPost, fetchTags, resetForumState, selectForumPosts, selectForumStatus, selectForumError, selectForumCurrentPage, selectForumTotalPages, selectForumTotalPosts, selectForumTags, selectForumTagsStatus, selectForumTagsError, selectForumTagsCurrentPage, selectForumTagsTotalPages, selectForumTagsTotalTags, selectCreatePostStatus, selectCreatePostError, fetchPostById, fetchComments, createComment, likePost, // Add likePost thunk
+fetchForumPosts, createPost, fetchForumTags, // Export the renamed thunk (will rename in slice next)
+resetForumState, selectForumPosts, selectForumStatus, selectForumError, selectForumCurrentPage, selectForumTotalPages, selectForumTotalPosts, selectForumTags, selectForumTagsStatus, selectForumTagsError, selectForumTagsCurrentPage, selectForumTagsTotalPages, selectForumTagsTotalTags, selectCreatePostStatus, selectCreatePostError, fetchPostById, fetchComments, createComment, likePost, // Add likePost thunk
 clearSelectedPost, selectSelectedPost, selectSelectedPostStatus, selectSelectedPostError, selectPostComments, selectCommentsStatus, selectCommentsError, selectCommentsCurrentPage, selectCommentsTotalPages, selectCommentsTotalComments, selectCreateCommentStatus, selectCreateCommentError, selectLikeStatus, selectLikeError } from './features/forum/forumSlice';

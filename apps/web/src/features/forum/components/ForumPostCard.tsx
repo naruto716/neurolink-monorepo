@@ -18,6 +18,7 @@ import { PostResponseDTO } from '@neurolink/shared'; // Renamed from ForumPostDT
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChatCircleDots, Heart } from '@phosphor-icons/react'; // Removed PlayCircle
+import { formatDistanceToNow } from 'date-fns'; // Import date-fns function
 import { AccessibleTypography } from '../../../app/components/AccessibleTypography';
 
 interface ForumPostCardProps {
@@ -116,7 +117,7 @@ const ForumPostCard = React.forwardRef<HTMLDivElement, ForumPostCardProps>(({ po
                {displayName || post.username}
              </Typography>
              <Typography variant="caption" color="text.secondary">
-               • {new Date(post.created_at).toLocaleDateString()} {/* Use a separator */}
+               • {formatDistanceToNow(new Date(post.created_at), { addSuffix: true })} {/* Use relative time */}
              </Typography>
         </Stack>
 

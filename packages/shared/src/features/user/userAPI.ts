@@ -102,7 +102,7 @@ export interface FetchTagsParams {
     fuzzyThreshold?: number; // Parameter for fuzzy search threshold
 }
 
-export const fetchTags = async (apiClient: AxiosInstance, params: FetchTagsParams = {}): Promise<Tag[]> => {
+export const fetchUserTags = async (apiClient: AxiosInstance, params: FetchTagsParams = {}): Promise<Tag[]> => { // Renamed function
     try {
         // Construct query parameters, applying defaults
         const queryParams: Record<string, string | number> = {};

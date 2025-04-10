@@ -67,7 +67,7 @@ export const fetchUserByUsername = async (apiClient, username) => {
         throw new Error(error.response?.data?.message || `Failed to fetch user: ${username}`);
     }
 };
-export const fetchTags = async (apiClient, params = {}) => {
+export const fetchUserTags = async (apiClient, params = {}) => {
     try {
         // Construct query parameters, applying defaults
         const queryParams = {};

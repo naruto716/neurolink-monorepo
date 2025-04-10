@@ -58,13 +58,13 @@ export {
     respondToCommitmentInvitation,
     fetchPendingInvitationCount,
     fetchAcceptedCommitmentCount,
-    createCommitment
-    // Note: fetchTags and FetchTagsParams are intentionally omitted here
-    // fetchTags is exported from forumAPI.ts
-    // FetchTagsParams is exported from forum/types.ts
+    createCommitment,
+    fetchUserTags, // Export renamed function
+    FetchTagsParams as FetchUserTagsParams // Export and alias the interface
 } from './features/user/userAPI';
 export * from './features/posts/postsAPI'; // Export Post API functions
-export * from './features/forum/forumAPI'; // Export Forum API functions
+// Remove explicit export of forumAPI functions, export thunks from slice instead
+// export * from './features/forum/forumAPI'; // Keep this commented or remove
 export * from './features/tokens/tokensSlice'; // Export token actions/selectors if needed directly
 export * from './features/user/userSlice'; // Export user actions/selectors if needed directly
 export * from './features/user/paginatedUsersSlice'; // Export paginated user actions/selectors
@@ -86,7 +86,7 @@ export { // Export forum slice actions and selectors explicitly
     // Existing
     fetchForumPosts,
     createPost,
-    fetchTags,
+    fetchForumTags, // Export the renamed thunk (will rename in slice next)
     resetForumState,
     selectForumPosts,
     selectForumStatus,

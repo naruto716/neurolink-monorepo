@@ -420,6 +420,8 @@
    "endOfPosts": "You've reached the end.",
    "viewPost": "View post",
    "postImagePreviewAlt": "Post image preview",
+   "searchLabel": "Search posts...",
+   "filterTagsLabel": "Filter by tags",
    "createPost": {
      "breadcrumb": "Create Post",
      "title": "Create New Forum Post",

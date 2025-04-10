@@ -36,7 +36,7 @@ export interface FetchTagsParams {
     limit?: number;
     fuzzyThreshold?: number;
 }
-export declare const fetchTags: (apiClient: AxiosInstance, params?: FetchTagsParams) => Promise<Tag[]>;
+export declare const fetchUserTags: (apiClient: AxiosInstance, params?: FetchTagsParams) => Promise<Tag[]>;
 export declare const uploadProfilePicture: (apiClient: AxiosInstance, file: File) => Promise<string>;
 export interface FetchUsersParams {
     q?: string;

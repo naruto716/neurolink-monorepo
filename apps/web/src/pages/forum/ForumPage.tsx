@@ -10,8 +10,9 @@ import {
   // Paper, // Removed unused import
   Stack,
   Typography,
-  // Avatar // Moved to ForumPostCard
-  // Chip // Moved to ForumPostCard
+  TextField, // Add TextField
+  Autocomplete, // Add Autocomplete
+  Chip, // Add Chip for tag rendering
  } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add'; // Import AddIcon
 import { Link as RouterLink } from 'react-router-dom'; // Import Link for navigation
@@ -20,7 +21,7 @@ import { useTranslation } from 'react-i18next';
 import { AccessibleTypography } from '../../app/components/AccessibleTypography';
 import { useAppDispatch, useAppSelector } from '../../app/store/initStore'; // Import Redux hooks
 // Import forum slice actions/selectors AND user API
-import { fetchForumPosts, selectForumPosts, selectForumStatus, selectForumError, selectForumCurrentPage, selectForumTotalPages, fetchUserByUsername, User } from '@neurolink/shared';
+import { fetchForumPosts, selectForumPosts, selectForumStatus, selectForumError, selectForumCurrentPage, selectForumTotalPages, fetchUserByUsername, User, fetchForumTags, selectForumTags, TagResponseDTO, FetchForumPostsParams } from '@neurolink/shared'; // Use fetchForumTags
 import apiClient from '../../app/api/apiClient'; // Import apiClient
 import { PostResponseDTO } from '@neurolink/shared/src/features/forum/types'; // Import type (renamed from ForumPostDTO)
 import ForumPostCard from '../../features/forum/components/ForumPostCard'; // Import the new card component
@@ -40,19 +41,33 @@ const ForumPage = () => {
   // Local state to store fetched user details (username -> User object)
   const [userDetails, setUserDetails] = useState<Record<string, User>>({});
   const [attemptedUsernames, setAttemptedUsernames] = useState<Set<string>>(new Set()); // Track attempted fetches
-  // const [userFetchStatus, setUserFetchStatus] = useState<'idle' | 'loading' | 'failed'>('idle'); // Removed unused state
+  // Filter state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterTags, setFilterTags] = useState<TagResponseDTO[]>([]);
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
+
+  // Selectors for tags
+  const availableTags = useAppSelector(selectForumTags);
+  const tagsStatus = useAppSelector(state => state.forum.tagsStatus); // Use direct state access if selector not exported/needed elsewhere
 
   // Ref for the loading spinner at the bottom
   const observerRef = useRef<HTMLDivElement>(null);
-  const isFetchingNextPage = useRef(false); // Prevent multiple fetches for the same page
+  const isFetchingNextPage = useRef(false);
+  // const initialFetchDone = useRef(false); // Removed unused ref
 
-  // Fetch initial posts on mount
+  // Fetch initial posts and tags
   useEffect(() => {
-    // Fetch only if idle (to avoid re-fetching on component re-renders unless needed)
+    // Fetch posts only if status is idle (initial load)
     if (status === 'idle') {
-      dispatch(fetchForumPosts({ apiClient, params: { page: 1, size: 10 } })); // Fetch page 1, size 10
+      dispatch(fetchForumPosts({ apiClient, params: { page: 1, size: 10 } }));
     }
-  }, [dispatch, status]); // Dependency array includes dispatch and status
+    // Fetch tags if not already fetched/loading
+    if (tagsStatus === 'idle') {
+      dispatch(fetchForumTags({ apiClient })); // Use renamed thunk
+    }
+    // Intentionally only run on mount for initial data load
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dispatch]);
 
   // Effect to fetch user details when posts change
   useEffect(() => {
@@ -88,25 +103,71 @@ const ForumPage = () => {
     }
   }, [posts, status, userDetails, attemptedUsernames]); // Add attemptedUsernames to dependencies
 
-  // Callback for IntersectionObserver
+  // Debounce search term
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 500); // 500ms delay
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchTerm]);
+
+  // Effect to refetch posts when debounced search term or filter tags change
+  useEffect(() => {
+    // Don't refetch on initial mount if searchTerm and filterTags are empty
+    if (debouncedSearchTerm === '' && filterTags.length === 0 && status !== 'idle') {
+       // If filters cleared and not initial load, refetch page 1
+       if (currentPage !== 1 || status === 'succeeded') { // Avoid refetch if already loading page 1
+           dispatch(fetchForumPosts({ apiClient, params: { page: 1, size: 10 } }));
+       }
+       return;
+    }
+
+    // Trigger fetch only if search term or tags are present
+    if (debouncedSearchTerm !== '' || filterTags.length > 0) {
+        const params: FetchForumPostsParams = { page: 1, size: 10 }; // Use specific type
+        if (debouncedSearchTerm) {
+            params.search = debouncedSearchTerm;
+        }
+        if (filterTags.length > 0) {
+            params.tags = filterTags.map(tag => tag.name); // Send tag names
+        }
+        dispatch(fetchForumPosts({ apiClient, params }));
+    }
+    // Intentionally exclude 'status' and 'currentPage' to only trigger on filter changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearchTerm, filterTags, dispatch]);
+
+
+  // Callback for IntersectionObserver (Infinite Scroll)
   const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
     const target = entries[0];
     if (
         target.isIntersecting &&
-        status !== 'loading' && // Ensure not already loading globally
-        !isFetchingNextPage.current && // Ensure not already fetching the next page
+        status !== 'loading' &&
+        !isFetchingNextPage.current &&
         currentPage < totalPages
        ) {
-      isFetchingNextPage.current = true; // Mark as fetching
+      isFetchingNextPage.current = true;
       const nextPage = currentPage + 1;
-      dispatch(fetchForumPosts({ apiClient, params: { page: nextPage, size: 10 } }))
+      // Include current filters in pagination fetch
+      const params: FetchForumPostsParams = { page: nextPage, size: 10 }; // Use specific type
+      if (debouncedSearchTerm) {
+          params.search = debouncedSearchTerm;
+      }
+      if (filterTags.length > 0) {
+          params.tags = filterTags.map(tag => tag.name);
+      }
+      dispatch(fetchForumPosts({ apiClient, params }))
         .finally(() => {
-            isFetchingNextPage.current = false; // Reset after fetch completes (success or fail)
+            isFetchingNextPage.current = false;
         });
     }
-  }, [status, currentPage, totalPages, dispatch]);
+  }, [status, currentPage, totalPages, dispatch, debouncedSearchTerm, filterTags]); // Add filter dependencies
 
-  // Effect for IntersectionObserver
+  // Effect for setting up IntersectionObserver
   useEffect(() => {
     const observer = new IntersectionObserver(handleObserver, {
       root: null, // Use the viewport
@@ -146,6 +207,52 @@ const ForumPage = () => {
             <AccessibleTypography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
               {t('forum.description', 'Discuss topics, ask questions, and connect with others.')}
             </AccessibleTypography>
+
+            {/* Search and Filter Inputs */}
+            {/* Wrap Stack in Box with maxWidth */}
+            <Box sx={{ maxWidth: { sm: '100%', md: '100%' }, mb: 3, mx: 'auto', px: 1 }}> {/* Center the box */}
+              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ alignItems: 'center' }}>
+              <TextField
+                // fullWidth // Remove fullWidth
+                variant="outlined"
+                size="small"
+                label={t('forum.searchLabel', 'Search posts...')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                // Use sx to control width/flexibility
+                sx={{ width: { xs: '100%', sm: 'auto' }, flexGrow: 1 }} // Let it grow within the constrained Box
+              />
+              {/* Tag Filter Autocomplete - Needs tag fetching logic */}
+              <Autocomplete
+                multiple
+                id="forum-filter-tags"
+                options={availableTags || []} // Use fetched tags
+                getOptionLabel={(option) => option.name}
+                value={filterTags}
+                onChange={(event, newValue) => {
+                  setFilterTags(newValue);
+                }}
+                loading={tagsStatus === 'loading'} // Use tagsStatus
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    variant="outlined"
+                    size="small"
+                    label={t('forum.filterTagsLabel', 'Filter by tags')}
+                    // placeholder={t('forum.filterTagsPlaceholder', 'Select tags...')}
+                  />
+                )}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip variant="outlined" label={option.name} {...getTagProps({ index })} key={option.id} />
+                  ))
+                }
+                isOptionEqualToValue={(option, value) => option.id === value.id}
+                sx={{ width: { xs: '100%', sm: 'auto' }, minWidth: { sm: 240 } }}
+              />
+            </Stack>
+          </Box> {/* Close the wrapping Box */}
+            {/* Removed misplaced closing tag */}
             {/* Conditional Rendering based on status */}
             {status === 'loading' && currentPage === 0 && (
               <Box sx={{ display: 'flex', justifyContent: 'center', my: 5 }}>
@@ -160,8 +267,8 @@ const ForumPage = () => {
             {/* Render posts if succeeded or loading more */}
             {(status === 'succeeded' || (status === 'loading' && currentPage > 0)) && ( // Keep outer check
               <Stack
-                divider={<Divider flexItem />} // Add dividers between items
-                spacing={0} // Remove spacing, divider handles it
+                divider={<Divider flexItem />}
+                spacing={1} // Add spacing between cards
               >
                  {posts.length === 0 && status === 'succeeded' && (
                    <AccessibleTypography color="text.secondary" align="center" sx={{ py: 4 }}>

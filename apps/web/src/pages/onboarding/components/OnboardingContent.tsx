@@ -46,7 +46,7 @@ import {
 import { selectIdToken } from '@neurolink/shared/src/features/tokens/tokensSlice';
 import { Tag, UserPreferences, UserProfileInput } from '@neurolink/shared/src/features/user/types';
 // Import FetchTagsParams and uploadProfilePicture from the correct path
-import { createUser, fetchTags, FetchTagsParams, uploadProfilePicture } from '@neurolink/shared/src/features/user/userAPI';
+import { createUser, fetchUserTags, FetchUserTagsParams, uploadProfilePicture } from '@neurolink/shared'; // Use renamed fetchUserTags and aliased FetchUserTagsParams
 // REMOVED: import { fetchUser } from '@neurolink/shared/src/features/user/userSlice';
 import { jwtDecode } from 'jwt-decode';
 import { debounce } from 'lodash'; // Added for debouncing search
@@ -373,11 +373,11 @@ const OnboardingContent: React.FC = () => {
     setTagFetchStatus(prev => ({ ...prev, [categoryType]: 'loading' }));
 
     try {
-      const fetchParams: FetchTagsParams = { type: categoryType, limit: 20 };
+      const fetchParams: FetchUserTagsParams = { type: categoryType, limit: 20 }; // Use aliased type
       if (query) {
         fetchParams.value = query; // Use value param for search
       }
-      const fetchedTags = await fetchTags(apiClient, fetchParams);
+      const fetchedTags = await fetchUserTags(apiClient, fetchParams); // Use renamed function
       setAllTags(prev => ({ ...prev, [categoryType]: fetchedTags })); // Store fetched tags under the category
       setTagFetchStatus(prev => ({ ...prev, [categoryType]: 'loaded' }));
     } catch (error) {

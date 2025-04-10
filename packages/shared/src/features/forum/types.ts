@@ -35,6 +35,7 @@ export interface FetchForumPostsParams {
   page?: number;
   size?: number;
   search?: string;
+  tags?: string[]; // Add optional tags array
 }
 
 /**

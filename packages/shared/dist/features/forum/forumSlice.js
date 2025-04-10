@@ -1,7 +1,11 @@
 // packages/shared/src/features/forum/forumSlice.ts
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit'; // Import AsyncThunk
-import { fetchForumPosts as fetchForumPostsAPI, createPost as createPostAPI, fetchTags as fetchTagsAPI, fetchPostById as fetchPostByIdAPI, // Add new API imports
-fetchCommentsForPost as fetchCommentsAPI, createCommentForPost as createCommentAPI, likePost as likePostAPI, // Add likePost API import
+import { fetchForumPosts as fetchForumPostsAPI, createPost as createPostAPI, 
+// fetchTags as fetchTagsAPI, // Remove old alias
+fetchPostById as fetchPostByIdAPI, fetchCommentsForPost as fetchCommentsAPI, createCommentForPost as createCommentAPI, 
+// Removed duplicate alias
+fetchForumTags as fetchForumTagsAPI, // Use renamed API function
+likePost as likePostAPI, // Add likePost API import
  } from './forumAPI';
 // Initial state
 const initialState = {
@@ -102,9 +106,10 @@ export const likePost = createAsyncThunk('forum/likePost', async ({ apiClient, p
     }
 });
 // Async thunk for fetching tags
-export const fetchTags = createAsyncThunk('forum/fetchTags', async ({ apiClient, params }, { rejectWithValue }) => {
+export const fetchForumTags = createAsyncThunk('forum/fetchForumTags', // Rename action type
+async ({ apiClient, params }, { rejectWithValue }) => {
     try {
-        const response = await fetchTagsAPI(apiClient, params);
+        const response = await fetchForumTagsAPI(apiClient, params); // Use renamed API alias
         return response;
     }
     catch (error) {
@@ -178,12 +183,13 @@ const forumSlice = createSlice({
             state.createPostStatus = 'failed';
             state.createPostError = action.payload ?? 'Unknown error creating post';
         })
-            // Fetch Tags Reducers
-            .addCase(fetchTags.pending, (state) => {
+            // Fetch Forum Tags Reducers
+            .addCase(fetchForumTags.pending, (state) => {
             state.tagsStatus = 'loading';
             state.tagsError = null;
         })
-            .addCase(fetchTags.fulfilled, (state, action) => {
+            .addCase(fetchForumTags.fulfilled, (// Use renamed thunk
+        state, action) => {
             state.tagsStatus = 'succeeded';
             const requestedPage = action.meta.arg.params?.page;
             const isPaginating = requestedPage && requestedPage > 1;
@@ -198,7 +204,7 @@ const forumSlice = createSlice({
             state.tagsTotalTags = action.payload.total_tags;
             state.tagsError = null;
         })
-            .addCase(fetchTags.rejected, (state, action) => {
+            .addCase(fetchForumTags.rejected, (state, action) => {
             state.tagsStatus = 'failed';
             state.tagsError = action.payload ?? 'Unknown error fetching tags';
         })

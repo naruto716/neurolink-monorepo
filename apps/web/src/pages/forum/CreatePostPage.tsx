@@ -27,7 +27,7 @@ import { Image } from '@phosphor-icons/react';
 import { useAppDispatch, useAppSelector } from '../../app/store/initStore';
 import {
   createPost,
-  fetchTags,
+  fetchForumTags, // Use renamed thunk
   selectForumTags,
   selectCreatePostStatus,
   PostCreateDTO,
@@ -75,7 +75,7 @@ const CreatePostPage: React.FC = () => {
   // Fetch tags on component mount
   useEffect(() => {
     if (tagsStatus === 'idle') {
-      dispatch(fetchTags({ apiClient }));
+      dispatch(fetchForumTags({ apiClient })); // Use renamed thunk
     }
   }, [dispatch, tagsStatus]);
 

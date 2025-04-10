@@ -13,13 +13,10 @@ export * from './features/posts/types'; // Re-export all types from posts/types.
 export * from './features/commitments/types'; // Export commitment types
 export * from './features/forum/types'; // Export forum types
 // Explicitly export required functions from userAPI, excluding fetchTags/FetchTagsParams to avoid conflict
-export { fetchCurrentUser, createUser, fetchUserByUsername, uploadProfilePicture, fetchUsers, fetchUserFriends, fetchUserFriendCount, fetchPendingRequests, acceptFriendRequest, declineFriendRequest, sendFriendRequest, fetchConnectionStatus, fetchSentRequests, fetchUserCommitments, fetchCommitmentById, fetchSentInvitations, fetchSentInvitationsDetail, fetchReceivedInvitations, respondToCommitmentInvitation, fetchPendingInvitationCount, fetchAcceptedCommitmentCount, createCommitment
-// Note: fetchTags and FetchTagsParams are intentionally omitted here
-// fetchTags is exported from forumAPI.ts
-// FetchTagsParams is exported from forum/types.ts
- } from './features/user/userAPI';
+export { fetchCurrentUser, createUser, fetchUserByUsername, uploadProfilePicture, fetchUsers, fetchUserFriends, fetchUserFriendCount, fetchPendingRequests, acceptFriendRequest, declineFriendRequest, sendFriendRequest, fetchConnectionStatus, fetchSentRequests, fetchUserCommitments, fetchCommitmentById, fetchSentInvitations, fetchSentInvitationsDetail, fetchReceivedInvitations, respondToCommitmentInvitation, fetchPendingInvitationCount, fetchAcceptedCommitmentCount, createCommitment, fetchUserTags } from './features/user/userAPI';
 export * from './features/posts/postsAPI'; // Export Post API functions
-export * from './features/forum/forumAPI'; // Export Forum API functions
+// Remove explicit export of forumAPI functions, export thunks from slice instead
+// export * from './features/forum/forumAPI'; // Keep this commented or remove
 export * from './features/tokens/tokensSlice'; // Export token actions/selectors if needed directly
 export * from './features/user/userSlice'; // Export user actions/selectors if needed directly
 export * from './features/user/paginatedUsersSlice'; // Export paginated user actions/selectors
@@ -30,7 +27,8 @@ export { // Export chat slice actions and selectors explicitly
 setChatConnecting, setChatConnected, setChatDisconnected, setChatError, setTotalUnreadCount, selectChatConnectionStatus, selectTotalUnreadCount, selectChatUserId, selectChatError } from './features/chat/chatSlice';
 export { // Export forum slice actions and selectors explicitly
 // Existing
-fetchForumPosts, createPost, fetchTags, resetForumState, selectForumPosts, selectForumStatus, selectForumError, selectForumCurrentPage, selectForumTotalPages, selectForumTotalPosts, selectForumTags, selectForumTagsStatus, selectForumTagsError, selectForumTagsCurrentPage, selectForumTagsTotalPages, selectForumTagsTotalTags, selectCreatePostStatus, selectCreatePostError, 
+fetchForumPosts, createPost, fetchForumTags, // Export the renamed thunk (will rename in slice next)
+resetForumState, selectForumPosts, selectForumStatus, selectForumError, selectForumCurrentPage, selectForumTotalPages, selectForumTotalPosts, selectForumTags, selectForumTagsStatus, selectForumTagsError, selectForumTagsCurrentPage, selectForumTagsTotalPages, selectForumTagsTotalTags, selectCreatePostStatus, selectCreatePostError, 
 // New exports for post detail and comments
 fetchPostById, fetchComments, createComment, likePost, // Add likePost thunk
 clearSelectedPost, selectSelectedPost, selectSelectedPostStatus, selectSelectedPostError, selectPostComments, selectCommentsStatus, selectCommentsError, selectCommentsCurrentPage, selectCommentsTotalPages, selectCommentsTotalComments, selectCreateCommentStatus, selectCreateCommentError, 

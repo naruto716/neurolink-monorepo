@@ -8,7 +8,7 @@ import { useAppDispatch, useAppSelector } from '../../app/store/initStore'; // U
 import { selectCurrentUser, fetchUser } from '@neurolink/shared/src/features/user/userSlice';
 // Removed useUpdateUserMutation import
 import { UserUpdate, Tag } from '@neurolink/shared/src/features/user/types';
-import { fetchTags, FetchTagsParams, uploadProfilePicture } from '@neurolink/shared/src/features/user/userAPI'; // Import tag/upload functions
+import { fetchUserTags, FetchUserTagsParams, uploadProfilePicture } from '@neurolink/shared'; // Use renamed fetchUserTags and aliased FetchUserTagsParams
 import { AccessibleTypography } from '../../app/components/AccessibleTypography';
 import { toast } from 'react-toastify';
 import apiClient from '../../app/api/apiClient'; // Import apiClient
@@ -113,9 +113,9 @@ const EditProfilePage: React.FC = () => {
     if (!categoryType) return;
     setTagFetchStatus(prev => ({ ...prev, [categoryType]: 'loading' }));
     try {
-      const fetchParams: FetchTagsParams = { type: categoryType, limit: 20 };
+      const fetchParams: FetchUserTagsParams = { type: categoryType, limit: 20 }; // Use renamed type
       if (query) fetchParams.value = query;
-      const fetchedTags = await fetchTags(apiClient, fetchParams);
+      const fetchedTags = await fetchUserTags(apiClient, fetchParams); // Use renamed function
       setAllTags(prev => ({ ...prev, [categoryType]: fetchedTags }));
       setTagFetchStatus(prev => ({ ...prev, [categoryType]: 'loaded' }));
     } catch (error) {

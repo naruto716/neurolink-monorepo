@@ -3,7 +3,7 @@ import { AxiosInstance } from 'axios';
 import { PostResponseDTO, // Renamed from ForumPostDTO
 PaginatedForumPostsResponseDTO, FetchForumPostsParams, PostCreateDTO, TagResponseDTO, PaginatedTagsResponseDTO, FetchTagsParams, PostDetailResponseDTO, // Add detail DTO
 CommentCreateDTO, // Add comment DTOs
-CommentResponseDTO, PaginatedCommentsResponseDTO, FetchCommentsParams } from './types';
+CommentResponseDTO, PaginatedCommentsResponseDTO, FetchCommentsParams, LikeResponse } from './types';
 import { SharedRootState } from '../../app/store/store';
 export interface ForumState {
     posts: PostResponseDTO[];
@@ -124,7 +124,7 @@ type FetchTagsThunkArg = {
     apiClient: AxiosInstance;
     params?: FetchTagsParams;
 };
-export declare const fetchTags: AsyncThunk<PaginatedTagsResponseDTO, FetchTagsThunkArg, {
+export declare const fetchForumTags: AsyncThunk<PaginatedTagsResponseDTO, FetchTagsThunkArg, {
     rejectValue: string;
     state: SharedRootState;
     extra?: unknown;

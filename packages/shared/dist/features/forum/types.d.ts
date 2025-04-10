@@ -31,6 +31,7 @@ export interface FetchForumPostsParams {
     page?: number;
     size?: number;
     search?: string;
+    tags?: string[];
 }
 /**
 * DTO for a single comment response.

@@ -19,10 +19,12 @@ import {
 import {
   fetchForumPosts as fetchForumPostsAPI,
   createPost as createPostAPI,
-  fetchTags as fetchTagsAPI,
-  fetchPostById as fetchPostByIdAPI, // Add new API imports
+  // fetchTags as fetchTagsAPI, // Remove old alias
+  fetchPostById as fetchPostByIdAPI,
   fetchCommentsForPost as fetchCommentsAPI,
   createCommentForPost as createCommentAPI,
+  // Removed duplicate alias
+  fetchForumTags as fetchForumTagsAPI, // Use renamed API function
   likePost as likePostAPI, // Add likePost API import
 } from './forumAPI';
 import { SharedRootState } from '../../app/store/store'; // Assuming SharedRootState path
@@ -227,15 +229,15 @@ export const likePost = createAsyncThunk<
 type FetchTagsThunkArg = { apiClient: AxiosInstance; params?: FetchTagsParams };
 
 // Async thunk for fetching tags
-export const fetchTags = createAsyncThunk<
+export const fetchForumTags = createAsyncThunk< // Rename thunk
   PaginatedTagsResponseDTO,
   FetchTagsThunkArg,
   { rejectValue: string; state: SharedRootState }
 >(
-  'forum/fetchTags',
+  'forum/fetchForumTags', // Rename action type
   async ({ apiClient, params }, { rejectWithValue }) => {
     try {
-      const response = await fetchTagsAPI(apiClient, params);
+      const response = await fetchForumTagsAPI(apiClient, params); // Use renamed API alias
       return response;
     } catch (error: any) {
       const message = error.response?.data?.detail || error.message || 'Failed to fetch tags';
@@ -314,12 +316,12 @@ const forumSlice = createSlice({
         state.createPostStatus = 'failed';
         state.createPostError = action.payload ?? 'Unknown error creating post';
       })
-      // Fetch Tags Reducers
-      .addCase(fetchTags.pending, (state) => {
+      // Fetch Forum Tags Reducers
+      .addCase(fetchForumTags.pending, (state) => { // Use renamed thunk
         state.tagsStatus = 'loading';
         state.tagsError = null;
       })
-      .addCase(fetchTags.fulfilled, (
+      .addCase(fetchForumTags.fulfilled, ( // Use renamed thunk
         state,
         action: PayloadAction<PaginatedTagsResponseDTO, string, { arg: FetchTagsThunkArg }>
       ) => {
@@ -337,7 +339,7 @@ const forumSlice = createSlice({
         state.tagsTotalTags = action.payload.total_tags;
         state.tagsError = null;
       })
-      .addCase(fetchTags.rejected, (state, action) => {
+      .addCase(fetchForumTags.rejected, (state, action) => { // Use renamed thunk
         state.tagsStatus = 'failed';
         state.tagsError = action.payload ?? 'Unknown error fetching tags';
       })

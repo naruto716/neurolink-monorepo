@@ -1,3 +1,4 @@
+import * as qs from 'qs'; // Import qs library
 /**
  * Fetches a paginated list of forum posts from the API.
  *
@@ -8,9 +9,14 @@
 export const fetchForumPosts = async (apiClient, // Use AxiosInstance type
 params) => {
     try {
-        const response = await apiClient.get('/forum/posts', {
-            params: params, // Pass params directly, Axios handles query string conversion
-        });
+        // Use qs for serialization to handle array format correctly
+        const config = {
+            params: params,
+            paramsSerializer: params => {
+                return qs.stringify(params, { arrayFormat: 'repeat' });
+            }
+        };
+        const response = await apiClient.get('/forum/posts', config); // Use config with serializer
         return response.data;
     }
     catch (error) {
@@ -46,7 +52,8 @@ export const createPost = async (apiClient, postData) => {
  * @param params - Optional parameters for pagination and search.
  * @returns A promise that resolves to the paginated tags response.
  */
-export const fetchTags = async (apiClient, params) => {
+export const fetchForumTags = async (// Renamed function
+apiClient, params) => {
     try {
         const response = await apiClient.get('/forum/tags', {
             params: params,

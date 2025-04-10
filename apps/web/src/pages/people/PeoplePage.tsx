@@ -39,7 +39,7 @@ import {
 import { CaretLeft, CaretRight, ChatText, MagnifyingGlass, User, UserPlus } from '@phosphor-icons/react'; // Removed X
 import apiClient from '../../app/api/apiClient';
 // Added Tag, FetchTagsParams, fetchTags, sendFriendRequest, selectCurrentUser
-import { FetchTagsParams, ListedUser, Tag, fetchTags, selectCurrentUser, sendFriendRequest } from '@neurolink/shared';
+import { FetchUserTagsParams, ListedUser, Tag, fetchUserTags, selectCurrentUser, sendFriendRequest } from '@neurolink/shared'; // Use aliased FetchUserTagsParams
 import { debounce } from 'lodash'; // Added debounce
 import { toast } from 'react-toastify'; // Added toast
 import { useChatContext } from 'stream-chat-react'; // Import Stream Chat context hook
@@ -353,11 +353,11 @@ const PeoplePage = () => {
     }
     setTagFetchStatus('loading');
     try {
-      const fetchParams: FetchTagsParams = { type: categoryType, limit: 50 }; // Fetch more tags for display
+      const fetchParams: FetchUserTagsParams = { type: categoryType, limit: 50 }; // Use aliased type
       if (query) {
         fetchParams.value = query;
       }
-      const tags = await fetchTags(apiClient, fetchParams);
+      const tags = await fetchUserTags(apiClient, fetchParams);
       setFetchedTags(tags);
       setTagFetchStatus('loaded');
     } catch (fetchError) {
@@ -679,7 +679,7 @@ const PeoplePage = () => {
             inputValue={tagSearchQuery}
             onInputChange={handleTagInputChange}
             fullWidth // Allow Autocomplete to fill remaining space
-            options={fetchedTags.filter(ft => !selectedFilterTags.some(st => st.type === ft.type && st.value === ft.value))} // Exclude already selected tags
+            options={Array.isArray(fetchedTags) ? fetchedTags.filter(ft => !selectedFilterTags.some(st => st.type === ft.type && st.value === ft.value)) : []} // Ensure fetchedTags is array before filtering
             loading={tagFetchStatus === 'loading'}
             getOptionLabel={(option) => option.value}
             isOptionEqualToValue={(option, value) => option.value === value.value && option.type === value.type}

@@ -25,7 +25,8 @@ export declare const createPost: (apiClient: AxiosInstance, postData: PostCreate
  * @param params - Optional parameters for pagination and search.
  * @returns A promise that resolves to the paginated tags response.
  */
-export declare const fetchTags: (apiClient: AxiosInstance, params?: FetchTagsParams) => Promise<PaginatedTagsResponseDTO>;
+export declare const fetchForumTags: (// Renamed function
+apiClient: AxiosInstance, params?: FetchTagsParams) => Promise<PaginatedTagsResponseDTO>;
 /**
  * Fetches a specific forum post by its ID.
  *

@@ -1,5 +1,6 @@
 // packages/shared/src/features/forum/forumAPI.ts
-import { AxiosInstance } from 'axios'; // Import AxiosInstance from axios
+import { AxiosInstance, AxiosRequestConfig } from 'axios'; // Import AxiosRequestConfig
+import * as qs from 'qs'; // Import qs library
 import {
   FetchForumPostsParams,
   PaginatedForumPostsResponseDTO,
@@ -27,9 +28,14 @@ export const fetchForumPosts = async (
   params?: FetchForumPostsParams
 ): Promise<PaginatedForumPostsResponseDTO> => {
   try {
-    const response = await apiClient.get<PaginatedForumPostsResponseDTO>('/forum/posts', { // Removed /api/v1 prefix
-      params: params, // Pass params directly, Axios handles query string conversion
-    });
+    // Use qs for serialization to handle array format correctly
+    const config: AxiosRequestConfig = {
+        params: params,
+        paramsSerializer: params => {
+            return qs.stringify(params, { arrayFormat: 'repeat' });
+        }
+    };
+    const response = await apiClient.get<PaginatedForumPostsResponseDTO>('/forum/posts', config); // Use config with serializer
     return response.data;
   } catch (error) {
     // TODO: Add more robust error handling specific to the application needs
@@ -68,7 +74,7 @@ export const createPost = async (
  * @param params - Optional parameters for pagination and search.
  * @returns A promise that resolves to the paginated tags response.
  */
-export const fetchTags = async (
+export const fetchForumTags = async ( // Renamed function
   apiClient: AxiosInstance,
   params?: FetchTagsParams
 ): Promise<PaginatedTagsResponseDTO> => {
