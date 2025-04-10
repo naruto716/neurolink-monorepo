@@ -418,6 +418,33 @@
    "sidebar.title": "Forum Tools",
    "noPosts": "No forum posts found yet.",
    "endOfPosts": "You've reached the end.",
-   "viewPost": "View post"
+   "viewPost": "View post",
+   "postImagePreviewAlt": "Post image preview",
+   "createPost": {
+     "breadcrumb": "Create Post",
+     "title": "Create New Forum Post",
+     "postTitleLabel": "Post Title",
+     "tagsLabel": "Tags (Optional)",
+     "tagsPlaceholder": "Add relevant tags",
+     "contentLabel": "Content (Markdown supported)",
+     "submitButton": "Create Post",
+     "successMessage": "Post created successfully!",
+     "errorMessage": "Failed to create post. Please try again.",
+     "errorEmptyFields": "Title and Content cannot be empty."
+   },
+   "detail": {
+     "loadError": "Failed to load post details.",
+     "notFound": "Forum post not found.",
+     "commentsTitle": "Comments ({{count}})",
+     "commentPlaceholder": "Write a comment...",
+     "commentSubmit": "Comment",
+     "commentEmptyError": "Comment cannot be empty.",
+     "commentSuccess": "Comment added successfully!",
+     "commentError": "Failed to add comment. Please try again.",
+     "noComments": "No comments yet. Be the first to share your thoughts!",
+     "likeAriaLabel": "Like post",
+     "likeSuccess": "Post liked!",
+     "likeError": "Failed to like post. Please try again."
+   }
  }
 }

@@ -2,7 +2,6 @@ import { PayloadAction } from '@reduxjs/toolkit';
 import { AxiosInstance } from 'axios';
 import { ListedUser, PaginatedUsersResponse } from './types';
 import { FetchUsersParams } from './userAPI';
-import { SharedRootState } from '../../app/store/store';
 export interface PaginatedUsersState {
     users: ListedUser[];
     currentPage: number;
@@ -31,13 +30,16 @@ export declare const paginatedUsersSlice: import("@reduxjs/toolkit").Slice<Pagin
     setUsersFilters: (state: import("immer").WritableDraft<PaginatedUsersState>, action: PayloadAction<Omit<FetchUsersParams, "page" | "limit">>) => void;
 }, "paginatedUsers", "paginatedUsers", import("@reduxjs/toolkit").SliceSelectors<PaginatedUsersState>>;
 export declare const clearPaginatedUsers: import("@reduxjs/toolkit").ActionCreatorWithoutPayload<"paginatedUsers/clearPaginatedUsers">, setUsersFilters: import("@reduxjs/toolkit").ActionCreatorWithPayload<Omit<FetchUsersParams, "page" | "limit">, "paginatedUsers/setUsersFilters">;
-export declare const selectPaginatedUsers: (state: SharedRootState) => ListedUser[];
-export declare const selectPaginatedUsersStatus: (state: SharedRootState) => PaginatedUsersState["status"];
-export declare const selectPaginatedUsersError: (state: SharedRootState) => string | null;
-export declare const selectUsersCurrentPage: (state: SharedRootState) => number;
-export declare const selectUsersTotalPages: (state: SharedRootState) => number;
-export declare const selectUsersTotalCount: (state: SharedRootState) => number;
-export declare const selectUsersPageSize: (state: SharedRootState) => number;
-export declare const selectUsersCurrentFilters: (state: SharedRootState) => Omit<FetchUsersParams, "page" | "limit">;
+interface StateWithPaginatedUsers {
+    paginatedUsers: PaginatedUsersState;
+}
+export declare const selectPaginatedUsers: (state: StateWithPaginatedUsers) => ListedUser[];
+export declare const selectPaginatedUsersStatus: (state: StateWithPaginatedUsers) => PaginatedUsersState["status"];
+export declare const selectPaginatedUsersError: (state: StateWithPaginatedUsers) => string | null;
+export declare const selectUsersCurrentPage: (state: StateWithPaginatedUsers) => number;
+export declare const selectUsersTotalPages: (state: StateWithPaginatedUsers) => number;
+export declare const selectUsersTotalCount: (state: StateWithPaginatedUsers) => number;
+export declare const selectUsersPageSize: (state: StateWithPaginatedUsers) => number;
+export declare const selectUsersCurrentFilters: (state: StateWithPaginatedUsers) => Omit<FetchUsersParams, "page" | "limit">;
 declare const _default: import("redux").Reducer<PaginatedUsersState>;
 export default _default;

@@ -4,7 +4,7 @@ import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { AccessibleTypography } from './AccessibleTypography';
 import { useAppSelector } from '../store/initStore'; // Import useAppSelector
-import { selectCurrentUser } from '@neurolink/shared/src/features/user/userSlice'; // Import selector
+import { selectCurrentUser, selectSelectedPost } from '@neurolink/shared'; // Import selectors
 
 interface BreadcrumbProps {
   // Optional custom items to override automatic breadcrumb creation
@@ -23,7 +23,8 @@ interface BreadcrumbRoute {
 const Breadcrumb: React.FC<BreadcrumbProps> = ({ customItems }) => {
   const location = useLocation();
   const { t } = useTranslation();
-  const currentUser = useAppSelector(selectCurrentUser); // Get current user
+  const currentUser = useAppSelector(selectCurrentUser);
+  const selectedPost = useAppSelector(selectSelectedPost); // Get selected post for title
 
   const routeNameMap: Record<string, string> = useMemo(() => {
     return {
@@ -38,6 +39,8 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ customItems }) => {
       // Add onboarding route if needed, or rely on customItems
       '/onboarding': t('nav.onboarding'),
       '/commitments': t('nav.commitments'), // Add mapping for commitments page
+      '/forum': t('nav.forum'), // Add mapping for forum page
+      // No need to map /forum/posts specifically if handled below
     };
   }, [t]);
 
@@ -59,6 +62,17 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ customItems }) => {
         { path: '/', label: routeNameMap['/'], isLast: false },
         { path: profilePath, label: routeNameMap['/profile'], isLast: false }, // Link to user's profile
         { path: '/profile/edit', label: routeNameMap['/profile/edit'], isLast: true },
+      ];
+    }
+
+    // Special case for /forum/posts/:postId
+    // Check if the path matches and if we have the selected post data in Redux
+    const forumPostMatch = location.pathname.match(/^\/forum\/posts\/(.+)$/);
+    if (forumPostMatch && selectedPost) {
+      return [
+        { path: '/', label: routeNameMap['/'] || 'Home', isLast: false },
+        { path: '/forum', label: routeNameMap['/forum'] || 'Forum', isLast: false },
+        { path: location.pathname, label: selectedPost.title, isLast: true }, // Use title from Redux state
       ];
     }
 
@@ -94,7 +108,7 @@ const Breadcrumb: React.FC<BreadcrumbProps> = ({ customItems }) => {
     });
 
     return breadcrumbRoutes;
-  }, [location.pathname, customItems, routeNameMap, currentUser]); // Add currentUser dependency
+  }, [location.pathname, customItems, routeNameMap, currentUser, selectedPost]); // Add selectedPost dependency
 
   // Always show breadcrumbs, even on the home page
   return (

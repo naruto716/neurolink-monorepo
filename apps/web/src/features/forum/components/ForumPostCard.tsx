@@ -12,15 +12,16 @@ import {
   Stack,
   Typography,
   alpha,
+  // useTheme, // No longer needed
 } from '@mui/material';
-import { ForumPostDTO } from '@neurolink/shared';
+import { PostResponseDTO } from '@neurolink/shared'; // Renamed from ForumPostDTO
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ChatCircleDots, Heart } from '@phosphor-icons/react'; // Icons for comments/likes
+import { ChatCircleDots, Heart } from '@phosphor-icons/react'; // Removed PlayCircle
 import { AccessibleTypography } from '../../../app/components/AccessibleTypography';
 
 interface ForumPostCardProps {
-  post: ForumPostDTO;
+  post: PostResponseDTO; // Use the renamed type
   // Add optional props for user details fetched in parent
   displayName?: string;
   profilePicture?: string | null;
@@ -32,27 +33,71 @@ interface ForumPostCardProps {
 const ForumPostCard = React.forwardRef<HTMLDivElement, ForumPostCardProps>(({ post, displayName, profilePicture }, ref) => {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  // const theme = useTheme(); // No longer needed
 
   const handleCardClick = () => {
     navigate(`/forum/posts/${post.id}`);
   };
 
+  // Function to extract the first image URL from markdown
+  const extractFirstImageUrl = (markdown: string): string | null => {
+    if (!markdown) return null;
+    const imageRegex = /!\[.*?\]\((.*?)\)/; // Capture the URL part
+    const match = markdown.match(imageRegex);
+    return match ? match[1] : null;
+  };
+
+  // Function to extract the first video URL from HTML video tag
+  const extractFirstVideoUrl = (htmlString: string): string | null => {
+    if (!htmlString) return null;
+    const videoRegex = /<video.*?src=["'](.*?)["'].*?>/i; // Capture the src part
+    const match = htmlString.match(videoRegex);
+    return match ? match[1] : null;
+  };
+
+  // Updated function to strip markdown, now completely removing images
+  const sanitizeMarkdownPreview = (markdown: string): string => {
+    if (!markdown) return '';
+    return markdown
+      .replace(/!\[.*?\]\(.*?\)/g, '') // Remove images
+      .replace(/<video.*?<\/video>/gi, '') // Remove video tags
+      .replace(/#{1,6}\s/g, '')
+      .replace(/(\*\*|__)(.*?)\1/g, '$2')
+      .replace(/(\*|_)(.*?)\1/g, '$2')
+      .replace(/~~(.*?)~~/g, '$1')
+      .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+      .replace(/`{1,3}(.*?)`{1,3}/g, '$1')
+      .replace(/^\s*>\s?/gm, '')
+      .replace(/^\s*[-*+]\s/gm, '')
+      .replace(/\n{2,}/g, '\n') // Collapse multiple newlines to one
+      .replace(/\n/g, ' ') // Replace remaining newlines with spaces
+      .trim();
+  };
+
+  const firstImageUrl = extractFirstImageUrl(post.content);
+  const firstVideoUrl = extractFirstVideoUrl(post.content); // Check for video
+
   return (
     // Attach the forwarded ref to the Paper element
     <Paper
       elevation={0} // Flat initially
-      sx={{
-        p: 2, // Add padding directly
-        borderRadius: '8px', // Slightly less rounded
+      sx={(theme) => ({ // Use function form to access theme
+        p: 2,
+        borderRadius: '8px',
         cursor: 'pointer',
-        transition: (theme) => theme.transitions.create('background-color', {
+        // Remove default background, inherit from parent
+        backgroundColor: 'transparent',
+        transition: theme.transitions.create('background-color', {
             duration: theme.transitions.duration.shortest,
         }),
         '&:hover': {
-          // Change background color on hover
-          bgcolor: (theme) => alpha(theme.palette.action.hover, 0.04),
+          // Apply appropriate hover based on theme mode
+          backgroundColor: theme.palette.mode === 'dark'
+            ? alpha(theme.palette.common.white, 0.08) // Increase alpha for more noticeable hover
+            : alpha(theme.palette.action.hover, 0.04),
         },
-      }}
+      })} // Add missing closing parenthesis
+// Removed extra closing braces
       onClick={handleCardClick}
       aria-label={`${t('forum.viewPost', 'View post')}: ${post.title}`}
       ref={ref} // Attach the ref here
@@ -75,7 +120,33 @@ const ForumPostCard = React.forwardRef<HTMLDivElement, ForumPostCardProps>(({ po
              </Typography>
         </Stack>
 
-        {/* Post Content */}
+        {/* Media Preview: Show image or video icon */}
+        {firstImageUrl && !firstVideoUrl && ( // Show image only if no video found first
+          <Box sx={{ my: 1.5, overflow: 'hidden', borderRadius: '8px' }}>
+            <img
+              src={firstImageUrl}
+              alt={t('forum.postImagePreviewAlt', 'Post image preview')}
+              style={{ width: '100%', height: 'auto', display: 'block' }}
+            />
+          </Box>
+        )}
+        {firstVideoUrl && ( // Show video player if video found
+           <Box
+             sx={{ my: 1.5, overflow: 'hidden', borderRadius: '8px', bgcolor: 'action.hover' /* Optional background */ }}
+             onClick={(e) => e.stopPropagation()} // Stop click propagation here
+           >
+             <video
+               src={firstVideoUrl}
+               controls // Add basic playback controls
+               style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '8px' }}
+               preload="metadata" // Load only metadata initially for performance
+             >
+               {t('common.videoUnsupported', 'Your browser does not support the video tag.')}
+             </video>
+           </Box>
+        )}
+
+        {/* Post Content Preview */}
         <Box>
           <AccessibleTypography variant="h6" component="h2" gutterBottom sx={{ fontWeight: 600, mb: 1 }}>
             {post.title}
@@ -91,7 +162,7 @@ const ForumPostCard = React.forwardRef<HTMLDivElement, ForumPostCardProps>(({ po
               overflow: 'hidden',
               textOverflow: 'ellipsis',
             }}>
-            {post.content} {/* Display full content, CSS handles truncation */}
+            {sanitizeMarkdownPreview(post.content)} {/* Display sanitized content */}
           </AccessibleTypography>
 
           {/* Tags */}

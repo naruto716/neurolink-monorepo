@@ -23,6 +23,8 @@ export type { Tag, UserPreferences, User, UserProfileInput, ListedUser, Paginate
 export * from './features/posts/types'; // Re-export all types from posts/types.ts
 export * from './features/commitments/types'; // Export commitment types
 export * from './features/forum/types'; // Export forum types
+// Explicitly export types needed for CreatePostPage that might not be covered by '*'
+export type { PostCreateDTO, TagResponseDTO } from './features/forum/types';
 // Explicitly export Commitment and Invitation related types
 export type {
     Commitment,
@@ -33,7 +35,34 @@ export type {
     PaginatedReceivedInvitationsResponse,
     PaginatedSentInvitationsResponse
 } from './features/commitments/types';
-export * from './features/user/userAPI';
+// Explicitly export required functions from userAPI, excluding fetchTags/FetchTagsParams to avoid conflict
+export {
+    fetchCurrentUser,
+    createUser,
+    fetchUserByUsername,
+    uploadProfilePicture,
+    fetchUsers,
+    fetchUserFriends,
+    fetchUserFriendCount,
+    fetchPendingRequests,
+    acceptFriendRequest,
+    declineFriendRequest,
+    sendFriendRequest,
+    fetchConnectionStatus,
+    fetchSentRequests,
+    fetchUserCommitments,
+    fetchCommitmentById,
+    fetchSentInvitations,
+    fetchSentInvitationsDetail,
+    fetchReceivedInvitations,
+    respondToCommitmentInvitation,
+    fetchPendingInvitationCount,
+    fetchAcceptedCommitmentCount,
+    createCommitment
+    // Note: fetchTags and FetchTagsParams are intentionally omitted here
+    // fetchTags is exported from forumAPI.ts
+    // FetchTagsParams is exported from forum/types.ts
+} from './features/user/userAPI';
 export * from './features/posts/postsAPI'; // Export Post API functions
 export * from './features/forum/forumAPI'; // Export Forum API functions
 export * from './features/tokens/tokensSlice'; // Export token actions/selectors if needed directly
@@ -54,14 +83,45 @@ export { // Export chat slice actions and selectors explicitly
     selectChatError
 } from './features/chat/chatSlice';
 export { // Export forum slice actions and selectors explicitly
+    // Existing
     fetchForumPosts,
+    createPost,
+    fetchTags,
     resetForumState,
     selectForumPosts,
     selectForumStatus,
     selectForumError,
     selectForumCurrentPage,
     selectForumTotalPages,
-    selectForumTotalPosts
+    selectForumTotalPosts,
+    selectForumTags,
+    selectForumTagsStatus,
+    selectForumTagsError,
+    selectForumTagsCurrentPage,
+    selectForumTagsTotalPages,
+    selectForumTagsTotalTags,
+    selectCreatePostStatus,
+    selectCreatePostError,
+    // New exports for post detail and comments
+    fetchPostById,
+    fetchComments,
+    createComment,
+    likePost, // Add likePost thunk
+    clearSelectedPost,
+    selectSelectedPost,
+    selectSelectedPostStatus,
+    selectSelectedPostError,
+    selectPostComments,
+    selectCommentsStatus,
+    selectCommentsError,
+    selectCommentsCurrentPage,
+    selectCommentsTotalPages,
+    selectCommentsTotalComments,
+    selectCreateCommentStatus,
+    selectCreateCommentError,
+    // Add like selectors
+    selectLikeStatus,
+    selectLikeError
 } from './features/forum/forumSlice';
 
 // Export other shared utilities or components if any

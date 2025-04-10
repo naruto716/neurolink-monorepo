@@ -3,7 +3,8 @@ import { AxiosInstance } from 'axios';
 // Use the correct ListedUser type and import Tag
 import { ListedUser, PaginatedUsersResponse } from './types';
 import { fetchUsers, FetchUsersParams } from './userAPI';
-import { SharedRootState } from '../../app/store/store';
+// We don't need SharedRootState directly for selectors if we define a minimal interface
+// import { SharedRootState } from '../../app/store/store';
 
 // Define the state structure for paginated users
 export interface PaginatedUsersState {
@@ -109,30 +110,35 @@ export const paginatedUsersSlice = createSlice({
 // Export actions and reducer
 export const { clearPaginatedUsers, setUsersFilters } = paginatedUsersSlice.actions;
 
-// Selectors - Explicitly use SharedRootState
+// Define a minimal state interface for selectors within this slice
+interface StateWithPaginatedUsers {
+  paginatedUsers: PaginatedUsersState;
+}
+
+// Selectors - Use the minimal state interface
 // Update selector to return ListedUser[]
-export const selectPaginatedUsers = (state: SharedRootState): ListedUser[] => 
+export const selectPaginatedUsers = (state: StateWithPaginatedUsers): ListedUser[] =>
   state.paginatedUsers?.users || [];
 
-export const selectPaginatedUsersStatus = (state: SharedRootState): PaginatedUsersState['status'] => 
+export const selectPaginatedUsersStatus = (state: StateWithPaginatedUsers): PaginatedUsersState['status'] =>
   state.paginatedUsers?.status || 'idle';
 
-export const selectPaginatedUsersError = (state: SharedRootState): string | null => 
+export const selectPaginatedUsersError = (state: StateWithPaginatedUsers): string | null =>
   state.paginatedUsers?.error || null;
 
-export const selectUsersCurrentPage = (state: SharedRootState): number => 
+export const selectUsersCurrentPage = (state: StateWithPaginatedUsers): number =>
   state.paginatedUsers?.currentPage || 1;
 
-export const selectUsersTotalPages = (state: SharedRootState): number => 
+export const selectUsersTotalPages = (state: StateWithPaginatedUsers): number =>
   state.paginatedUsers?.totalPages || 0;
   
-export const selectUsersTotalCount = (state: SharedRootState): number => 
+export const selectUsersTotalCount = (state: StateWithPaginatedUsers): number =>
   state.paginatedUsers?.totalCount || 0;
 
-export const selectUsersPageSize = (state: SharedRootState): number => 
+export const selectUsersPageSize = (state: StateWithPaginatedUsers): number =>
   state.paginatedUsers?.pageSize || 10;
 
-export const selectUsersCurrentFilters = (state: SharedRootState): Omit<FetchUsersParams, 'page' | 'limit'> =>
+export const selectUsersCurrentFilters = (state: StateWithPaginatedUsers): Omit<FetchUsersParams, 'page' | 'limit'> =>
   state.paginatedUsers?.currentFilters || {};
 
 

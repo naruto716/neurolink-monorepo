@@ -77,7 +77,7 @@ export const paginatedUsersSlice = createSlice({
 });
 // Export actions and reducer
 export const { clearPaginatedUsers, setUsersFilters } = paginatedUsersSlice.actions;
-// Selectors - Explicitly use SharedRootState
+// Selectors - Use the minimal state interface
 // Update selector to return ListedUser[]
 export const selectPaginatedUsers = (state) => state.paginatedUsers?.users || [];
 export const selectPaginatedUsersStatus = (state) => state.paginatedUsers?.status || 'idle';

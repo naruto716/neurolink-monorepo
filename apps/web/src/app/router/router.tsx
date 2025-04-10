@@ -13,6 +13,8 @@ import EditProfilePage from '../../pages/profile/EditProfilePage'; // Import the
 import ChatPage from '../../pages/chat/ChatPage'; // Import ChatPage
 import CommitmentPage from '../../pages/commitments/CommitmentPage'; // Import CommitmentPage
 import ForumPage from '../../pages/forum/ForumPage'; // Import ForumPage
+import CreatePostPage from '../../pages/forum/CreatePostPage'; // Import CreatePostPage
+import ForumPostDetailPage from '../../pages/forum/ForumPostDetailPage'; // Import Detail Page
 // Removed CommitmentDetail import as it will be a modal
 // import CommitmentDetail from '../../pages/commitments/components/CommitmentDetail';
 // import FriendListPage from '../../pages/people/FriendListPage'; // Removed old page import
@@ -46,8 +48,9 @@ const routes: RouteObject[] = [
                   { path: 'people/:username', element: <UserProfilePage /> },
                   { path: 'profile/edit', element: <EditProfilePage /> },
                   { path: 'chat', element: <ChatPage /> },
-                  { path: 'forum', element: <ForumPage /> }, // Use ForumPage component
-                  { path: 'forum/posts/:postId', element: <div>Forum Post Detail Page Placeholder</div> }, // Add Forum Post Detail route
+                  { path: 'forum', element: <ForumPage /> }, // Forum list page
+                  { path: 'forum/create', element: <CreatePostPage /> }, // Add route for creating posts
+                  { path: 'forum/posts/:postId', element: <ForumPostDetailPage /> }, // Use the actual detail page component
                   { path: 'commitments', element: <CommitmentPage /> },
                   { path: 'commitments/:subpage', element: <CommitmentPage /> },
                   // Removed Commitment Detail route

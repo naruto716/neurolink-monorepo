@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react'; // Re-a
 import {
   Alert,
   Box,
-  // Button, // Removed unused import
+  Button, // Add Button import
   CircularProgress,
   Container,
   Divider, // Re-add Divider import
@@ -13,6 +13,8 @@ import {
   // Avatar // Moved to ForumPostCard
   // Chip // Moved to ForumPostCard
  } from '@mui/material';
+import AddIcon from '@mui/icons-material/Add'; // Import AddIcon
+import { Link as RouterLink } from 'react-router-dom'; // Import Link for navigation
 import { useTranslation } from 'react-i18next';
 // import Breadcrumb from '../../app/components/Breadcrumb'; // Removed redundant Breadcrumb
 import { AccessibleTypography } from '../../app/components/AccessibleTypography';
@@ -20,7 +22,7 @@ import { useAppDispatch, useAppSelector } from '../../app/store/initStore'; // I
 // Import forum slice actions/selectors AND user API
 import { fetchForumPosts, selectForumPosts, selectForumStatus, selectForumError, selectForumCurrentPage, selectForumTotalPages, fetchUserByUsername, User } from '@neurolink/shared';
 import apiClient from '../../app/api/apiClient'; // Import apiClient
-import { ForumPostDTO } from '@neurolink/shared/src/features/forum/types'; // Import type
+import { PostResponseDTO } from '@neurolink/shared/src/features/forum/types'; // Import type (renamed from ForumPostDTO)
 import ForumPostCard from '../../features/forum/components/ForumPostCard'; // Import the new card component
 // import { CaretDown } from '@phosphor-icons/react'; // Removed unused import
 
@@ -37,6 +39,7 @@ const ForumPage = () => {
 
   // Local state to store fetched user details (username -> User object)
   const [userDetails, setUserDetails] = useState<Record<string, User>>({});
+  const [attemptedUsernames, setAttemptedUsernames] = useState<Set<string>>(new Set()); // Track attempted fetches
   // const [userFetchStatus, setUserFetchStatus] = useState<'idle' | 'loading' | 'failed'>('idle'); // Removed unused state
 
   // Ref for the loading spinner at the bottom
@@ -57,11 +60,14 @@ const ForumPage = () => {
       const usernamesToFetch = posts
         .map(post => post.username)
         .filter((username, index, self) =>
-          self.indexOf(username) === index && !userDetails[username] // Unique and not already fetched
+          self.indexOf(username) === index && // Unique username in the current posts batch
+          !userDetails[username] && // Not already successfully fetched
+          !attemptedUsernames.has(username) // Not already attempted
         );
 
       if (usernamesToFetch.length > 0) {
-        // setUserFetchStatus('loading'); // Removed state update
+        // Mark these usernames as attempted immediately
+        setAttemptedUsernames(prev => new Set([...prev, ...usernamesToFetch]));
         Promise.all(
           usernamesToFetch.map(username =>
             fetchUserByUsername(apiClient, username)
@@ -80,7 +86,7 @@ const ForumPage = () => {
         });
       }
     }
-  }, [posts, status, userDetails]); // Depend on posts, status, and userDetails
+  }, [posts, status, userDetails, attemptedUsernames]); // Add attemptedUsernames to dependencies
 
   // Callback for IntersectionObserver
   const handleObserver = useCallback((entries: IntersectionObserverEntry[]) => {
@@ -124,9 +130,19 @@ const ForumPage = () => {
         {/* Main Content Area */}
         <Grid item xs={12}>
           {/* Removed outer Paper wrapper */}
-            <AccessibleTypography variant="h4" component="h1" gutterBottom>
-              {t('forum.title', 'Community Forum')}
-            </AccessibleTypography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <AccessibleTypography variant="h4" component="h1" gutterBottom sx={{ mb: 0 }}>
+                {t('forum.title', 'Community Forum')}
+              </AccessibleTypography>
+              <Button
+                variant="contained"
+                startIcon={<AddIcon />}
+                component={RouterLink}
+                to="/forum/create"
+              >
+                {t('forum.createPost.breadcrumb', 'Create Post')} {/* Reuse translation */}
+              </Button>
+            </Box>
             <AccessibleTypography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
               {t('forum.description', 'Discuss topics, ask questions, and connect with others.')}
             </AccessibleTypography>
@@ -152,7 +168,7 @@ const ForumPage = () => {
                      {t('forum.noPosts', 'No forum posts found yet.')}
                    </AccessibleTypography>
                 )}
-                {posts.map((post: ForumPostDTO, index: number) => {
+                {posts.map((post: PostResponseDTO, index: number) => { // Use correct type here
                   // Attach ref to the last post card
                   const isLastPost = index === posts.length - 1;
                   const user = userDetails[post.username]; // Get user details from state
